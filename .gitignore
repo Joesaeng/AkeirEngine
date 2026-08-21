@@ -18,3 +18,6 @@ Game/Cache/
 # OS
 Thumbs.db
 .DS_Store
+
+# 리서치 작업 자료는 공개 저장소에 넣지 않는다 (C:\Project\Project_ME_research 에 별도 보관)
+/research/

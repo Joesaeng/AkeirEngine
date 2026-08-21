@@ -9,13 +9,12 @@
 MoltEngine-0.1/
 ├── QUICKSTART.md              ← 지금 이 파일
 ├── RELEASE.md                 버전, git 해시, bin/game.exe 의 sha256
-├── bin\game.exe (+ game.pdb)  미리 빌드된 CLI. 빌드 없이 바로 쓴다. 아래 예시의 `game` = 이 파일. PATH 에 bin\ 을 넣거나 전체 경로로 부른다
+├── bin\game.exe               미리 빌드된 CLI. 빌드 없이 바로 쓴다. 아래 예시의 `game` = 이 파일. PATH 에 bin\ 을 넣거나 전체 경로로 부른다
 ├── .mcp.json                  Claude Code 용 MCP 서버 등록 (bin\game.exe mcp --project Game). 상대 경로 — 이 폴더를 Claude Code 의 프로젝트 루트로 열면 된다
 ├── Docs/                      00-START-HERE → STATUS → DECISIONS → BUILD → ARCHITECTURE → CONVENTIONS
 ├── AI_Native_Game_Framework_Design.md   설계 정본 (§0–§89, ▶ v3 구현 주석 포함)
 ├── Game/                      샘플 프로젝트 "TestArena" (플레이어 + 고블린 3마리, 테스트 3개, 골든 이미지). 건드려도 됨 — 참고용
-├── Engine/ Tools/ Tests/ Game/Source/ cmake/ scripts/ CMakeLists.txt CMakePresets.json   소스 (다시 빌드하려면 Docs/BUILD.md; .cpm-cache 는 없어 첫 configure 가 GitHub 에서 의존성을 받는다)
-└── research/                  설계 근거 리서치
+└── Engine/ Tools/ Tests/ Game/Source/ cmake/ scripts/ CMakeLists.txt CMakePresets.json   소스 (다시 빌드하려면 Docs/BUILD.md; .cpm-cache 는 없어 첫 configure 가 GitHub 에서 의존성을 받는다)
 ```
 
 ## 1. 5분 안에 돌려 보기 (빌드 불필요)
@@ -96,6 +95,6 @@ serve 없이 `--tx` 를 주면 `TX_REQUIRES_SERVE`. 데몬을 무시하고 싶�
 - `game <명령> --help`, `game capabilities --json` 의 `errorCodes[]`, 각 오류의 `error.ruleId` + `error.details` + `fixes[]`(MachineApplicable 이면 `game validate --fix`).
 - `Docs/00-START-HERE.md` → 해당 모듈 README (`Engine/*/README.md`, `Tools/CLI/README.md`) → 설계 문서의 § .
 - 알려진 한계: `Docs/STATUS.md` "알려진 문제 / 기술 부채" (예: MCP 인자 오타는 조용히 무시됨, `query` 는 `limit` 만 있고 cursor 없음).
-- 크래시가 나면 `<project>/Cache/crash/*.dmp` 와 envelope 의 `error.details.lastLogs` 를 같이 보고한다 (`bin\game.pdb` 로 심볼 해석).
+- 크래시가 나면 `<project>/Cache/crash/*.dmp` 와 envelope 의 `error.details.lastLogs` 를 같이 보고한다 (심볼 `.pdb` 는 같은 태그를 체크아웃해 `scripts\build.cmd msvc-release all` 로 재생성).
 
 git: 이 릴리즈는 태그 `ME0.1`(= `v0.1.0`) 이다. zip 안에는 `.git` 이 없다(`git archive`) — 새 프로젝트는 자기 저장소를 만들면 된다 (`project init` 이 `.gitignore` 를 써 둔다).

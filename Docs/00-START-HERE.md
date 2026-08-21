@@ -26,7 +26,6 @@
 | 5 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 모듈 ↔ 설계 문서 § 대응, 데이터 흐름 |
 | 6 | [`CONVENTIONS.md`](CONVENTIONS.md) | 코드를 쓰기 전에 |
 | 7 | [`../AI_Native_Game_Framework_Design.md`](../AI_Native_Game_Framework_Design.md) | 설계 정본. 4,900줄. **전부 읽을 필요는 없다** — 아래 "설계 문서 읽는 법" |
-| 참고 | [`../research/README.md`](../research/README.md) | 설계 문서 v2 의 근거 리서치(11개 주제)와 검증 결과 |
 
 ## 3. 설계 문서 읽는 법
 
@@ -47,7 +46,6 @@ Project_ME/
 ├── AI_Native_Game_Framework_Design.md   설계 정본
 ├── README.md                            루트 진입점 (이 문서로 안내)
 ├── Docs/                                ← 지금 여기
-├── research/                            리서치 원문 11개 + critic + 검증 결과 + v1 원본
 ├── .mcp.json                            Claude Code 용 MCP 서버 등록 — 개발 저장소에서는 절대 경로(msvc-debug 빌드), 릴리즈 zip 에서는 상대 경로 `bin\game.exe`. `game mcp --print-config` 가 절대 경로 버전을 출력한다
 ├── QUICKSTART.md                        릴리즈 zip 사용자용 진입점 (빌드 없이 bin/game.exe 로 시작)
 ├── CMakeLists.txt, CMakePresets.json    빌드 (§41). preset: msvc-debug / msvc-release / msvc-headless / clang-cl-debug

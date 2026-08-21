@@ -4912,7 +4912,7 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 | §87 | 출처 6개 → 약 120개 (엔진/선행 사례, 벤치마크, MCP, CLI 지침, 표준, 결정론, reflection, 라이브러리) |
 | **§88 신설** | 미결 설계 결정 11개와 권장 기본값 (목표 게임, 프로세스 모델, authoring/play world, 입력, 크래시, build, 보안, sub-asset, 직렬화 소비자, 파일 granularity, query DSL) |
 
-보강에 쓰인 리서치 원문(11개 주제, finding 217개, 권고 118개)과 critic의 gap 분석, 그리고 보강 전 원본(v1)은 `research/` 디렉터리에 있다 (`research/README.md` 참조).
+보강에 쓰인 리서치 원문(11개 주제, finding 217개, 권고 118개)과 critic의 gap 분석, 보강 전 원본(v1)은 **공개 저장소에 포함하지 않는다**(엔진이 아닌 작업 자료; 작성자가 별도 보관). 출처 목록은 §87.
 
 **▶ v3 (구현 중 수정, 2026-08-21)**: Phase 3 구현에서 설계를 구체화/수정한 곳. 각 항목의 근거는 `Docs/DECISIONS.md` ADR-0018~0022.
 
@@ -4936,7 +4936,7 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 | §46, §46.1, §47 | 구현: sidecar 대신 **`game mcp`(C++ 네이티브 stdio MCP)**. `server/discover`(2026-07-28) + `initialize`(2025-xx) 둘 다 응답. tools = `capabilities.tools[].enabled`, `tools/call` → `structuredContent` envelope + `isError`. resources/prompts/Tasks 미구현 (ADR-0030). |
 | §15, §47 | `capabilities` 에 `busCommands[]`(Mutation command + args JSON Schema = `apply.changes[].op` 의 oneOf) 추가. `tools[]` 15개에 `enabled` 플래그. |
 
-**검증 (2026-08-21)**: v2 추가 내용을 7개 에이전트가 리서치 원문·웹 1차 출처로 fact-check하고 전체 일관성을 점검했다 — 130건(high 2, medium 37, low 91) 중 거의 전부를 반영했다. 목록과 주요 수정은 `research/verification-v2.md`. 구현에 영향을 준 수정: `game capabilities`의 tools[]/commands[] 2층 구조(§15/§47), §74 Phase 0 구성, ChangeSet `replace`의 `value` 필드(§78), §13 오류 객체 = §79 Diagnostic + α, command id 정식 명명(§8.1), `CommandKind::Meta`(§8), tx commit의 compose 규칙(§9.2).
+**검증 (2026-08-21)**: v2 추가 내용을 7개 에이전트가 리서치 원문·웹 1차 출처로 fact-check하고 전체 일관성을 점검했다 — 130건(high 2, medium 37, low 91) 중 거의 전부를 반영했다. 검증 목록은 저장소 밖의 작업 자료에 있고, 구현에 영향을 준 항목은 아래와 Docs/DECISIONS.md 에 남겼다. 구현에 영향을 준 수정: `game capabilities`의 tools[]/commands[] 2층 구조(§15/§47), §74 Phase 0 구성, ChangeSet `replace`의 `value` 필드(§78), §13 오류 객체 = §79 Diagnostic + α, command id 정식 명명(§8.1), `CommandKind::Meta`(§8), tx commit의 compose 규칙(§9.2).
 
 ---
 

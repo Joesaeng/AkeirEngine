@@ -16,7 +16,7 @@
 ## ADR-0002 ECS substrate = Flecs v4.1.6 (기본 후보, spike 로 확정)
 - **상태**: **확정** (2026-08-21, Phase 1). S-A 조건 충족: authoring JSON → PlayWorld(Flecs) → query/dump/snapshot 동작, 두 프로세스 finalHash 동일. EnTT arm(S-B)은 돌리지 않았다 — §3.1 규칙 "S-A가 동작하면 Flecs 채택".
 - **결정**: runtime world 는 Flecs. authoring source of truth 는 여전히 우리 JSON 문서 모델(§6)이며 Flecs world 는 그 투영이다. Flecs REST/Explorer 는 play world 디버깅 전용 (authoring 변경은 CommandBus 만).
-- **근거**: Flecs 가 reflection·query DSL·JSON·REST·Explorer 를 1st-party 로 제공해 §12–§19/§25/§26 의 60–70% 를 덮는다 (research/flecs-vs-entt.md). EnTT v4 는 storage 만.
+- **근거**: Flecs 가 reflection·query DSL·JSON·REST·Explorer 를 1st-party 로 제공해 §12–§19/§25/§26 의 60–70% 를 덮는다 (2026-08 리서치; 원문은 저장소 밖). EnTT v4 는 storage 만.
 - **대안**: EnTT v4.0.0 (S-B) — Flecs 가 2주 내 동작하지 않을 때의 fallback. Godot headless / Bevy+BRP — §72 비교 arm 으로만.
 - **영향**: C++17 이상, Flecs 64-bit entity id 는 외부 비노출(§7), archetype 특성상 빈번한 add/remove 는 field/CanToggle 로.
 - **참조**: §3.1, §55, §88.10

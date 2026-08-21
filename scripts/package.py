@@ -5,7 +5,7 @@
 
 Produces dist/MoltEngine-<version>.zip containing
   - every git-tracked file at <ref>  (git archive; no build/, .cpm-cache/, Cache/)
-  - bin/game.exe from build/<preset>/bin/   (prebuilt CLI; the zip is usable without a compiler)
+  - bin/game.exe from build/<preset>/bin/   (prebuilt CLI; the zip is usable without a compiler; no .pdb)
   - .mcp.json with RELATIVE paths (bin/game.exe mcp --project Game) so Claude Code can be pointed at the unpacked folder
   - RELEASE.md with version, git ref, sha256 of game.exe
 
@@ -55,9 +55,7 @@ def main():
     # 2. binary
     os.makedirs(os.path.join(stage, "bin"), exist_ok=True)
     shutil.copy2(exe, os.path.join(stage, "bin", "game.exe"))
-    pdb = os.path.splitext(exe)[0] + ".pdb"
-    if os.path.exists(pdb):
-        shutil.copy2(pdb, os.path.join(stage, "bin", "game.pdb"))
+    # game.pdb(64MB 심볼)는 넣지 않는다 — 같은 태그에서 재빌드하면 재생성된다 (QUICKSTART §5)
     with open(exe, "rb") as f:
         exe_sha = hashlib.sha256(f.read()).hexdigest()
 
