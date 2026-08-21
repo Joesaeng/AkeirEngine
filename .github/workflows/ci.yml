@@ -37,44 +37,80 @@ jobs:
       - name: Build
         run: cmake --build --preset msvc-headless
       - name: Unit tests (doctest)
-        run: build\msvc-headless\Tests\akeir_tests.exe
+        run: build/msvc-headless/Tests/akeir_tests.exe
       - name: ctest registration matches doctest (no ';' in test names)
         shell: pwsh
         run: |
-          $doctest = [int](& build\msvc-headless\Tests\akeir_tests.exe --list-test-cases | Select-String -Pattern 'passing the current filters: (\d+)').Matches[0].Groups[1].Value
+          $doctest = [int](& build/msvc-headless/Tests/akeir_tests.exe --list-test-cases | Select-String -Pattern 'passing the current filters: (\d+)').Matches[0].Groups[1].Value
           $ctest = [int](& ctest --preset msvc-headless -N | Select-String -Pattern 'Total Tests: (\d+)').Matches[0].Groups[1].Value
           Write-Host "doctest cases: $doctest  ctest entries: $ctest"
-          if ([int]$ctest -ne [int]$doctest) { throw "ctest registered $ctest entries but doctest has $doctest cases (a TEST_CASE name contains ';'?)" }
+          if ($ctest -ne $doctest) { throw "ctest registered $ctest entries but doctest has $doctest cases (a TEST_CASE name contains ';'?)" }
           ctest --preset msvc-headless --output-on-failure
       - name: akeir validate (sample project)
         working-directory: Game
-        run: ..\build\msvc-headless\bin\akeir.exe validate --json
+        run: ../build/msvc-headless/bin/akeir.exe validate --json
       - name: akeir test (data-driven scenarios; Visual/* skipped without SDL)
         working-directory: Game
-        run: ..\build\msvc-headless\bin\akeir.exe test --json
+        run: ../build/msvc-headless/bin/akeir.exe test --json
       - name: Determinism — run twice, hashes must match
         working-directory: Game
         shell: pwsh
         run: |
-          $a = (..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
-          $b = (..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
+          $a = (../build/msvc-headless/bin/akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
+          $b = (../build/msvc-headless/bin/akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
           Write-Host "run A: $a   run B: $b   reference: $env:REFERENCE_FINAL_HASH"
           if ($a -ne $b) { throw "T0 violated: two runs differ" }
           if ($a -ne $env:REFERENCE_FINAL_HASH) {
             Write-Host "::warning::finalHash $a differs from the reference $env:REFERENCE_FINAL_HASH (different compiler/CRT? see AKEIR.md §22.2) — sample data or determinism may have changed"
           }
+      - name: akeir capabilities (same code path as MCP tools/list)
+        working-directory: Game
+        run: ../build/msvc-headless/bin/akeir.exe capabilities --json | Out-Null
+      - name: MCP smoke (tools/list over stdio, headless build)
+        working-directory: Game
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ../build/msvc-headless/bin/akeir.exe mcp 2>$null
+          $text = ($resp | Out-String).Trim()
+          $n = 0
+          try { $n = ($text | ConvertFrom-Json).result.tools.Count } catch { Write-Host "not JSON-RPC: $text" }
+          Write-Host "tools: $n"
+          if ($n -ne 15) { Write-Host $text; throw "expected 15 MCP tools, got $n" }
       - name: Empty project round-trip (project init → prefab → run)
         shell: pwsh
         run: |
-          $A = "$PWD\build\msvc-headless\bin\akeir.exe"
-          & $A project init CiGame --dir "$env:RUNNER_TEMP\CiGame" --json | Out-Null
-          Push-Location "$env:RUNNER_TEMP\CiGame"
+          $A = "$PWD/build/msvc-headless/bin/akeir.exe"
+          & $A project init CiGame --dir "$env:RUNNER_TEMP/CiGame" --json | Out-Null
+          Push-Location "$env:RUNNER_TEMP/CiGame"
           & $A prefab create Hero --components '{"Collider2D":{"shape":"circle"},"RigidBody2D":{"type":"dynamic","gravityScale":0},"Movement":{"speed":5},"PlayerController":{},"Health":{"max":100}}' --json | Out-Null
           & $A prefab instantiate Hero --name Player --json | Out-Null
           $r = & $A run --headless --ticks 120 --json | ConvertFrom-Json
           if (-not $r.ok) { throw "run failed" }
           & $A undo 2 --json | Out-Null
           Pop-Location
+      - name: Crash triage (on failure) — symbolize minidumps with cdb if present
+        if: failure()
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $dumps = Get-ChildItem -Path Game/Cache/crash -Filter *.dmp -ErrorAction SilentlyContinue
+          if (-not $dumps) { Write-Host "no minidumps"; exit 0 }
+          Get-ChildItem Game/Cache/crash | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem Game/Cache/crash -Filter *.json | ForEach-Object { Get-Content $_.FullName -Raw | Write-Host }
+          $cdb = Get-ChildItem "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/cdb.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          foreach ($d in $dumps) {
+            Write-Host "== $($d.FullName)"
+            if ($cdb) { & $cdb.FullName -z $d.FullName -y "build/msvc-headless/bin;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 160 } else { Write-Host "cdb.exe not found on runner" }
+          }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: crash-dumps-headless
+          path: |
+            Game/Cache/crash/**
+            build/msvc-headless/bin/akeir.pdb
+          if-no-files-found: ignore
 
   sdl:
     name: Windows SDL (msvc-release) — build, unit tests, scenarios incl. golden capture, package
@@ -93,49 +129,27 @@ jobs:
       - name: Build
         run: cmake --build --preset msvc-release
       - name: Unit tests (incl. Render/InputMap)
-        run: build\msvc-release\Tests\akeir_tests.exe
+        run: build/msvc-release/Tests/akeir_tests.exe
       - name: akeir test (3 scenarios incl. Visual golden capture)
         working-directory: Game
-        run: ..\build\msvc-release\bin\akeir.exe test --json
+        run: ../build/msvc-release/bin/akeir.exe test --json
       - name: Capture smoke (software renderer)
         working-directory: Game
-        run: ..\build\msvc-release\bin\akeir.exe capture --ticks 300 --out Cache\capture\ci.png --json
-      - name: akeir capabilities (bisect: same code path as MCP tools/list)
+        run: ../build/msvc-release/bin/akeir.exe capture --ticks 300 --out Cache/capture/ci.png --json
+      - name: akeir capabilities (same code path as MCP tools/list)
         working-directory: Game
-        run: ..uild\msvc-releaseinkeir.exe capabilities --json | Out-Null
+        run: ../build/msvc-release/bin/akeir.exe capabilities --json | Out-Null
       - name: MCP smoke (tools/list over stdio)
         working-directory: Game
         shell: pwsh
         run: |
           $PSNativeCommandUseErrorActionPreference = $false
-          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..uild\msvc-releaseinkeir.exe mcp 2>$null
+          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ../build/msvc-release/bin/akeir.exe mcp 2>$null
           $text = ($resp | Out-String).Trim()
           $n = 0
           try { $n = ($text | ConvertFrom-Json).result.tools.Count } catch { Write-Host "not JSON-RPC: $text" }
           Write-Host "tools: $n"
           if ($n -ne 15) { Write-Host $text; throw "expected 15 MCP tools, got $n" }
-      - name: Crash triage (on failure) — symbolize minidumps with cdb if present
-        if: failure()
-        working-directory: Game
-        shell: pwsh
-        run: |
-          $PSNativeCommandUseErrorActionPreference = $false
-          $dumps = Get-ChildItem -Path Cache\crash -Filter *.dmp -ErrorAction SilentlyContinue
-          if (-not $dumps) { Write-Host "no minidumps"; exit 0 }
-          $cdb = Get-ChildItem "C:\Program Files (x86)\Windows Kits\Debuggersd\cdb.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
-          foreach ($d in $dumps) {
-            Write-Host "== $($d.FullName)"
-            if ($cdb) { & $cdb.FullName -z $d.FullName -y "..uild\msvc-releasein;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 120 }
-            else { Write-Host "cdb.exe not found on runner" }
-          }
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: crash-dumps
-          path: |
-            Game/Cache/crash/*.dmp
-            build/msvc-release/bin/akeir.pdb
-          if-no-files-found: ignore
       - name: Package release zip
         run: python scripts/package.py --preset msvc-release
       - uses: actions/upload-artifact@v4
@@ -143,3 +157,25 @@ jobs:
           name: AKEIR-release-zip
           path: dist/*.zip
           if-no-files-found: error
+      - name: Crash triage (on failure) — symbolize minidumps with cdb if present
+        if: failure()
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $dumps = Get-ChildItem -Path Game/Cache/crash -Filter *.dmp -ErrorAction SilentlyContinue
+          if (-not $dumps) { Write-Host "no minidumps"; exit 0 }
+          Get-ChildItem Game/Cache/crash | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem Game/Cache/crash -Filter *.json | ForEach-Object { Get-Content $_.FullName -Raw | Write-Host }
+          $cdb = Get-ChildItem "C:/Program Files (x86)/Windows Kits/10/Debuggers/x64/cdb.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          foreach ($d in $dumps) {
+            Write-Host "== $($d.FullName)"
+            if ($cdb) { & $cdb.FullName -z $d.FullName -y "build/msvc-release/bin;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 160 } else { Write-Host "cdb.exe not found on runner" }
+          }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: crash-dumps-sdl
+          path: |
+            Game/Cache/crash/**
+            build/msvc-release/bin/akeir.pdb
+          if-no-files-found: ignore
