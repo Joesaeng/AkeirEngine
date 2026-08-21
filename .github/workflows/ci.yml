@@ -32,6 +32,7 @@ jobs:
           if ($bad) { throw "TEST_CASE names must not contain ';' (ctest splits them): $($bad.Path)" }
           $stale = git grep -n -i -E 'moltengine|ME0\.1|game\.exe|pme_|pme::|"pme/' -- ':!Docs/DECISIONS.md' ':!Docs/STATUS.md' ':!AKEIR.md' ':!.github/workflows/ci.yml'
           if ($LASTEXITCODE -eq 0 -and $stale) { Write-Host $stale; throw "stale pre-rename identifiers found" }
+          exit 0
       - name: Configure
         run: cmake --preset msvc-headless
       - name: Build
@@ -65,7 +66,14 @@ jobs:
           }
       - name: akeir capabilities (same code path as MCP tools/list)
         working-directory: Game
-        run: ../build/msvc-headless/bin/akeir.exe capabilities --json | Out-Null
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $o = (& ../build/msvc-headless/bin/akeir.exe capabilities --json | Out-String)
+          $code = $LASTEXITCODE
+          if ($code -ne 0) { Write-Host $o.Substring(0, [Math]::Min(4000, $o.Length)); throw "capabilities exited $code" }
+          Write-Host "capabilities ok ($($o.Length) bytes)"
+          exit 0
       - name: MCP smoke (tools/list over stdio, headless build)
         working-directory: Game
         shell: pwsh
@@ -103,6 +111,7 @@ jobs:
             Write-Host "== $($d.FullName)"
             if ($cdb) { & $cdb.FullName -z $d.FullName -y "build/msvc-headless/bin;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 160 } else { Write-Host "cdb.exe not found on runner" }
           }
+          exit 0
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -138,7 +147,14 @@ jobs:
         run: ../build/msvc-release/bin/akeir.exe capture --ticks 300 --out Cache/capture/ci.png --json
       - name: akeir capabilities (same code path as MCP tools/list)
         working-directory: Game
-        run: ../build/msvc-release/bin/akeir.exe capabilities --json | Out-Null
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $o = (& ../build/msvc-release/bin/akeir.exe capabilities --json | Out-String)
+          $code = $LASTEXITCODE
+          if ($code -ne 0) { Write-Host $o.Substring(0, [Math]::Min(4000, $o.Length)); throw "capabilities exited $code" }
+          Write-Host "capabilities ok ($($o.Length) bytes)"
+          exit 0
       - name: MCP smoke (tools/list over stdio)
         working-directory: Game
         shell: pwsh
@@ -171,6 +187,7 @@ jobs:
             Write-Host "== $($d.FullName)"
             if ($cdb) { & $cdb.FullName -z $d.FullName -y "build/msvc-release/bin;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 160 } else { Write-Host "cdb.exe not found on runner" }
           }
+          exit 0
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
