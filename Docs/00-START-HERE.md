@@ -26,6 +26,7 @@
 | 5 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 모듈 ↔ 설계 문서 § 대응, 데이터 흐름 |
 | 6 | [`CONVENTIONS.md`](CONVENTIONS.md) | 코드를 쓰기 전에 |
 | 7 | [`../AKEIR.md`](../AKEIR.md) | 설계 정본. 4,900줄. **전부 읽을 필요는 없다** — 아래 "설계 문서 읽는 법" |
+| 8 | `PRINCIPLES.md` (로컬 전용, gitignore — 이 저장소 clone 에는 없다) | 엔진 구현 규약·판단 기준 (Rule 0 = §84 전제; 우선순위 ADR > AKEIR.md > PRINCIPLES > 요약 문서). 있으면 읽는다. **이 문서의 수정은 사용자와 먼저 합의한다.** |
 
 ## 3. 설계 문서 읽는 법
 

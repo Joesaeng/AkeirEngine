@@ -24,3 +24,6 @@ Thumbs.db
 
 # MCP client config is machine-specific: copy .mcp.json.example or run `akeir mcp --print-config > .mcp.json`
 .mcp.json
+
+# 엔진 구현 규약·판단 기준 (로컬 전용, 사용자 소유 — 수정은 사용자와 먼저 합의한 뒤에만)
+/Docs/PRINCIPLES.md
