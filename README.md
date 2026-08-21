@@ -1,6 +1,6 @@
 # AKEIR Engine 0.1 — AI-Native Game Framework
 
-> **AKEIR** ← 그리스어 ἄχειρ(acheir, "손이 없는") / ἀχειροποίητος("사람 손으로 만들어지지 않은"). 발음 에이키어. 저장소 디렉터리명은 `Project_ME`, 코드 네임스페이스/타깃 접두어는 `pme`, CLI 실행 파일은 `akeir.exe`. 릴리즈: https://github.com/Joesaeng/AKEIR Engine/releases (태그 `v0.1.0` = `v0.1.0`, zip 에 빌드된 `bin/akeir.exe` 포함 — `QUICKSTART.md`).
+> **AKEIR** ← 그리스어 ἄχειρ(acheir, "손이 없는") / ἀχειροποίητος("사람 손으로 만들어지지 않은"). 발음 에이키어. 저장소 디렉터리명은 `Project_ME`, 코드 네임스페이스/타깃 접두어는 `pme`, CLI 실행 파일은 `akeir.exe`. 릴리즈: https://github.com/Joesaeng/AkeirEngine/releases (태그 `v0.1.0`, zip 에 빌드된 `bin/akeir.exe` 포함 — `QUICKSTART.md`).
 
 AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 프로젝트 데이터 + Command API + headless 실행**만으로 게임을 만들 수 있게 하는 개인용 C++ 게임 프레임워크 PoC.
 
