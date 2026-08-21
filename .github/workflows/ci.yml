@@ -29,7 +29,7 @@ jobs:
           Get-Content .mcp.json.example -Raw | ConvertFrom-Json | Out-Null
           $bad = Select-String -Path Tests/*.cpp -Pattern 'TEST_CASE\("[^"]*;' -List
           if ($bad) { throw "TEST_CASE names must not contain ';' (ctest splits them): $($bad.Path)" }
-          $stale = git grep -n -i -E 'moltengine|ME0\.1|game\.exe|pme_|pme::|"pme/' -- ':!Docs/DECISIONS.md' ':!Docs/STATUS.md' ':!AKEIR.md'
+          $stale = git grep -n -i -E 'moltengine|ME0\.1|game\.exe|pme_|pme::|"pme/' -- ':!Docs/DECISIONS.md' ':!Docs/STATUS.md' ':!AKEIR.md' ':!.github/workflows/ci.yml'
           if ($stale) { Write-Host $stale; throw "stale pre-rename identifiers found" }
       - name: Configure
         run: cmake --preset msvc-headless
@@ -103,8 +103,10 @@ jobs:
         working-directory: Game
         shell: pwsh
         run: |
-          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..\build\msvc-release\bin\akeir.exe mcp
-          $n = ($resp | ConvertFrom-Json).result.tools.Count
+          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..\build\msvc-release\bin\akeir.exe mcp 2>$null
+          $text = ($resp | Out-String).Trim()
+          Write-Host ("response head: " + $text.Substring(0, [Math]::Min(200, $text.Length)))
+          $n = ($text | ConvertFrom-Json).result.tools.Count
           Write-Host "tools: $n"
           if ($n -ne 15) { throw "expected 15 MCP tools, got $n" }
       - name: Package release zip
