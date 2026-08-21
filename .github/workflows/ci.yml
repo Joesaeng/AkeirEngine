@@ -84,7 +84,7 @@ jobs:
           $n = 0
           try { $n = ($text | ConvertFrom-Json).result.tools.Count } catch { Write-Host "not JSON-RPC: $text" }
           Write-Host "tools: $n"
-          if ($n -ne 15) { Write-Host $text; throw "expected 15 MCP tools, got $n" }
+          if ($n -ne 14) { Write-Host $text; throw "expected 14 MCP tools in the headless build (capture is disabled without SDL), got $n" }
       - name: Empty project round-trip (project init → prefab → run)
         shell: pwsh
         run: |

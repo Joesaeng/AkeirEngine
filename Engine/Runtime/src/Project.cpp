@@ -72,8 +72,17 @@ void Project::loadDirectory(const std::string& subdir, const std::string& suffix
     }
 }
 
+namespace {
+// fs::absolute("") 는 MSVC STL 14.51+ 에서 filesystem_error 를 던진다 (14.44 까지는 cwd 를 돌려줬다).
+// 빈 경로 = 현재 디렉터리로 정규화해 둔다 — 컴파일러 버전에 따라 동작이 갈리면 안 된다.
+fs::path absoluteOrCwd(const std::string& dir) {
+    if (dir.empty()) return fs::current_path();
+    return fs::absolute(dir);
+}
+} // namespace
+
 std::optional<Project> Project::load(const std::string& rootDir, std::vector<Diagnostic>& diagnostics) {
-    fs::path root = fs::absolute(rootDir);
+    fs::path root = absoluteOrCwd(rootDir);
     fs::path pj = root / "project.json";
     std::string err;
     auto j = readJsonFile(pj.string(), &err);
@@ -95,7 +104,7 @@ std::optional<Project> Project::load(const std::string& rootDir, std::vector<Dia
 
 Project Project::create(const std::string& rootDir, const std::string& name, int tickRate) {
     Project p;
-    p.rootDir_ = fs::absolute(rootDir).generic_string();
+    p.rootDir_ = absoluteOrCwd(rootDir).generic_string();
     p.projectJson_ = Json::object();
     p.projectJson_["$schema"] = kProjectSchema;
     p.projectJson_["schemaVersion"] = kProjectSchemaVersion;

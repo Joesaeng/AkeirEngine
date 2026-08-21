@@ -219,3 +219,13 @@ TEST_CASE("Project: reference graph — who points at a prefab / entity (§19)")
     CHECK(out[1].kind == "prefab");
     CHECK(out[1].detail == goblin);
 }
+
+TEST_CASE("Project::create with an empty root resolves to the current directory (fs::absolute(\"\") throws on MSVC STL 14.51+)") {
+    // `akeir capabilities` / MCP tools/list build a scratch project with root "" — must not depend on the STL's absolute("") behavior.
+    Project scratch = Project::create("", "scratch");
+    CHECK(scratch.rootDir() == fs::current_path().generic_string());
+    std::vector<Diagnostic> diags;
+    CHECK_FALSE(Project::load("", diags).has_value());   // no project.json in the test cwd — a diagnostic, not an exception
+    REQUIRE(diags.size() == 1);
+    CHECK(diags[0].ruleId == "PROJECT_NOT_FOUND");
+}

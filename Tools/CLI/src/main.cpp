@@ -36,7 +36,7 @@ void printEnvelope(const Envelope& env, OutputMode mode) {
 }
 
 std::string findProjectDir(const Args& args) {
-    if (auto p = args.get("project")) return std::filesystem::absolute(*p).string();
+    if (auto p = args.get("project")) return (p->empty() ? std::filesystem::current_path() : std::filesystem::absolute(*p)).string();
     // cwd 에서 위로 올라가며 project.json 을 찾는다
     auto dir = std::filesystem::current_path();
     for (int depth = 0; depth < 8; ++depth) {

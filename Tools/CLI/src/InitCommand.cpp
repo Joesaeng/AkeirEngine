@@ -75,7 +75,9 @@ Envelope cmdProjectInit(Context& ctx) {
     if (name.empty()) return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "akeir project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force]"));
     for (char c : name) if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' || c == ' '))
         return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "Project name may contain letters, digits, space, '_' and '-'.", Json{{"name", name}}));
-    fs::path dir = fs::absolute(ctx.args.getOr("dir", name));
+    std::string dirArg = ctx.args.getOr("dir", name);
+    if (dirArg.empty()) dirArg = name;   // fs::absolute("") 는 최신 MSVC STL 에서 throw
+    fs::path dir = fs::absolute(dirArg);
     const int tickRate = static_cast<int>(ctx.args.getInt("tick-rate").value_or(60));
     if (tickRate <= 0 || tickRate > 1000) return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "--tick-rate must be 1..1000."));
     std::error_code ec;
