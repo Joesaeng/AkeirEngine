@@ -194,7 +194,7 @@ Envelope cmdQuery(Context& ctx) {
         rows.push_back(row);
     }
     Envelope env = Envelope::success("query", Json{{"rows", rows}, {"total", ids.size()}, {"with", with}, {"without", without}, {"tick", o->world->currentTick()}});
-    if (static_cast<long long>(ids.size()) > limit) { env.withMeta("truncated", true); env.withMeta("hint", "raise --limit to see all rows (no cursor yet)"); }
+    if (static_cast<long long>(ids.size()) > limit) { env.withMeta("truncated", true); env.withMeta("hint", "raise limit (CLI: --limit) to see all rows; there is no cursor yet"); }
     return env;
 }
 

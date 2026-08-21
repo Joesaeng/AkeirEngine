@@ -46,12 +46,20 @@ cd C:\work\MyGame
 %G% schema --all --json                          # 쓸 수 있는 component 와 속성(타입/범위/enum — 값은 소문자: "circle", "dynamic")
 ```
 
-`project init` 이 만드는 것: `project.json`, `Worlds/Main.world.json`(MainCamera 하나), `Config/input.json`(MoveX/MoveY/Attack), 빈 `Prefabs/ Tests/ Data/ Assets/`, `.gitignore`, `README.md`(다음 명령들).
+`project init` 이 만드는 것: `project.json`, `Worlds/Main.world.json`(MainCamera 하나), `Config/input.json`(MoveX/MoveY/Attack), 빈 `Prefabs/ Tests/ Data/ Assets/`, `.gitignore`, `README.md`(다음 명령들 — 복붙 가능한 예시 포함).
+
+cmd.exe 에서 JSON 인자는 큰따옴표를 `\"` 로 escape 한다 (PowerShell 은 작은따옴표로 감싼다):
+```bat
+%G% prefab create Hero --components "{\"Collider2D\":{\"shape\":\"circle\",\"radius\":0.4},\"RigidBody2D\":{\"type\":\"dynamic\",\"gravityScale\":0},\"Movement\":{\"speed\":5},\"PlayerController\":{},\"Health\":{\"max\":100}}" --json
+%G% prefab instantiate Hero --name Player --json
+%G% entity create Wall --components "{\"Collider2D\":{\"size\":[10,1]},\"RigidBody2D\":{\"type\":\"static\"},\"Transform\":{\"position\":[0,-5,0]}}" --json
+%G% run --headless --ticks 600 --json
+```
 
 데이터만으로 할 수 있는 것 (C++ 불필요):
-- entity/prefab/world 만들기·수정·삭제, 속성 설정, 태그, prefab 상속(`--base`)과 override. 모든 변경은 한 undo 단위(`game undo`).
+- entity/prefab/world 만들기·수정·삭제, 속성 설정, 태그, prefab 상속(`--base`)과 override. 명령 하나 = undo 한 단위(`game undo`; `validate --fix` 는 fix 마다 하나, `apply`/`tx` 는 묶음이 하나).
 - 물리(Box2D): `Collider2D`(box/circle/capsule) + `RigidBody2D`(static/kinematic/dynamic). **Collider2D 만 있으면 body 가 없어 아무것도 막지 못한다** — 벽은 `RigidBody2D {type: static}` 을 같이 준다 (`validate` 가 `COLLIDER_WITHOUT_BODY` 로 경고하고 `--fix` 가 붙여 준다).
-- 플레이어 이동: `Movement` + `PlayerController` (input.json 의 MoveX/MoveY).
+- 플레이어 이동: `Collider2D` + `RigidBody2D`(dynamic, gravityScale 0) + `Movement` + `PlayerController` (input.json 의 MoveX/MoveY). 의존성 사슬(`Movement` → `RigidBody2D` → `Collider2D`)은 `schema --all` 의 `x-requires` 에 있고, 빠뜨리면 `COMPONENT_DEPENDENCY_MISSING` 으로 거부된다(생성 자체가 롤백된다).
 - 적 AI: `EnemyAI`(detectionRange 안에서 추적, attackRange 안에서 공격, targetTag) + `Health`. **공격이 효과를 내려면 맞는 쪽에도 `Health` 가 있어야 한다.**
 - 카메라: `Camera2D`(orthoSize, background). 스프라이트는 `SpriteRenderer.tint` 색 도형으로 그려진다(텍스처 로드는 아직 없음).
 - 테스트: `Tests/**/*.test.json` 을 **손으로** 쓴다 (setup / inputs / assert / determinism / capture golden) — 형식은 `Engine/Testing/README.md`.
@@ -60,7 +68,7 @@ C++ 이 필요한 것: 새 component/system(예: 투사체, 점수, 스폰 웨�
 
 ## 3. AI 클라이언트(MCP)로 쓰기
 
-zip 을 푼 디렉터리를 Claude Code 로 열면 `.mcp.json` 이 `game` 서버를 등록한다(stdio, 대상 프로젝트 = `Game/`). 다른 프로젝트를 대상으로 하려면 `--project` 경로를 바꾼다. 클라이언트가 상대 경로를 못 풀면 절대 경로 버전을 만들어 준다:
+zip 을 푼 디렉터리를 Claude Code 로 열면 `.mcp.json` 이 `game` 서버를 등록한다(stdio, 대상 프로젝트 = `Game/`). 다른 프로젝트를 대상으로 하려면 `--project` 경로를 바꾼다. Claude Code(Node) 는 상대 경로를 프로젝트 루트 기준으로 푼다. Python 등 다른 런처는 못 풀 수 있으니 그때는 절대 경로 버전을 만들어 쓴다:
 ```bat
 %G% mcp --print-config --project C:\work\MyGame > .mcp.json
 ```

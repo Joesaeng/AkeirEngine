@@ -399,7 +399,14 @@ Envelope CommandBus::execute(const std::string& id, const Json& args, const Exec
     ChangeSet cs; Json result; std::vector<Diagnostic> warnings;
     if (auto fail = runMutation(*def, argsObj, fork, cs, result, warnings)) return finish(std::move(*fail), nullptr, opts);
     if (opts.validateAfter && !cs.empty())
-        if (auto err = validateFork(fork, cs.touched)) return finish(Envelope::failure(def->id, *err), &cs, opts);
+        if (auto err = validateFork(fork, cs.touched)) {
+            // 거부된 명령: 제안된 ops 는 버려졌다 — changes 를 싣지 않고 rolledBack 만 표시 (fix 가 가리키는 새 id 도 존재하지 않는다)
+            Envelope env = Envelope::failure(def->id, *err);
+            env.meta["rolledBack"] = true;
+            env.meta["committed"] = false;
+            env.error.details["proposedOps"] = cs.ops.size();
+            return finish(std::move(env), nullptr, opts);
+        }
     if (opts.dryRun) {
         Envelope env = Envelope::success(def->id, result);
         for (auto& w : warnings) env.withWarning(w);
