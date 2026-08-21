@@ -26,11 +26,12 @@ jobs:
       - name: Repo hygiene (example MCP config parses, no ';' in test names, no stale names)
         shell: pwsh
         run: |
+          $PSNativeCommandUseErrorActionPreference = $false
           Get-Content .mcp.json.example -Raw | ConvertFrom-Json | Out-Null
           $bad = Select-String -Path Tests/*.cpp -Pattern 'TEST_CASE\("[^"]*;' -List
           if ($bad) { throw "TEST_CASE names must not contain ';' (ctest splits them): $($bad.Path)" }
           $stale = git grep -n -i -E 'moltengine|ME0\.1|game\.exe|pme_|pme::|"pme/' -- ':!Docs/DECISIONS.md' ':!Docs/STATUS.md' ':!AKEIR.md' ':!.github/workflows/ci.yml'
-          if ($stale) { Write-Host $stale; throw "stale pre-rename identifiers found" }
+          if ($LASTEXITCODE -eq 0 -and $stale) { Write-Host $stale; throw "stale pre-rename identifiers found" }
       - name: Configure
         run: cmake --preset msvc-headless
       - name: Build
@@ -99,16 +100,42 @@ jobs:
       - name: Capture smoke (software renderer)
         working-directory: Game
         run: ..\build\msvc-release\bin\akeir.exe capture --ticks 300 --out Cache\capture\ci.png --json
+      - name: akeir capabilities (bisect: same code path as MCP tools/list)
+        working-directory: Game
+        run: ..uild\msvc-releaseinkeir.exe capabilities --json | Out-Null
       - name: MCP smoke (tools/list over stdio)
         working-directory: Game
         shell: pwsh
         run: |
-          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..\build\msvc-release\bin\akeir.exe mcp 2>$null
+          $PSNativeCommandUseErrorActionPreference = $false
+          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..uild\msvc-releaseinkeir.exe mcp 2>$null
           $text = ($resp | Out-String).Trim()
-          Write-Host ("response head: " + $text.Substring(0, [Math]::Min(200, $text.Length)))
-          $n = ($text | ConvertFrom-Json).result.tools.Count
+          $n = 0
+          try { $n = ($text | ConvertFrom-Json).result.tools.Count } catch { Write-Host "not JSON-RPC: $text" }
           Write-Host "tools: $n"
-          if ($n -ne 15) { throw "expected 15 MCP tools, got $n" }
+          if ($n -ne 15) { Write-Host $text; throw "expected 15 MCP tools, got $n" }
+      - name: Crash triage (on failure) — symbolize minidumps with cdb if present
+        if: failure()
+        working-directory: Game
+        shell: pwsh
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $dumps = Get-ChildItem -Path Cache\crash -Filter *.dmp -ErrorAction SilentlyContinue
+          if (-not $dumps) { Write-Host "no minidumps"; exit 0 }
+          $cdb = Get-ChildItem "C:\Program Files (x86)\Windows Kits\Debuggersd\cdb.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          foreach ($d in $dumps) {
+            Write-Host "== $($d.FullName)"
+            if ($cdb) { & $cdb.FullName -z $d.FullName -y "..uild\msvc-releasein;srv*" -c "!analyze -v; kb; q" 2>&1 | Select-Object -Last 120 }
+            else { Write-Host "cdb.exe not found on runner" }
+          }
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: crash-dumps
+          path: |
+            Game/Cache/crash/*.dmp
+            build/msvc-release/bin/akeir.pdb
+          if-no-files-found: ignore
       - name: Package release zip
         run: python scripts/package.py --preset msvc-release
       - uses: actions/upload-artifact@v4
