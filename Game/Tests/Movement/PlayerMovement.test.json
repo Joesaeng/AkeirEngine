@@ -1,0 +1,24 @@
+{
+  "$schema": "game://schema/test/1",
+  "name": "PlayerMovement",
+  "description": "Scripted input: hold MoveX for 1s then MoveY for 1s; the player translates on both axes and stays alive. A goblin spawned far away must not reach the player in time.",
+  "seed": 7,
+  "setup": [
+    { "entity": "path:TestArena/Arena/Player", "as": "player" },
+    { "spawn": "name:Goblin", "as": "far", "name": "FarGoblin", "position": [-40, 0, 0] }
+  ],
+  "inputs": [
+    { "tick": 0, "hold": { "MoveX": 1.0 }, "untilTick": 60 },
+    { "tick": 60, "axis": { "MoveY": -1.0 }, "untilTick": 120 }
+  ],
+  "run": { "ticks": 120 },
+  "determinism": { "runs": 2, "hashEvery": 20 },
+  "assert": [
+    { "id": "start-at-origin", "expr": "abs(player.Transform.position[0]) < 0.2 && abs(player.Transform.position[1]) < 0.2", "at": 1 },
+    { "id": "moved-right", "expr": "player.Transform.position[0] > 2.0", "at": 60 },
+    { "id": "moved-down", "expr": "player.Transform.position[1] < -2.0", "at": 120 },
+    { "id": "far-goblin-idle-or-chasing", "expr": "far.EnemyAI.state in [\"idle\", \"chase\"]", "always": true },
+    { "id": "far-goblin-never-hits", "expr": "dist(far.Transform.position, player.Transform.position) > 5", "always": true },
+    { "id": "spawned-goblin-tagged", "expr": "world.entities.exists(e, e.name == \"FarGoblin\" && \"enemy\" in e.tags)", "at": "end" }
+  ]
+}

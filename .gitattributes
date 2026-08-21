@@ -1,0 +1,13 @@
+# §5.3 canonical JSON 은 LF 고정 — autocrlf 로 CRLF 가 되면 JSON_NOT_CANONICAL 이 난다
+* text=auto eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
+*.txt text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.cmd text eol=crlf
+*.png binary
+*.dmp binary

@@ -1,0 +1,41 @@
+{
+  "$schema": "game://schema/prefab/1",
+  "schemaVersion": 1,
+  "id": "prefab_01m0j3qp6de00t7ar0k009fhd3",
+  "name": "Player",
+  "tags": ["player"],
+  "components": {
+    "Collider2D": {
+      "shape": "circle",
+      "radius": 0.4,
+      "layer": "Player"
+    },
+    "Health": {
+      "max": 100
+    },
+    "Movement": {
+      "speed": 5
+    },
+    "PlayerController": {
+      "inputScale": 1
+    },
+    "RigidBody2D": {
+      "type": "dynamic",
+      "mass": 1,
+      "linearDamping": 8,
+      "gravityScale": 0,
+      "fixedRotation": true
+    },
+    "SpriteRenderer": {
+      "sprite": "",
+      "layer": "Character",
+      "tint": [1, 1, 1, 1],
+      "sortingOrder": 10
+    },
+    "Transform": {
+      "position": [0, 0, 0],
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1]
+    }
+  }
+}

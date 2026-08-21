@@ -1,0 +1,45 @@
+{
+  "$schema": "game://schema/prefab/1",
+  "schemaVersion": 1,
+  "id": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+  "name": "Goblin",
+  "tags": ["enemy"],
+  "components": {
+    "Collider2D": {
+      "shape": "capsule",
+      "radius": 0.4,
+      "layer": "Enemy"
+    },
+    "EnemyAI": {
+      "behavior": "melee_basic",
+      "targetTag": "player",
+      "detectionRange": 12,
+      "attackRange": 1,
+      "damage": 10,
+      "attackCooldown": 1
+    },
+    "Health": {
+      "max": 30
+    },
+    "Movement": {
+      "speed": 3
+    },
+    "RigidBody2D": {
+      "type": "dynamic",
+      "mass": 1,
+      "linearDamping": 4,
+      "gravityScale": 0,
+      "fixedRotation": true
+    },
+    "SpriteRenderer": {
+      "sprite": "",
+      "layer": "Character",
+      "tint": [0.6, 1, 0.6, 1]
+    },
+    "Transform": {
+      "position": [0, 0, 0],
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1]
+    }
+  }
+}

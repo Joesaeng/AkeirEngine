@@ -1,0 +1,20 @@
+# build outputs
+/build/
+/out/
+# 의존성 소스 캐시 (scripts/fetch-deps.ps1 로 재생성 가능)
+/.cpm-cache/
+# 파생 캐시 (설계 문서 §5: 삭제해도 재생성 가능해야 한다)
+Cache/
+Game/Cache/
+# 테스트 결과 (§24: Tests/.results/<run>/results.json + artifacts)
+.results/
+# 릴리즈 zip 스테이징 (scripts/package.py)
+/dist/
+# IDE
+/.vs/
+/.vscode/
+/.idea/
+*.user
+# OS
+Thumbs.db
+.DS_Store

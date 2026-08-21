@@ -1,0 +1,142 @@
+# STATUS — 진행 상태 (MoltEngine)
+
+**마지막 갱신: 2026-08-21 (세션 1, Phase 4 serve + Phase 7 MCP 서버까지 완료 시점)**. 매 작업 세션의 끝에 이 파일을 갱신한다. 설계 문서 §74 (Phase) / §86 (체크리스트)를 추적한다.
+
+## 한눈에
+
+| Phase | 내용 | 상태 |
+|---|---|---|
+| -1 | Substrate spike + §88 결정 | **부분** — 결정은 DECISIONS.md ADR-0001~0014 로 기록(대부분 `가정`). Flecs spike(S-A)는 Phase 1 구현이 겸한다. Godot/Bevy 비교 arm(A3/C)은 미실행 |
+| 0 | 최소 Runtime | **완료(headless)** — Core, fixed-tick Application, FPU env, OTel 로그, crash/watchdog, CLI envelope. SDL 창/입력만 Phase 2 로 이월 (SDL3 는 `msvc-debug` 로 빌드됨) |
+| 1 | World + Reflection + 데이터 모델 | **완료** — Reflection registry, canonical JSON, Project 문서 모델(prefab resolve, validate, fmt), Flecs PlayWorld, Box2D, Game/ 샘플(Health/Movement/PlayerController/EnemyAI + 3 systems). `game run --headless` 가 실제 World 를 결정론적으로 돌린다 |
+| 2 | Render | **완료(PoC)** — `Engine/Platform`(SDL3 창/입력/창 모드 루프) + `Engine/Render`(SDL_Renderer placeholder 스프라이트, software capture, golden 비교). `game run`(창), `game capture`, 테스트 capture assertion + golden. 텍스처/SDL_GPU 는 미구현 |
+| 3 | Command | **완료(핵심)** — `Engine/Commands`: ChangeSet(RFC 6902 superset) · CommandBus(fork→handler→validate→commit) · journal/history · undo/redo · in-process tx · apply(batch/$ref/idempotency) · dry-run · 내장 Mutation command 13개 · CLI 17개 쓰기 명령 · `validate --fix`. 남은 것: file.* op, checkpoint(§52), `--if-match`, migration(§53) |
+| 4 | CLI 확장 + `game serve` | **완료(핵심)** — `game serve`(127.0.0.1 NDJSON JSON-RPC + token, `Cache/serve.json`), 모든 `game <cmd>` 자동 포워딩, multi-call `tx begin|commit|rollback|list`(TTL), `run status` handle, `--stdio`, journal 복구. 텍스트 출력 포맷/`--fields`/`project.set` 은 미구현 |
+| 5 | Headless + Test + Capture | **완료(핵심)** — `Engine/Testing`: §23 시나리오(setup/inputs/assert), §23.1 표현식, run-twice 결정성 + snapshot diff, §24 results.json/JUnit, capture assertion + golden(`requires: ["renderer"]`), `game test`. Game/Tests 3개 시나리오(SDL 빌드) 통과 |
+| 6 | Editor | 미시작 |
+| 7 | MCP sidecar + §72 실험 | **부분** — `game mcp`(stdio MCP 서버, initialize/server/discover/tools/list/tools/call, tools 14개 enabled). §72 비교 실험은 미실행 |
+
+빌드: `scripts\build.cmd msvc-headless all` 과 `msvc-debug all`(SDL3 포함) 통과. 테스트: `pme_tests.exe` 75 케이스(msvc-debug; headless 는 73) 통과 + `game test` 3 시나리오(SDL) / 2 + 1 skipped(headless) 통과 (2026-08-21). 샘플 `Game/` 은 `validate` 0 error / 0 warning(canonical), `run --headless --ticks 600` 의 기준 finalHash = `0xbc23e49a65efb2e8` (msvc-debug / msvc-headless 동일; 이 값이 바뀌면 결정론 또는 샘플 데이터가 바뀐 것).
+git: 첫 커밋 + 태그 `ME0.1`/`v0.1.0` (2026-08-21, 사용자 지시). 릴리즈 zip 은 `python scripts/package.py` → `dist/MoltEngine-0.1.zip` (소스 + Docs + `bin/game.exe` + QUICKSTART). 이후 커밋도 사용자가 지시할 때만.
+
+## §86 체크리스트 진행
+
+**Phase -1**
+- [x] 목표 게임 이름 붙이기 → ADR-0001 (가정: 2D top-down arena)
+- [~] Flecs vs EnTT spike → Flecs 를 기본으로 Phase 1 에서 검증 (ADR-0002)
+- [ ] Godot headless / Bevy+brp_mcp 로 §71 시나리오 측정 (A3, C)
+- [x] §88 각 항목 결정/가정 기록 → DECISIONS.md (88.0 ADR-0001, 88.1 ADR-0011, 88.4 ADR-0012, 88.5 ADR-0004; 나머지는 구현 시점에 ADR 추가)
+- [x] 컴파일러 결정 → ADR-0004
+- [x] 의존성 관리 하나 선택 → ADR-0006 (CPM)
+
+**Phase 0 — Runtime**
+- [x] CMake ≥ 3.28, C++20, preset 4종, `scripts/build.cmd|ps1`
+- [x] Application / Main Loop — fixed tick, headless 경로 accumulator 없음 (§20.1) — `Application::runHeadless`
+- [x] SDL3 Window / Input / `dummy` driver 선택 (§20) → Phase 2 에서 구현 (`Engine/Platform`; `offscreen` 은 software renderer 로 대체, ADR-0026)
+- [x] `det_fp_flags` INTERFACE target (§41) — `/fp:precise`, hash 노출
+- [x] FPU env assert (round-to-nearest, DAZ/FTZ) (§22.2) — `normalizeFpEnv`, run 시작 시 적용
+- [x] Logging: OTel JSONL (§28) — `pme::Logger`, stderr/file/ring sink
+- [x] 크래시 핸들러: minidump + 마지막 N 로그 + exit 6, watchdog exit 7 (§88.4) — 실측 검증됨. C++ 예외는 INTERNAL_ERROR envelope(exit 1)
+
+**Phase 1 — World + Reflection + 데이터 모델** (완료)
+- [x] Persistent ID: TypeID/UUIDv7 grammar, 형식 검사, v8 결정적 (§7) — `pme::Id`. DUPLICATE_PERSISTENT_ID 검출 (`game id fix` 는 미구현)
+- [x] Reflection registry: `PME_REFLECT_*` / `PropertyMeta` / runtime 등록 (§42.2) — Engine/Reflection
+- [x] Transform + 내장 component 5종 (SpriteRenderer, Collider2D, RigidBody2D, Camera2D) — Engine/Runtime/Components
+- [x] World 문서 모델: entities = id-keyed object, 계층 = parent + order, prefab set/add/remove (§5.3, §6, §34) — `pme::Project`
+- [x] JSON load / save — reflection 기반 serializer + visibility mask 3종 (§26.1, §88.8) — Serialization/ComponentJson
+- [x] Canonical serialization + `game fmt` + round-trip byte-identical 테스트 (§5.3)
+- [x] JSON Schema 2020-12 생성 + wire_format (§14, §14.1) — `game schema component X`
+- [x] Box2D v3.1.1 통합 (PhysicsWorld 인터페이스 뒤) (§57) — Engine/Physics
+- [x] `RngStream` (xoshiro256** + SplitMix64, per-system) (§22.2) — `PlayWorld::rng(name)`
+- [x] 결정적 EntityId: runtime spawn 은 `Id::deterministic(seed, tick, ordinal)` (§7.1)
+- [x] Flecs 투영 round-trip: project JSON → PlayWorld → snapshot, 두 프로세스 finalHash 동일 (T0). `ecs_world_to_json` 대신 자체 snapshot — authoring JSON 이 source of truth 이므로 Flecs JSON round-trip 은 불필요 (ADR-0002 확정)
+- [x] `game run --headless` 가 프로젝트 World 를 돌린다: `--ticks --seed --world --hash-every --hash-out --snapshot-out --replay`
+- [x] `game validate`(exit 3 + fixes) / `fmt` / `schema` / `explain` / `entity list` / `query` / `dump` / `refs`(§19 reference graph: prefab/base/parent/property/override/defaultWorld)
+- [x] `game project init <name> [--dir]` — 빈 프로젝트(project.json, Worlds/Main.world.json + MainCamera, Config/input.json, .gitignore, README) (ME0.1 릴리즈 조건)
+
+**Phase 3 — Command** (핵심 완료; §86 Phase 3 항목)
+- [x] `CommandBus` + `CommandKind` + `ChangeBuilder` (§8) — `Engine/Commands`. handler 는 fork 위에서 ChangeBuilder 로만 변경
+- [x] ChangeSet = RFC 6902 superset, `before`/`value`, self-inverting, `inverse()`, `compose()` (§78, §10.1). `file.*` op 는 정의만 (asset store 없음)
+- [x] commit 절차 (§9.2): base 해시 검사 → journal → 메모리 적용 → canonical temp+rename → history → journal 삭제. 복구 `recoverJournal()`
+- [x] History (§10): `Cache/history/history.jsonl` + cursor, undo/redo, actor 태깅·필터, redo 꼬리 truncate, conflict 검출(`UNDO_CONFLICT`, `BASE_MISMATCH`)
+- [x] in-process Transaction (§9): beginTx/commitTx(compose → history 1항목)/rollbackTx. multi-call tx 는 Phase 4
+- [x] `apply` batch (§49): atomic, `$name`/`$name.field` 참조, idempotencyKey 재생, dry-run
+- [x] dry-run = fork + execute (§50): `--dry-run` 으로 모든 쓰기 명령에서. `--if-match` 는 미구현
+- [x] Mutation command: entity.create/delete/rename/reparent, component.add/remove, property.set, tag.add/remove, prefab.create/instantiate, world.create, document.patch. 인스턴스·derived prefab 은 set/add/remove override 로 (§78.1). `entity` 인자에 prefab selector 허용(prefab 편집)
+- [x] commit 전 검증: 새로 생기는 error 만 거부 (`VALIDATION_FAILED`), `--no-validate` 로 우회
+- [x] CLI: `game entity create|delete|rename|reparent`, `component add|remove`, `set`, `tag add|remove`, `prefab create|instantiate`, `world create`, `apply`, `undo|redo|history`, `cmd` (Tools/CLI/MutationCommands.cpp)
+- [x] `game validate --fix` (§29/§79): MachineApplicable fix 를 CommandBus(apply/document.patch)로 적용, 중복 fix 제거, fmt 는 직접 재직렬화. COMPONENT_DEPENDENCY_MISSING fix 는 전이적 의존성까지 add
+- [x] `capabilities`: tools[] 15개(§47, 이제 14개 enabled) + `busCommands[]`(args JSON Schema) + errorCodes
+- [ ] checkpoint (§52), semantic diff 출력 (§51), rename table/migration (§53), `--if-match`
+- [ ] `Engine/Validation` 별도 모듈 — 지금은 `Project::validate()` + `validateComponentJson` 이 규칙 전부. SARIF 출력 없음
+
+**Phase 2 — Render** (PoC 완료)
+- [x] SDL3 3.4.14 정적 빌드 + `Platform::init` (`SDL_HINT_VIDEO_DRIVER` 로 dummy 선택, 실제 driver 보고) (§20) — Engine/Platform
+- [x] `Config/input.json` action map → `InputFrame` (키보드; gamepad/mouse 는 unsupported 보고) (§88.3) — `InputMap`, `game input map`
+- [x] 창 모드 루프: fixed tick + accumulator + vsync 렌더, `--record inputs.jsonl` → headless `--replay` 가 같은 finalHash (§20.1, §22.3) — `runInteractive`, `game run`
+- [x] 2D placeholder 스프라이트 렌더(Transform/SpriteRenderer/Collider2D/Camera2D) — `Renderer2D` (SDL_Renderer; ADR-0027)
+- [x] software rasterizer capture: 창/GPU 없이 결정적 PNG, `game capture`, §27.1 비교(`--compare/--diff`, tolerance) (ADR-0026)
+- [x] 테스트 capture assertion + golden (`Tests/Golden/<test>/<name>_<WxH>.png`, `--update-golden`), `requires: ["renderer"]` → headless 에서 skipped
+- [ ] 텍스처/스프라이트 아틀라스(`SpriteRenderer.sprite` Ref + Assets/ sidecar), 텍스트, SDL_GPU 경로, offscreen GL driver, 오디오
+
+**Phase 5 — Headless + Test + Capture** (핵심 완료)
+- [x] `Tests/**/*.test.json` 스키마 파싱 (setup spawn/entity+as, inputs hold/axis/press/release, run, determinism, assert always/eventually/at) — `TestScenario::fromJson`
+- [x] §23.1 assertion 표현식 evaluator (CEL 부분집합: 비교·산술·논리·in·has/size/abs/dist/min/max·all/exists/exists_one), undefined = 오류 — `pme::expr::Expr`
+- [x] snapshot 위 평가, `always` 첫 위반에서 abort, `eventually` 창, `at` tick/end, 실패 시 bindings + snapshot artifact
+- [x] run-twice 결정성(§22.2 T0) + 첫 divergent tick 의 snapshot diff(entity/path/a/b) + firstDivergentSystem, `expectedFinalHash`
+- [x] `results.json`(§24) + `--junit`(testsuite = 디렉터리, [[ATTACHMENT|…]]) + exit 3
+- [x] `game test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--list]`, 샘플 `Game/Tests/Combat/GoblinBasicCombat`, `Game/Tests/Movement/PlayerMovement`
+- [x] `capture` assertion + golden 비교 (SDL 빌드; `requires: ["renderer"]`)
+- [ ] `events`(Screenshot/NamedEvent), `videoDriver: offscreen`(software renderer 가 대신한다)
+- [ ] T1 (`threads: [1, 8]`) — 엔진이 단일 스레드
+- [ ] `game replay record` → test inputs 변환 (§22.3), `GAME_TEST_CONFIG` 환경변수 모드
+
+**Phase 4 — CLI 확장 + `game serve`** (핵심 완료)
+- [x] `game serve`: 프로젝트 1회 로드, 단일 CommandBus, loopback TCP NDJSON JSON-RPC, per-session token, `Cache/serve.json` 발견, `--idle-timeout`, `--port` (§88.1, §46.2; ADR-0029)
+- [x] 얇은 클라이언트: 데몬이 있으면 모든 `game <cmd>` 가 RPC 로 포워딩(`meta.via = "serve"`), 없거나 죽었으면 stale 파일 제거 후 one-shot. `--local` 로 강제 in-process
+- [x] multi-call tx: `tx begin [--ttl]` → `--tx <id>` → `tx commit|rollback|list`, TTL 만료 → `TX_UNKNOWN_OR_EXPIRED` (§9.1). one-shot 에서는 `TX_REQUIRES_SERVE`
+- [x] run handle: `run.start` 가 `result.run` 을 돌려주고 serve 안에서 `run status [id]` 로 조회 (§46.2)
+- [x] `--stdio` 모드 (Editor 임베딩), `project.reload`(열린 tx 무효화), actor 는 요청마다 호출자의 것
+- [ ] 사람용 텍스트 출력 포맷, `--fields`/`--jq`/`--cursor`, `project.set`(defaultWorld/seed), Game 모듈 등록 주입, 파일 watcher → `project.reload_document` (§39)
+
+**Phase 7 — MCP** (서버 완료, 실험 미실행)
+- [x] `game mcp`: stdio MCP 서버 (`server/discover` 2026-07-28 + `initialize` 2025-xx 호환, `tools/list`, `tools/call` → `structuredContent` = envelope, `isError`), tool → CLI argv / bus.apply 매핑 (§46.2), instructions 텍스트 (ADR-0030)
+- [ ] resources (`game://schema/...`, snapshot), prompts(recipe), progress/Tasks, §72 비교 실험(Godot/Bevy arm), `--read-only` tool 집합
+
+(Phase 6 항목은 설계 문서 §86 그대로. 시작할 때 여기에 옮긴다.)
+
+## 알려진 문제 / 기술 부채
+
+- `game` CLI 의 사람용 출력(TTY)은 pretty JSON 뿐이다. 명령별 텍스트 포맷은 미구현.
+- `capabilities.tools[]` 15개 전부 구현됨 (`capture` 는 SDL 빌드에서만 enabled).
+- `project.json` 은 Project 의 문서 맵 밖에 있어 command 로 못 바꾼다 (`defaultWorld`, `seed` 등) — `project.set` 미구현.
+- `game validate --fix` 의 JSON_NOT_CANONICAL 수정(재직렬화)은 CommandBus 를 거치지 않는다 (JSON 값 변화가 없어 ChangeSet 으로 표현 불가) → undo 대상 아님.
+- `apply` 는 changes[] 를 `busCommands[].args` 스키마로 사전 검증하지 않는다 — 각 handler 가 인자를 검사한다 (`ARG_REQUIRED`/`ARG_TYPE`).
+- History 는 프로젝트당 하나의 선형 스택 (`Cache/history`). `game serve` 가 있으면 그것이 단일 writer; `--local` 로 우회해 두 프로세스가 쓰면 `BASE_MISMATCH` 로 드러난다 — 파일 lock 없음.
+- `game serve` 는 단일 스레드·연결 하나씩 처리한다. 긴 `run`/`test` 동안 다른 클라이언트는 기다린다.
+- MCP `tools/call` 의 인자는 tool inputSchema 로 사전 검증하지 않는다 — 모르는 키는 무시되고 CLI 인자로 번역된다.
+- `Project` 전체를 복사해 fork 한다 (O(문서 크기)). 수백 entity 에서는 무시할 수준; 큰 프로젝트면 copy-on-write 필요.
+- `game query / dump / run` 은 serve 안에서도 호출마다 play world 를 새로 build 한다 (authoring 모델만 상주; play world 상주 + step API 는 미구현).
+- PlayWorld 의 query 는 선형 스캔 (수백 entity 규모에서 충분). Flecs 쿼리 파이프라인은 필요할 때.
+- body 가 있는 entity 의 Transform.x/y 는 physics 가 소유한다 (ADR-0016) — system 이 Transform.position 을 직접 바꿔도 body 에는 반영되지 않는다.
+- `Collider2D.layer` 문자열 → Box2D category/mask bit 매핑은 아직 없다 (전부 0x0001/0xFFFF).
+- CLI 가 `game::registerGameSystems` 를 직접 호출한다 — Game/ 을 교체 가능한 모듈로 만들려면 등록 함수 주입이 필요.
+- `Crash.cpp` 의 `stopWatchdog()` 은 `std::thread` 를 join 하므로 watchdog 스레드가 깨어나는 것을 기다린다(최대 수 ms). 문제 없음이지만 알아둘 것.
+- CMake configure 시 CPM 이 `<name>_SOURCE_DIR` 을 내보내려면 `pme_add_dep` 가 macro 여야 한다 (function 이면 삼킨다). 이미 macro.
+
+## 다음 할 일 (우선순위 순)
+
+1. **§72 실험**: 저장소 루트 `.mcp.json` 이 `game mcp`(msvc-debug 빌드, Game/ 프로젝트)를 Claude Code 에 등록한다 — 새 세션에서 MCP tool 만으로 §71 시나리오(고블린 추가, 속도 조정, 테스트, capture)를 수행하고 tool call 수·오류율을 기록. Godot/Bevy arm 은 선택.
+2. Phase 4 잔여: 사람용 텍스트 출력, `--fields`, `project.set`, play world 상주(`run.step`/`run.stop`) + Flecs REST, 파일 watcher.
+3. Phase 7 잔여: MCP resources(`game://schema/*`, snapshot), prompts(recipe), `--read-only`.
+4. Phase 2 잔여: 텍스처 로드, 텍스트, 카메라 종횡비. Phase 3 잔여: `--if-match`, checkpoint(§52), semantic diff(§51), migration(§53), `Engine/Validation` + SARIF.
+5. Phase 6 Editor (ImGui) — serve 의 `--stdio` 또는 in-process ServeHost 위에.
+
+## 세션 로그
+
+- **2026-08-21 세션 1 (전반)**: 설계 문서 v2 보강·검증 → 구현 시작. 저장소 골격, Docs 6종, CMake/CPM/preset, Core 모듈, CLI 골격, 테스트 19 케이스. crash(exit 6, minidump)·watchdog(exit 7) 실측.
+- **2026-08-21 세션 1 (후반)**: Phase 0 마무리(Application, FpEnv) + Phase 1 전체 — Reflection, Serialization(canonical/ComponentJson), Runtime(Project/Components), Physics(Box2D), ECS(PlayWorld/Flecs), Game/Source 샘플, CLI 명령 11개. 테스트 47 케이스. `game run --headless --ticks 600` 이 두 프로세스에서 같은 finalHash — T0 확인. 고블린 3마리가 플레이어를 추적·공격해 600 tick 후 HP 10 (§71 시나리오 2~5 의 headless 부분).
+- **2026-08-21 세션 1 (Phase 3)**: `Engine/Commands` 전체 + CLI 쓰기 명령 17개 + `validate --fix` + capabilities tools[] 15개. 테스트 63 케이스. 샘플 프로젝트 복사본에서 `set` → `entity create` → `apply`(prefab.create + instantiate×2 + tag, `$ref`) → `run` → `undo 2` 로 파일이 원본과 byte-identical 복귀, `validate --fix` 가 범위/의존성/canonical 오류 4건을 전부 고치는 것을 확인.
+- **2026-08-21 세션 1 (Phase 5 테스트)**: `Engine/Testing`(Expr + TestRunner) + `game test` + 샘플 시나리오 2개. GoblinBasicCombat 의 run-twice finalHash 가 `game run` 기준값 `0xbc23e49a65efb2e8` 과 같다(러너와 run 경로의 동치 확인). 테스트 71 케이스.
+- **2026-08-21 세션 1 (Phase 2)**: `Engine/Platform` + `Engine/Render` + CLI `run`(창)/`capture`/`input map` + 테스트 capture assertion/golden. software capture 두 번이 byte-identical, `game run --ticks 90 --record` → `--headless --replay` 가 같은 finalHash(`0xafcd091ec8be292a`). 골든 `Tests/Golden/CombatCapture/combat_end_256x256.png` 생성. 발견한 버그: `std::optional<unique_ptr>` 를 돌려주며 out-param 을 move 해 null 역참조(crash handler 가 exit 6 + minidump 로 잡음 — §88.4 경로 실증).
+- **2026-08-21 세션 1 (Phase 4/7)**: `game serve`(ServeHost + Winsock NDJSON JSON-RPC + token) + 자동 포워딩 + multi-call tx(TTL) + run handle + `--stdio`, `game mcp`(stdio MCP 서버). 데몬 위에서 tx begin → create/tag(--tx) → 밖에서는 안 보임 → commit → history 1항목, stop 후 one-shot 으로 history 이어짐을 확인. MCP: initialize/tools/list(13~14)/tools/call(query, apply dryRun, inspect 오류 → isError) 확인. `game refs`(§19) 추가로 tools 15/15. 루트 `.mcp.json` 등록. 테스트 75 케이스.

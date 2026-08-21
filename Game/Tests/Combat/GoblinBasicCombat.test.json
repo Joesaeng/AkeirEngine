@@ -1,0 +1,23 @@
+{
+  "$schema": "game://schema/test/1",
+  "name": "GoblinBasicCombat",
+  "description": "§71 scenario, headless: three goblins detect, chase and attack the idle player; the player survives 600 ticks but takes damage. Run twice for T0.",
+  "seed": 381251,
+  "setup": [
+    { "entity": "path:TestArena/Arena/Player", "as": "player" },
+    { "entity": "name:Goblin_01", "as": "g1" },
+    { "entity": "name:Goblin_03", "as": "g3" }
+  ],
+  "run": { "ticks": 600 },
+  "determinism": { "runs": 2, "hashEvery": 60, "expectedFinalHash": null },
+  "assert": [
+    { "id": "player-alive", "expr": "player.Health.current > 0", "always": true },
+    { "id": "g1-chases", "expr": "g1.EnemyAI.state in [\"chase\", \"attack\"]", "eventually": { "withinTicks": 120 } },
+    { "id": "g3-engages", "expr": "g3.EnemyAI.state in [\"chase\", \"attack\"]", "eventually": { "withinTicks": 300 } },
+    { "id": "someone-attacks", "expr": "world.entities.exists(e, has(e.components.EnemyAI) && e.components.EnemyAI.state == \"attack\")", "eventually": { "withinTicks": 600 } },
+    { "id": "player-hurt", "expr": "player.Health.current < player.Health.max", "eventually": { "withinTicks": 600 } },
+    { "id": "goblins-close", "expr": "dist(g1.Transform.position, player.Transform.position) < 2.5", "at": "end" },
+    { "id": "every-enemy-has-collider", "expr": "world.entities.all(e, !has(e.components.EnemyAI) || has(e.components.Collider2D))", "at": "end" },
+    { "id": "entity-count", "expr": "size(world.entities) == 7", "at": "end" }
+  ]
+}
