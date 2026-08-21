@@ -12,7 +12,7 @@ MoltEngine-0.1/
 ├── bin\game.exe               미리 빌드된 CLI. 빌드 없이 바로 쓴다. 아래 예시의 `game` = 이 파일. PATH 에 bin\ 을 넣거나 전체 경로로 부른다
 ├── .mcp.json                  Claude Code 용 MCP 서버 등록 (bin\game.exe mcp --project Game). 상대 경로 — 이 폴더를 Claude Code 의 프로젝트 루트로 열면 된다
 ├── Docs/                      00-START-HERE → STATUS → DECISIONS → BUILD → ARCHITECTURE → CONVENTIONS
-├── AI_Native_Game_Framework_Design.md   설계 정본 (§0–§89, ▶ v3 구현 주석 포함)
+├── MoltEngine.md   설계 정본 (§0–§89, ▶ v3 구현 주석 포함)
 ├── Game/                      샘플 프로젝트 "TestArena" (플레이어 + 고블린 3마리, 테스트 3개, 골든 이미지). 건드려도 됨 — 참고용
 └── Engine/ Tools/ Tests/ Game/Source/ cmake/ scripts/ CMakeLists.txt CMakePresets.json   소스 (다시 빌드하려면 Docs/BUILD.md; .cpm-cache 는 없어 첫 configure 가 GitHub 에서 의존성을 받는다)
 ```

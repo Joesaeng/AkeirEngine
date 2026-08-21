@@ -1,4 +1,4 @@
-# AI-Native Game Framework 설계 초안
+# MoltEngine (ME) 설계 문서 — AI-Native Game Framework
 ## Unreal / Unity의 인간 중심 에디터를 우회하지 않고, AI가 직접 조작하는 게임 제작 환경
 
 > 상태: Architecture / PoC Design Draft **v2 (리서치 보강판, 검증 반영)** + ▶ v3 구현 주석 (§89 끝, Phase 3 까지)  

@@ -25,11 +25,11 @@
 | 4 | [`BUILD.md`](BUILD.md) | 빌드·테스트·실행. 복붙 가능한 명령 |
 | 5 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | 코드 모듈 ↔ 설계 문서 § 대응, 데이터 흐름 |
 | 6 | [`CONVENTIONS.md`](CONVENTIONS.md) | 코드를 쓰기 전에 |
-| 7 | [`../AI_Native_Game_Framework_Design.md`](../AI_Native_Game_Framework_Design.md) | 설계 정본. 4,900줄. **전부 읽을 필요는 없다** — 아래 "설계 문서 읽는 법" |
+| 7 | [`../MoltEngine.md`](../MoltEngine.md) | 설계 정본. 4,900줄. **전부 읽을 필요는 없다** — 아래 "설계 문서 읽는 법" |
 
 ## 3. 설계 문서 읽는 법
 
-`AI_Native_Game_Framework_Design.md` 는 §0–§89 로 되어 있고, `▶ v2` 표시가 붙은 부분이 리서치로 검증·보강된 내용이다.
+`MoltEngine.md` 는 §0–§89 로 되어 있고, `▶ v2` 표시가 붙은 부분이 리서치로 검증·보강된 내용이다.
 작업하려는 모듈에 해당하는 § 만 읽으면 된다. 모듈별 대응은 [`ARCHITECTURE.md`](ARCHITECTURE.md) 에 있다. 반드시 읽어야 하는 것:
 
 - **§0.1** — 리서치 후 이 문서의 위치 (무엇이 차별점이고 무엇이 아닌지)
@@ -43,7 +43,7 @@
 
 ```
 Project_ME/
-├── AI_Native_Game_Framework_Design.md   설계 정본
+├── MoltEngine.md   설계 정본
 ├── README.md                            루트 진입점 (이 문서로 안내)
 ├── Docs/                                ← 지금 여기
 ├── .mcp.json                            Claude Code 용 MCP 서버 등록 — 개발 저장소에서는 절대 경로(msvc-debug 빌드), 릴리즈 zip 에서는 상대 경로 `bin\game.exe`. `game mcp --print-config` 가 절대 경로 버전을 출력한다

@@ -1,5 +1,5 @@
 # Project_ME — AI-Native Game Framework (PoC)
-# 설계 문서: AI_Native_Game_Framework_Design.md  (§41 Build 구조, §74 Phase, §75 Repository 구조)
+# 설계 문서: MoltEngine.md  (§41 Build 구조, §74 Phase, §75 Repository 구조)
 # 빌드 방법: Docs/BUILD.md
 cmake_minimum_required(VERSION 3.28)
 

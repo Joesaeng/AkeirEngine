@@ -30,7 +30,7 @@ Envelope cmdVersion(Context& ctx) {
 #else
     r["compiler"] = "gcc";
 #endif
-    r["designDoc"] = "AI_Native_Game_Framework_Design.md";
+    r["designDoc"] = "MoltEngine.md";
     r["fpEnv"] = fpEnvStatus().toJson();       // §22.2 FPU 환경
     return Envelope::success("project.version", r);
 }

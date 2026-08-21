@@ -9,7 +9,7 @@ AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 �
 
 | 무엇 | 어디 |
 |---|---|
-| 설계 문서 (정본, §0–§89) | [`AI_Native_Game_Framework_Design.md`](AI_Native_Game_Framework_Design.md) |
+| 설계 문서 (정본, §0–§89) | [`MoltEngine.md`](MoltEngine.md) |
 | 읽는 순서 / 저장소 지도 | [`Docs/00-START-HERE.md`](Docs/00-START-HERE.md) |
 | 내려진 결정 (ADR) | [`Docs/DECISIONS.md`](Docs/DECISIONS.md) |
 | 현재 진행 상태 / 다음 할 일 | [`Docs/STATUS.md`](Docs/STATUS.md) |
