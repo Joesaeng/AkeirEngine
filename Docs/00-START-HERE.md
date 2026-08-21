@@ -15,7 +15,7 @@
 
 ## 2. 읽는 순서
 
-릴리즈 zip(`AKEIR Engine-<ver>.zip`)을 푼 경우에는 **`QUICKSTART.md`** 부터 — 빌드 없이 `bin/akeir.exe` 로 바로 시작한다. 아래 순서는 소스 저장소에서 개발을 이어갈 때.
+릴리즈 zip(`AKEIR-<ver>.zip`)을 푼 경우에는 **`QUICKSTART.md`** 부터 — 빌드 없이 `bin/akeir.exe` 로 바로 시작한다. 아래 순서는 소스 저장소에서 개발을 이어갈 때.
 
 | 순서 | 문서 | 왜 |
 |---|---|---|
@@ -80,7 +80,7 @@ Project_ME/
 3. 작업 대상 모듈의 설계 § 와 `Engine/<모듈>/README.md` 를 읽는다.
 4. 구현 → 테스트 추가(`Tests/`) → 빌드 → 테스트.
 5. **끝내기 전에** `STATUS.md` 를 갱신한다 (완료 항목 체크, 새로 알게 된 문제, 다음 할 일). 결정을 내렸으면 `DECISIONS.md` 에 ADR 추가. 설계를 바꿨으면 설계 문서에 `▶ v3`.
-6. git: 첫 커밋 + 태그 `v0.1.0`/`v0.1.0` 이 있다. **이후 커밋은 사용자가 지시할 때만** 한다 (STATUS.md). 릴리즈 zip 은 `git archive` 라 `.git` 이 없다.
+6. git: 공개 저장소 https://github.com/Joesaeng/AkeirEngine, 태그 `v0.1.0` 이 있다. **이후 커밋은 사용자가 지시할 때만** 한다 (STATUS.md). 릴리즈 zip 은 `git archive` 라 `.git` 이 없다.
 
 ## 6. 자주 쓰는 명령
 

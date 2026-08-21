@@ -192,10 +192,10 @@
 - **근거**: Project 복사는 수백 entity 에서 ms 단위라 일관성(쓰기 중 읽기 없음)을 공짜로 얻는다. play world 상주(`run.step`)는 §88.2 의 promote 규칙과 함께 별도 설계가 필요해 미룬다.
 - **참조**: §88.1, §88.2
 
-## ADR-0032 이름 = AKEIR Engine (실행 파일 `akeir.exe`); 코드 접두어 `akeir` 유지; 릴리즈 = git tag `v0.1.0` + zip
-- **상태**: 확정 (2026-08-22, 사용자 결정). 2026-08-21 에 MoltEngine/ME 로 정했다가 `moltengine.ai` 가 존재해 같은 날 개명.
-- **결정**: 엔진 이름 **AKEIR Engine**(표기 AKEIR, 발음 에이키어). 어원은 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는") — "인간의 손을 탈피한다(Molt of the human hand)"는 원래 의도를 한 단어로 담는다. 실행 파일은 `game.exe` → **`akeir.exe`** (엔진을 부르는 이름이 곧 CLI 이름; `akeir run`, `akeir mcp`). 저장소 디렉터리(`Project_ME`), C++ 네임스페이스 `akeir`, CMake 타깃 접두어 `pme_`, 매크로 `AKEIR_*`, 샘플 게임 네임스페이스 `game::` 은 바꾸지 않는다. 사용자에게 보이는 곳(`akeir version`, envelope `meta.engine`, MCP serverInfo, README/Docs, 설계 문서 `AKEIR.md`)만 AKEIR. 버전 정본은 git tag `v0.1.0` 하나(약어 태그 없음); 릴리즈는 `scripts/package.py` 가 만드는 zip(`git archive` + `bin/akeir.exe` + 상대 경로 `.mcp.json` + QUICKSTART; 리서치 자료·`.pdb` 제외).
-- **근거**: 웹/GitHub 검색에서 "Akeir Engine"/`AkeirEngine` 충돌 0건(2026-08-22). 다른 탈피 계열 후보(MoltEngine, Exuvia, Ecdysis, Instar, Apolysis)는 제품·게임·라이브러리와 충돌하거나(Instar 는 한국어로 인스타그램 연상) 발음이 어려웠다. 공개 저장소: https://github.com/Joesaeng/AkeirEngine. 접두어까지 바꾼 근거: 외부 아키텍처 리뷰(2026-08-22) — "public API 에 옛 코드네임이 남으면 나중에 breaking change 가 된다".
+## ADR-0032 이름 = AKEIR Engine (실행 파일 `akeir.exe`); 코드 접두어 `pme` → `akeir`; 릴리즈 = git tag `v0.1.0` + zip
+- **상태**: 확정 (2026-08-22, 사용자 결정). 2026-08-21 에 AKEIR Engine/ME 로 정했다가 `moltengine.ai` 가 존재해 같은 날 개명.
+- **결정**: 엔진 이름 **AKEIR Engine**(표기 AKEIR, 발음 에이키어). 어원은 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는") — "인간의 손을 탈피한다(Molt of the human hand)"는 원래 의도를 한 단어로 담는다. 실행 파일은 `akeir.exe` → **`akeir.exe`** (엔진을 부르는 이름이 곧 CLI 이름; `akeir run`, `akeir mcp`). 코드 접두어도 통일한다 — C++ 네임스페이스 `akeir::`, 헤더 `#include "akeir/..."`, CMake 타깃 `akeir_core`/`akeir::core`, 테스트 `akeir_tests.exe`, 매크로 `AKEIR_*`(`AKEIR_REFLECT_*`, `AKEIR_LOG`, `AKEIR_WITH_SDL` …). (같은 날 오전의 첫 결정은 구 접두어 `pme`(Project ME) 유지였으나, 외부 리뷰가 지적한 대로 사용자가 없는 지금이 public API 를 바꾸는 가장 싼 시점이라 전부 개명했다.) 저장소 디렉터리(`Project_ME`)와 샘플 게임 네임스페이스 `game::` 만 그대로. 사용자에게 보이는 곳(`akeir version`, envelope `meta.engine`, MCP serverInfo, README/Docs, 설계 문서 `AKEIR.md`)도 AKEIR. 버전 정본은 git tag `v0.1.0` 하나(약어 태그 없음); 릴리즈는 `scripts/package.py` 가 만드는 zip(`git archive` + `bin/akeir.exe` + 상대 경로 `.mcp.json` + QUICKSTART; 리서치 자료·`.pdb` 제외).
+- **근거**: 웹/GitHub 검색에서 "Akeir Engine"/`AkeirEngine` 충돌 0건(2026-08-22). 다른 탈피 계열 후보(AKEIR Engine, Exuvia, Ecdysis, Instar, Apolysis)는 제품·게임·라이브러리와 충돌하거나(Instar 는 한국어로 인스타그램 연상) 발음이 어려웠다. 공개 저장소: https://github.com/Joesaeng/AkeirEngine. 접두어까지 바꾼 근거: 외부 아키텍처 리뷰(2026-08-22) — "public API 에 옛 코드네임이 남으면 나중에 breaking change 가 된다".
 - **참조**: §72, Docs/00-START-HERE.md, QUICKSTART.md
 
 ## ADR-0033 라이선스 = MIT; 저장소 위생(THIRD_PARTY_NOTICES, CONTRIBUTING, CI, portable `.mcp.json`)

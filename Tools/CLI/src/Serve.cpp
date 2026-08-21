@@ -275,6 +275,8 @@ int runServe(Context& ctx) {
 #endif
         std::string line;
         while (!host.stopRequested() && std::getline(std::cin, line)) {
+            if (!line.empty() && line.back() == '') line.pop_back();
+            if (line.size() >= 3 && static_cast<unsigned char>(line[0]) == 0xEF && static_cast<unsigned char>(line[1]) == 0xBB && static_cast<unsigned char>(line[2]) == 0xBF) line.erase(0, 3);
             if (line.empty()) continue;
             Json req = parseJson(line).value_or(Json());
             Json resp = host.dispatch(req, false);   // stdio 는 부모 프로세스가 소유하므로 token 생략

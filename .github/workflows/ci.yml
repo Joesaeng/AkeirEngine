@@ -23,6 +23,14 @@ jobs:
         with:
           path: ${{ env.CPM_SOURCE_CACHE }}
           key: cpm-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+      - name: Repo hygiene (example MCP config parses, no ';' in test names, no stale names)
+        shell: pwsh
+        run: |
+          Get-Content .mcp.json.example -Raw | ConvertFrom-Json | Out-Null
+          $bad = Select-String -Path Tests/*.cpp -Pattern 'TEST_CASE\("[^"]*;' -List
+          if ($bad) { throw "TEST_CASE names must not contain ';' (ctest splits them): $($bad.Path)" }
+          $stale = git grep -n -i -E 'moltengine|ME0\.1|game\.exe|pme_|pme::|"pme/' -- ':!Docs/DECISIONS.md' ':!Docs/STATUS.md' ':!AKEIR.md'
+          if ($stale) { Write-Host $stale; throw "stale pre-rename identifiers found" }
       - name: Configure
         run: cmake --preset msvc-headless
       - name: Build

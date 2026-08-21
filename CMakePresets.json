@@ -36,7 +36,7 @@
     },
     {
       "name": "clang-cl-debug",
-      "displayName": "clang-cl Debug (Ninja) — CI 두 번째 컴파일러 (§88.5)",
+      "displayName": "clang-cl Debug (Ninja) — 두 번째 컴파일러 — 로컬 sanitizer/SARIF 용 (§88.5; CI 에는 아직 없음)",
       "inherits": "msvc-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",

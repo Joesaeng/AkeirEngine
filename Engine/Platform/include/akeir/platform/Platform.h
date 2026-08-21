@@ -19,7 +19,7 @@ struct PlatformConfig {
     std::string videoDriver;      // "" | "dummy" | "offscreen" (SDL_HINT_VIDEO_DRIVER; 쉼표 우선순위 목록 허용)
     bool window = true;           // false = SDL_Init(VIDEO) 만 (capture / 테스트)
     int width = 1280, height = 720;
-    std::string title = "game";
+    std::string title = "akeir";
 };
 
 class Platform {

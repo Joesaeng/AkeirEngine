@@ -9,7 +9,7 @@
 AKEIR-0.1/
 ├── QUICKSTART.md              ← 지금 이 파일
 ├── RELEASE.md                 버전, git 해시, bin/akeir.exe 의 sha256
-├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (정적 링크된 Flecs/Box2D/nlohmann/doctest/SDL3 고지)
+├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (정적 링크된 Flecs/Box2D/nlohmann/SDL3 고지) · CONTRIBUTING.md
 ├── bin\akeir.exe               미리 빌드된 CLI. 빌드 없이 바로 쓴다. 아래 예시의 `akeir` = 이 파일. PATH 에 bin\ 을 넣거나 전체 경로로 부른다
 ├── .mcp.json                  Claude Code 용 MCP 서버 등록 (bin\akeir.exe mcp --project Game). 상대 경로 — 이 폴더를 Claude Code 의 프로젝트 루트로 열면 된다
 ├── Docs/                      00-START-HERE → STATUS → DECISIONS → BUILD → ARCHITECTURE → CONVENTIONS
@@ -98,4 +98,4 @@ serve 없이 `--tx` 를 주면 `TX_REQUIRES_SERVE`. 데몬을 무시하고 싶�
 - 알려진 한계: `Docs/STATUS.md` "알려진 문제 / 기술 부채" (예: MCP 인자 오타는 조용히 무시됨, `query` 는 `limit` 만 있고 cursor 없음).
 - 크래시가 나면 `<project>/Cache/crash/*.dmp` 와 envelope 의 `error.details.lastLogs` 를 같이 보고한다 (심볼 `.pdb` 는 같은 태그를 체크아웃해 `scripts\build.cmd msvc-release all` 로 재생성).
 
-git: 이 릴리즈는 태그 `v0.1.0`(= `v0.1.0`) 이다. zip 안에는 `.git` 이 없다(`git archive`) — 새 프로젝트는 자기 저장소를 만들면 된다 (`project init` 이 `.gitignore` 를 써 둔다).
+git: 이 릴리즈는 태그 `v0.1.0` 이다. zip 안에는 `.git` 이 없다(`git archive`) — 새 프로젝트는 자기 저장소를 만들면 된다 (`project init` 이 `.gitignore` 를 써 둔다).

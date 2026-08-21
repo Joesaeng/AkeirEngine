@@ -1,6 +1,6 @@
 # STATUS — 진행 상태 (AKEIR Engine)
 
-**마지막 갱신: 2026-08-21 (세션 1, Phase 4 serve + Phase 7 MCP 서버까지 완료 시점)**. 매 작업 세션의 끝에 이 파일을 갱신한다. 설계 문서 §74 (Phase) / §86 (체크리스트)를 추적한다.
+**마지막 갱신: 2026-08-22 (v0.1.0 릴리즈 + 외부 리뷰 반영 시점)**. 매 작업 세션의 끝에 이 파일을 갱신한다. 설계 문서 §74 (Phase) / §86 (체크리스트)를 추적한다.
 
 ## 한눈에
 
@@ -52,7 +52,7 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - [x] Flecs 투영 round-trip: project JSON → PlayWorld → snapshot, 두 프로세스 finalHash 동일 (T0). `ecs_world_to_json` 대신 자체 snapshot — authoring JSON 이 source of truth 이므로 Flecs JSON round-trip 은 불필요 (ADR-0002 확정)
 - [x] `akeir run --headless` 가 프로젝트 World 를 돌린다: `--ticks --seed --world --hash-every --hash-out --snapshot-out --replay`
 - [x] `akeir validate`(exit 3 + fixes) / `fmt` / `schema` / `explain` / `entity list` / `query` / `dump` / `refs`(§19 reference graph: prefab/base/parent/property/override/defaultWorld)
-- [x] `akeir project init <name> [--dir]` — 빈 프로젝트(project.json, Worlds/Main.world.json + MainCamera, Config/input.json, .gitignore, README) (v0.1.0 릴리즈 조건)
+- [x] `akeir project init <name> [--dir]` — 빈 프로젝트(project.json, Worlds/Main.world.json + MainCamera, Config/input.json, .gitignore, README) (v0.1.0 에 포함)
 
 **Phase 3 — Command** (핵심 완료; §86 Phase 3 항목)
 - [x] `CommandBus` + `CommandKind` + `ChangeBuilder` (§8) — `Engine/Commands`. handler 는 fork 위에서 ChangeBuilder 로만 변경
@@ -143,5 +143,5 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - **2026-08-21 세션 1 (Phase 5 테스트)**: `Engine/Testing`(Expr + TestRunner) + `akeir test` + 샘플 시나리오 2개. GoblinBasicCombat 의 run-twice finalHash 가 `akeir run` 기준값 `0xbc23e49a65efb2e8` 과 같다(러너와 run 경로의 동치 확인). 테스트 71 케이스.
 - **2026-08-21 세션 1 (Phase 2)**: `Engine/Platform` + `Engine/Render` + CLI `run`(창)/`capture`/`input map` + 테스트 capture assertion/golden. software capture 두 번이 byte-identical, `akeir run --ticks 90 --record` → `--headless --replay` 가 같은 finalHash(`0xafcd091ec8be292a`). 골든 `Tests/Golden/CombatCapture/combat_end_256x256.png` 생성. 발견한 버그: `std::optional<unique_ptr>` 를 돌려주며 out-param 을 move 해 null 역참조(crash handler 가 exit 6 + minidump 로 잡음 — §88.4 경로 실증).
 - **2026-08-21 세션 1 (Phase 4/7)**: `akeir serve`(ServeHost + Winsock NDJSON JSON-RPC + token) + 자동 포워딩 + multi-call tx(TTL) + run handle + `--stdio`, `akeir mcp`(stdio MCP 서버). 데몬 위에서 tx begin → create/tag(--tx) → 밖에서는 안 보임 → commit → history 1항목, stop 후 one-shot 으로 history 이어짐을 확인. MCP: initialize/tools/list(13~14)/tools/call(query, apply dryRun, inspect 오류 → isError) 확인. `akeir refs`(§19) 추가로 tools 15/15. 루트 `.mcp.json` 등록. 테스트 75 케이스.
+- **2026-08-21 세션 1 (v0.1.0 릴리즈)**: `akeir project init` 추가, 이름 결정(AKEIR Engine → 충돌 발견 → **AKEIR Engine**, 실행 파일 `akeir.exe`; ADR-0032), 첫 커밋 + 태그, `scripts/package.py` → `dist/AKEIR-0.1.zip`. 독립 에이전트 5명이 zip 만 풀어 QUICKSTART 를 따라가는 blind 검증 → 5/5 "동작, 마찰 있음"(blocker 없음). 발견·수정: ctest 가 `;` 든 테스트 11개를 건너뜀, `.mcp.json` 상대경로(`bin\\akeir.exe` 로), MCP outputSchema 의 풀리지 않는 `$ref`(inline 스키마로), 선택자 문법 미노출(bare name 허용 + 설명), `--help` 부재(추가), 릴리즈 exe 의 VC++ 재배포 의존(static CRT), Collider2D 만 있는 벽이 안 막힘(`COLLIDER_WITHOUT_BODY` 경고 + fix), 기타 문서 불일치. 수정 후 재패키징·재태깅.
 - **2026-08-22 (리뷰 반영)**: 외부 아키텍처 리뷰(GPT) 의 P0/P1 를 반영 — `pme`→`akeir` 네임스페이스/헤더/타깃/매크로 전면 개명(`akeir_tests.exe`, `AKEIR_REFLECT_*`, `AKEIR_LOG`, `AKEIR_WITH_SDL`), MIT LICENSE + THIRD_PARTY_NOTICES + CONTRIBUTING, `.mcp.json` gitignore + `.mcp.json.example`, README 를 한 줄 메시지 + 4 포인트로, GitHub Actions CI 2 job. 미룬 항목은 ADR-0033. 릴리즈 v0.1.0 zip 재생성.
-- **2026-08-21 세션 1 (v0.1.0 릴리즈)**: `akeir project init` 추가, 이름 결정(MoltEngine → 충돌 발견 → **AKEIR Engine**, 실행 파일 `akeir.exe`; ADR-0032), 첫 커밋 + 태그, `scripts/package.py` → `dist/AKEIR-0.1.zip`. 독립 에이전트 5명이 zip 만 풀어 QUICKSTART 를 따라가는 blind 검증 → 5/5 "동작, 마찰 있음"(blocker 없음). 발견·수정: ctest 가 `;` 든 테스트 11개를 건너뜀, `.mcp.json` 상대경로(`bin\\akeir.exe` 로), MCP outputSchema 의 풀리지 않는 `$ref`(inline 스키마로), 선택자 문법 미노출(bare name 허용 + 설명), `--help` 부재(추가), 릴리즈 exe 의 VC++ 재배포 의존(static CRT), Collider2D 만 있는 벽이 안 막힘(`COLLIDER_WITHOUT_BODY` 경고 + fix), 기타 문서 불일치. 수정 후 재패키징·재태깅.

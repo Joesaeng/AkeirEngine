@@ -19,7 +19,7 @@ namespace akeir {
 
 struct CrashConfig {
     std::string dumpDir = "Cache/crash";   // 프로젝트 상대 또는 절대
-    std::string stem = "game";             // <stem>-<timestamp>.dmp
+    std::string stem = "akeir";             // <stem>-<timestamp>.dmp
     std::shared_ptr<RingSink> lastLogs;    // 선택: 마지막 N개 로그를 envelope 에 싣는다
     std::string command;                   // envelope.command 에 기록할 현재 command id
 };

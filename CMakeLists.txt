@@ -8,7 +8,7 @@ if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 endif()
 
-project(AkeirEngine VERSION 0.1.0 LANGUAGES C CXX)   # AKEIR Engine. 코드 네임스페이스/타깃 접두어는 akeir (Project ME) 로 유지한다
+project(AkeirEngine VERSION 0.1.0 LANGUAGES C CXX)   # AKEIR Engine. 코드 네임스페이스/타깃 접두어는 akeir
 
 # ---- 언어 표준 (§41: floor C++20) ----
 set(CMAKE_CXX_STANDARD 20)

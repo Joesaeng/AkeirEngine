@@ -1,6 +1,6 @@
 # AKEIR Engine 설계 문서 — AI-Native Game Framework
 
-> **이름**: AKEIR ← 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는")을 읽기 쉽게 쓴 것. 표기 AKEIR, 발음 에이키어. 2026-08-22 개명(이전 가칭 MoltEngine — "사람의 손을 탈피한다"는 뜻은 그대로). 코드 접두어도 `akeir`/`AKEIR_` 로 통일(구 `pme`).
+> **이름**: AKEIR ← 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는")을 읽기 쉽게 쓴 것. 표기 AKEIR, 발음 에이키어. 2026-08-22 개명(이전 가칭 AKEIR Engine — "사람의 손을 탈피한다"는 뜻은 그대로). 코드 접두어도 `akeir`/`AKEIR_` 로 통일(구 `pme`).
 ## Unreal / Unity의 인간 중심 에디터를 우회하지 않고, AI가 직접 조작하는 게임 제작 환경
 
 > 상태: Architecture / PoC Design Draft **v2 (리서치 보강판, 검증 반영)** + ▶ v3 구현 주석 (§89 끝, Phase 3 까지)  

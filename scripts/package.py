@@ -3,7 +3,7 @@
 
     python scripts/package.py [--preset msvc-release] [--version 0.1] [--ref HEAD]
 
-Produces dist/AKEIR Engine-<version>.zip containing
+Produces dist/AKEIR-<version>.zip containing
   - every git-tracked file at <ref>  (git archive; no build/, .cpm-cache/, Cache/)
   - bin/akeir.exe from build/<preset>/bin/   (prebuilt CLI; the zip is usable without a compiler; no .pdb)
   - .mcp.json with RELATIVE paths (bin/akeir.exe mcp --project Game) so Claude Code can be pointed at the unpacked folder
@@ -55,7 +55,7 @@ def main():
     # 2. binary
     os.makedirs(os.path.join(stage, "bin"), exist_ok=True)
     shutil.copy2(exe, os.path.join(stage, "bin", "akeir.exe"))
-    # game.pdb(64MB 심볼)는 넣지 않는다 — 같은 태그에서 재빌드하면 재생성된다 (QUICKSTART §5)
+    # akeir.pdb(64MB 심볼)는 넣지 않는다 — 같은 태그에서 재빌드하면 재생성된다 (QUICKSTART §5)
     with open(exe, "rb") as f:
         exe_sha = hashlib.sha256(f.read()).hexdigest()
 

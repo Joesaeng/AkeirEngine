@@ -133,7 +133,7 @@ cd Game
 ```
 실패하면 `error.details.tests[].failures[]` 에 `{assertId, tick, bindings, note}` 와 `artifacts[]` 의 snapshot 경로가 있다. 시나리오 형식과 표현식 문법은 `Engine/Testing/README.md`.
 
-## 창 모드 · capture (Phase 2, `msvc-debug` 빌드만)
+## 창 모드 · capture (Phase 2, SDL 빌드 = `msvc-debug`/`msvc-release`; `msvc-headless` 만 제외)
 
 ```bash
 cd Game
@@ -166,7 +166,7 @@ start ..\build\msvc-headless\bin\akeir.exe serve --idle-timeout 600000     # 다
 
 MCP 클라이언트 등록 (stdio). 예: Claude Code `.mcp.json`
 ```json
-{ "mcpServers": { "game": { "command": "C:\\Project\\Project_ME\\build\\msvc-debug\\bin\\akeir.exe", "args": ["mcp", "--project", "C:\\Project\\Project_ME\\Game"] } } }
+{ "mcpServers": { "akeir": { "command": "C:\\Project\\Project_ME\\build\\msvc-debug\\bin\\akeir.exe", "args": ["mcp", "--project", "C:\\Project\\Project_ME\\Game"] } } }
 ```
 손으로 확인하려면 한 줄씩 stdin 으로:
 ```bash

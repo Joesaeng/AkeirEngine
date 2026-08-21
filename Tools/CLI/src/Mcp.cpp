@@ -121,7 +121,7 @@ int runMcp(Context& ctx) {
 #ifdef _WIN32
         GetModuleFileNameA(nullptr, exe, sizeof(exe));
 #endif
-        Json cfg = Json{{"mcpServers", Json{{"game", Json{{"command", std::string(exe)}, {"args", Json::array({"mcp", "--project", ctx.projectDir})}}}}}};
+        Json cfg = Json{{"mcpServers", Json{{"akeir", Json{{"command", std::string(exe)}, {"args", Json::array({"mcp", "--project", ctx.projectDir})}}}}}};
         std::fputs(cfg.dump(2).c_str(), stdout); std::fputc('\n', stdout);
         return kExitOk;
     }
@@ -138,6 +138,9 @@ int runMcp(Context& ctx) {
     AKEIR_LOG(Info, "mcp", "ready", "akeir mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
     std::string line;
     while (std::getline(std::cin, line)) {
+        // 클라이언트/셸에 따라 CRLF 나 UTF-8 BOM 이 붙어 올 수 있다 (pwsh 파이프 등) — 프레이밍 잡음은 벗기고 JSON 만 본다
+        if (!line.empty() && line.back() == '') line.pop_back();
+        if (line.size() >= 3 && static_cast<unsigned char>(line[0]) == 0xEF && static_cast<unsigned char>(line[1]) == 0xBB && static_cast<unsigned char>(line[2]) == 0xBF) line.erase(0, 3);
         if (line.empty()) continue;
         auto reqOpt = parseJson(line);
         if (!reqOpt || !reqOpt->is_object()) { std::fputs(rpcErr(Json(), -32700, "Parse error").dump().c_str(), stdout); std::fputc('\n', stdout); std::fflush(stdout); continue; }
@@ -184,7 +187,7 @@ int runMcp(Context& ctx) {
 
 void registerMcpCommands(std::vector<CommandSpec>& t) {
     t.push_back({"mcp", {"mcp"}, "Meta", "MCP server over stdio (§46)",
-                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `akeir serve`). Register in an MCP client as: command=game, args=[\"mcp\",\"--project\",\"<dir>\"].",
+                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `akeir serve`). Register in an MCP client as: command=akeir (bin/akeir.exe), args=[\"mcp\",\"--project\",\"<dir>\"], or run `akeir mcp --print-config`.",
                  "akeir mcp [--project DIR] [--actor A] | akeir mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
 }
 

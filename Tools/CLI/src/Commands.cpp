@@ -158,7 +158,7 @@ Json capabilitiesJson() {
 
     Json cmds = Json::array();
     for (const auto& spec : commandTable()) {
-        std::string cliLine = "game";
+        std::string cliLine = "akeir";
         for (const auto& p : spec.cli) cliLine += " " + p;
         cmds.push_back(Json{{"id", spec.id}, {"kind", spec.kind}, {"title", spec.title}, {"description", spec.description},
                             {"cli", spec.usage.empty() ? cliLine : spec.usage},
