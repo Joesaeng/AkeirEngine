@@ -8,7 +8,7 @@
 #   clang-cl      : /clang:-ffp-contract=off
 #
 # 모든 sim TU(Engine/*, Game/*)와 ThirdParty physics(Box2D/Jolt)가 이 target 을 link 해야 한다.
-# `game project info --json` 은 PME_FP_FLAGS_HASH 를 노출해 replay header(§22.3)와 비교한다.
+# `akeir project info --json` 은 PME_FP_FLAGS_HASH 를 노출해 replay header(§22.3)와 비교한다.
 
 add_library(det_fp_flags INTERFACE)
 

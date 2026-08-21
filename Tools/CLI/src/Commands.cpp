@@ -18,9 +18,9 @@ namespace {
 
 Envelope cmdVersion(Context& ctx) {
     Json r = Json::object();
-    r["engine"] = "MoltEngine";
+    r["engine"] = "AKEIR";
     r["engineVersion"] = PME_VERSION_STRING;
-    r["release"] = "ME0.1";
+    r["release"] = "v0.1.0";
     r["fpFlagsHash"] = PME_FP_FLAGS_HASH;      // §22.3 replay header / §41
     r["fpFlags"] = PME_FP_FLAGS_STRING;
 #if defined(_MSC_VER) && !defined(__clang__)
@@ -30,7 +30,7 @@ Envelope cmdVersion(Context& ctx) {
 #else
     r["compiler"] = "gcc";
 #endif
-    r["designDoc"] = "MoltEngine.md";
+    r["designDoc"] = "AKEIR.md";
     r["fpEnv"] = fpEnvStatus().toJson();       // §22.2 FPU 환경
     return Envelope::success("project.version", r);
 }
@@ -57,16 +57,16 @@ const std::vector<CommandSpec>& commandTable() {
     static const std::vector<CommandSpec> table = [] {
         std::vector<CommandSpec> t = {
         {"project.version", {"version"}, "Query", "Engine version",
-         "Engine version, compiler and determinism flag hash (fpFlagsHash, §22.3).", "game version [--json]", true, false, true, cmdVersion},
+         "Engine version, compiler and determinism flag hash (fpFlagsHash, §22.3).", "akeir version [--json]", true, false, true, cmdVersion},
         {"capabilities", {"capabilities"}, "Query", "Capability discovery",
          "Full tool/command descriptors, exit codes and error codes (§15). MCP tools/list is a pass-through of result.tools.",
-         "game capabilities [--json]", true, false, true, cmdCapabilities},
+         "akeir capabilities [--json]", true, false, true, cmdCapabilities},
         {"debug.crash_test", {"debug", "crash-test"}, "RuntimeControl", "Force a crash",
          "Forces an access violation to verify the crash handler writes a minidump and a CRASH envelope (exit 6, §88.4).",
-         "game debug crash-test", false, false, false, cmdCrashTest},
+         "akeir debug crash-test", false, false, false, cmdCrashTest},
         {"debug.hang_test", {"debug", "hang-test"}, "RuntimeControl", "Force a hang",
          "Sleeps forever to verify the watchdog emits a TIMEOUT envelope (exit 7, §88.4). Use with --timeout 2s.",
-         "game debug hang-test --timeout 2s", false, false, false, cmdHangTest},
+         "akeir debug hang-test --timeout 2s", false, false, false, cmdHangTest},
         };
         registerProjectCommands(t);
         registerInitCommands(t);
@@ -110,7 +110,7 @@ Json envelopeSchema() {
 
 Json capabilitiesJson() {
     Json r = Json::object();
-    r["info"] = Json{{"title", "MoltEngine Command API"}, {"engine", "MoltEngine"}, {"version", PME_VERSION_STRING}, {"sdl", sdlAvailable()}};
+    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", PME_VERSION_STRING}, {"sdl", sdlAvailable()}};
 
     // §47 tools[] — MCP 에 노출되는 15개 (이름 = command id 의 '.' → '_'). 구현된 것만 enabled:true. tools/list 는 enabled 만 pass-through 한다.
     // inputSchema 는 CLI 인자와 같은 의미의 JSON. apply.changes[].op 의 oneOf 는 busCommands[] 의 args 스키마다.
@@ -130,22 +130,22 @@ Json capabilitiesJson() {
     const char* kSel = "selector: an id (entity_…/prefab_…/world_…), a bare name (Goblin_01), name:<name>, or path:<World>/<Parent>/<Child>. Resolves entities AND prefabs; ambiguous → AMBIGUOUS_SELECTOR with candidates";
     Json SEL = Json{{"type", "string"}, {"description", kSel}};
     Json tools = Json::array();
-    tools.push_back(tool("capabilities", "Capability discovery", "Full tool/command descriptors, exit codes and error codes (§15).", props({}), true, false, true, "game capabilities --json", true));
-    tools.push_back(tool("project_info", "Project summary", "Name, tickRate, seed, worlds, prefabs, registered components.", props({}), true, false, true, "game project info --json", true));
-    tools.push_back(tool("schema_describe", "Component schemas", "JSON Schema 2020-12 (+x-*) and wire format of components (§14).", props({{"component", S}, {"all", B}}), true, false, true, "game schema component <Name> --json", true));
-    tools.push_back(tool("query", "Query play world", "Build the world, run N ticks, return entities matching with/without (components or #tags) (§16).", props({{"with", Json{{"type", "array"}, {"items", S}, {"description", "component names the entity must have; prefix # for tags (#enemy)"}}}, {"without", Json{{"type", "array"}, {"items", S}, {"description", "component names / #tags to exclude"}}}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"components", Json{{"type", "boolean"}, {"description", "include each entity's full component values"}}}, {"limit", Json{{"type", "integer"}, {"description", "max rows (default 100); raise it to see more — there is no cursor yet"}}}, {"world", S}}), true, false, true, "game query --with EnemyAI --ticks 300 --json", true));
-    tools.push_back(tool("inspect", "Inspect an entity", "Resolved components of one entity after N ticks (play world) — `game dump` (§25).", props({{"entity", SEL}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"world", S}}), true, false, true, "game dump <selector> --ticks 600 --json", true));
-    tools.push_back(tool("explain", "Explain an authoring object", "Where it lives, prefab chain, overrides, children, resolved components, lifecycle (§18).", props({{"selector", SEL}}), true, false, true, "game explain <selector> --json", true));
-    tools.push_back(tool("refs", "Reference graph", "Who references this id and what it references: prefab instances, parent links, Ref properties, overrides, defaultWorld (§19).", props({{"selector", SEL}}), true, false, true, "game refs <selector> --json", true));
+    tools.push_back(tool("capabilities", "Capability discovery", "Full tool/command descriptors, exit codes and error codes (§15).", props({}), true, false, true, "akeir capabilities --json", true));
+    tools.push_back(tool("project_info", "Project summary", "Name, tickRate, seed, worlds, prefabs, registered components.", props({}), true, false, true, "akeir project info --json", true));
+    tools.push_back(tool("schema_describe", "Component schemas", "JSON Schema 2020-12 (+x-*) and wire format of components (§14).", props({{"component", S}, {"all", B}}), true, false, true, "akeir schema component <Name> --json", true));
+    tools.push_back(tool("query", "Query play world", "Build the world, run N ticks, return entities matching with/without (components or #tags) (§16).", props({{"with", Json{{"type", "array"}, {"items", S}, {"description", "component names the entity must have; prefix # for tags (#enemy)"}}}, {"without", Json{{"type", "array"}, {"items", S}, {"description", "component names / #tags to exclude"}}}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"components", Json{{"type", "boolean"}, {"description", "include each entity's full component values"}}}, {"limit", Json{{"type", "integer"}, {"description", "max rows (default 100); raise it to see more — there is no cursor yet"}}}, {"world", S}}), true, false, true, "akeir query --with EnemyAI --ticks 300 --json", true));
+    tools.push_back(tool("inspect", "Inspect an entity", "Resolved components of one entity after N ticks (play world) — `akeir dump` (§25).", props({{"entity", SEL}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"world", S}}), true, false, true, "akeir dump <selector> --ticks 600 --json", true));
+    tools.push_back(tool("explain", "Explain an authoring object", "Where it lives, prefab chain, overrides, children, resolved components, lifecycle (§18).", props({{"selector", SEL}}), true, false, true, "akeir explain <selector> --json", true));
+    tools.push_back(tool("refs", "Reference graph", "Who references this id and what it references: prefab instances, parent links, Ref properties, overrides, defaultWorld (§19).", props({{"selector", SEL}}), true, false, true, "akeir refs <selector> --json", true));
     tools.push_back(tool("apply", "Apply a batch of commands", "Atomic batch of Mutation commands (§49). changes[].op ∈ busCommands[].id; '$name' refers to an earlier change's result (as: name). dryRun returns the ChangeSet without writing. Response.changes = RFC 6902 superset ops (§78).",
-                         props({{"changes", Json{{"type", "array"}, {"description", "each item: {op: <busCommands[].id>, ...args of that command, as?: name}. Call the `capabilities` tool for busCommands[] (ids + arg schemas)."}, {"items", Json{{"type", "object"}, {"required", Json::array({"op"})}}}}}, {"atomic", Json{{"type", "boolean"}, {"description", "default true: all-or-nothing, one undo step"}}}, {"dryRun", Json{{"type", "boolean"}, {"description", "compute the ChangeSet without writing"}}}, {"idempotencyKey", S}, {"tx", Json{{"type", "string"}, {"description", "open tx handle from the tx tool"}}}}), false, false, false, "game apply batch.json --json", true));
-    tools.push_back(tool("validate", "Validate project data", "All §29 rules; fix:true applies MachineApplicable fixes via CommandBus (undoable).", props({{"fix", B}, {"dryRun", B}}), true, false, true, "game validate [--fix] --json", true));
-    tools.push_back(tool("run", "Run headless", "Fixed-tick deterministic run; finalHash, per-N hashes, snapshot (§20, §22).", props({{"ticks", I}, {"seed", I}, {"world", S}, {"hashEvery", I}, {"snapshotOut", S}}), false, false, true, "game run --headless --ticks 600 --json", true));
-    tools.push_back(tool("run_status", "Run handle status", "Result of a run started in this `game serve` session (run.start returns result.run) (§46.2).", props({{"run", S}}), true, false, true, "game run status <run_id> --json", true));
-    tools.push_back(tool("test", "Run data-driven tests", "Tests/**/*.test.json scenarios: setup, scripted inputs, snapshot assertions (always/eventually/at), run-twice determinism; results.json + JUnit (§23, §24).", props({{"filter", S}, {"junit", S}, {"resultsDir", S}}), true, false, true, "game test [filter] --json", true));
-    tools.push_back(tool("capture", "Capture a frame", "Software-rasterized PNG of the world after N ticks (no GPU; deterministic). compare: golden comparison with tolerance (§27, §27.1).", props({{"ticks", I}, {"width", I}, {"height", I}, {"out", S}, {"compare", S}}), true, false, true, "game capture --ticks 60 --out Cache/capture/f.png --json", sdlAvailable()));
-    tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list: opaque tx handle + TTL (10 min); pass tx to apply to group several calls into one undo step. Works directly inside an MCP session; from the CLI it needs `game serve`.", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "game tx begin|commit|rollback|list", true));
-    tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "game undo|redo|history", true));
+                         props({{"changes", Json{{"type", "array"}, {"description", "each item: {op: <busCommands[].id>, ...args of that command, as?: name}. Call the `capabilities` tool for busCommands[] (ids + arg schemas)."}, {"items", Json{{"type", "object"}, {"required", Json::array({"op"})}}}}}, {"atomic", Json{{"type", "boolean"}, {"description", "default true: all-or-nothing, one undo step"}}}, {"dryRun", Json{{"type", "boolean"}, {"description", "compute the ChangeSet without writing"}}}, {"idempotencyKey", S}, {"tx", Json{{"type", "string"}, {"description", "open tx handle from the tx tool"}}}}), false, false, false, "akeir apply batch.json --json", true));
+    tools.push_back(tool("validate", "Validate project data", "All §29 rules; fix:true applies MachineApplicable fixes via CommandBus (undoable).", props({{"fix", B}, {"dryRun", B}}), true, false, true, "akeir validate [--fix] --json", true));
+    tools.push_back(tool("run", "Run headless", "Fixed-tick deterministic run; finalHash, per-N hashes, snapshot (§20, §22).", props({{"ticks", I}, {"seed", I}, {"world", S}, {"hashEvery", I}, {"snapshotOut", S}}), false, false, true, "akeir run --headless --ticks 600 --json", true));
+    tools.push_back(tool("run_status", "Run handle status", "Result of a run started in this `akeir serve` session (run.start returns result.run) (§46.2).", props({{"run", S}}), true, false, true, "akeir run status <run_id> --json", true));
+    tools.push_back(tool("test", "Run data-driven tests", "Tests/**/*.test.json scenarios: setup, scripted inputs, snapshot assertions (always/eventually/at), run-twice determinism; results.json + JUnit (§23, §24).", props({{"filter", S}, {"junit", S}, {"resultsDir", S}}), true, false, true, "akeir test [filter] --json", true));
+    tools.push_back(tool("capture", "Capture a frame", "Software-rasterized PNG of the world after N ticks (no GPU; deterministic). compare: golden comparison with tolerance (§27, §27.1).", props({{"ticks", I}, {"width", I}, {"height", I}, {"out", S}, {"compare", S}}), true, false, true, "akeir capture --ticks 60 --out Cache/capture/f.png --json", sdlAvailable()));
+    tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list: opaque tx handle + TTL (10 min); pass tx to apply to group several calls into one undo step. Works directly inside an MCP session; from the CLI it needs `akeir serve`.", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "akeir tx begin|commit|rollback|list", true));
+    tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "akeir undo|redo|history", true));
     r["tools"] = tools;
 
     // busCommands[] — CommandBus 의 Mutation command (apply.changes[].op 의 oneOf). 스키마는 Engine/Commands/BuiltinCommands.cpp 가 선언한다.

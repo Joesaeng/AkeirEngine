@@ -1,11 +1,11 @@
-// Tools/CLI/SdlCommands.cpp — 렌더/창이 필요한 명령: `game capture`, `game run`(창 모드), `game input map`, 그리고 `game test` 의 capture hook.
+// Tools/CLI/SdlCommands.cpp — 렌더/창이 필요한 명령: `akeir capture`, `akeir run`(창 모드), `akeir input map`, 그리고 `akeir test` 의 capture hook.
 // 설계 문서 §20 (창/driver), §20.1 (창 모드 accumulator), §27 (capture), §27.1 (golden 비교), §88.3 (input.json).
 // PME_WITH_SDL=OFF(msvc-headless) 빌드에서는 전부 FEATURE_UNAVAILABLE 을 돌려준다 — 같은 command 표를 유지해 capabilities 가 일관되게.
 //
-//   game capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff diff.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--world W] [--seed S] [--json]
+//   akeir capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff diff.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--world W] [--seed S] [--json]
 //     software renderer (CPU) 로 그린다 — 창/GPU 없이 결정적 PNG (ADR-0026). --compare 가 있으면 §27.1 비교 결과 + exit 3 on mismatch.
-//   game run [--ticks N] [--record inputs.jsonl] [--width W] [--height H] [--world W] [--seed S]     (--headless 가 없으면 창 모드)
-//   game input map [--json]        Config/input.json 이 SDL 에서 어떻게 해석되는지 (scancode, 미지원 바인딩)
+//   akeir run [--ticks N] [--record inputs.jsonl] [--width W] [--height H] [--world W] [--seed S]     (--headless 가 없으면 창 모드)
+//   akeir input map [--json]        Config/input.json 이 SDL 에서 어떻게 해석되는지 (scancode, 미지원 바인딩)
 #include "Commands.h"
 #include "GameSystems.h"
 #include "pme/core/ExitCodes.h"
@@ -52,7 +52,7 @@ bool buildWorld(Context& ctx, Project& prj, const std::string& command, Envelope
     out = PlayWorld::build(prj, worldId, cfg, bd);
     if (!out) {
         Json arr = Json::array(); for (auto& d : bd) arr.push_back(d.toJson());
-        fail = Envelope::failure(command, CommandError::make(ErrorCategory::Validation, "WORLD_BUILD_FAILED", "The world could not be built. Run `game validate`.", Json{{"diagnostics", arr}}));
+        fail = Envelope::failure(command, CommandError::make(ErrorCategory::Validation, "WORLD_BUILD_FAILED", "The world could not be built. Run `akeir validate`.", Json{{"diagnostics", arr}}));
         return false;
     }
     game::registerGameSystems(*out);
@@ -125,7 +125,7 @@ Envelope cmdRunWindowed(Context& ctx) {
     PlatformConfig pc;
     pc.width = static_cast<int>(ctx.args.getInt("width").value_or(1280));
     pc.height = static_cast<int>(ctx.args.getInt("height").value_or(720));
-    pc.title = prj->name() + " — game run";
+    pc.title = prj->name() + " — akeir run";
     pc.videoDriver = ctx.args.getOr("video-driver", "");
     std::string err;
     auto platform = Platform::init(pc, &err);
@@ -203,8 +203,8 @@ void installCaptureHooks(TestRunnerOptions& opts) {
 void registerSdlCommands(std::vector<CommandSpec>& t) {
     t.push_back({"capture", {"capture"}, "RuntimeControl", "Render the world to a PNG (§27)",
                  "Software-rasterized capture (no window/GPU; deterministic bytes). --ticks N advances first. --compare golden.png runs the §27.1 comparison (exit 3 on mismatch, --diff writes a diff image).",
-                 "game capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff d.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--json]", true, false, true, cmdCapture});
-    t.push_back({"input.map", {"input", "map"}, "Query", "Show the resolved input action map", "Config/input.json as SDL scancodes; lists unsupported bindings (gamepad/mouse).", "game input map [--json]", true, false, true, cmdInputMap});
+                 "akeir capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff d.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--json]", true, false, true, cmdCapture});
+    t.push_back({"input.map", {"input", "map"}, "Query", "Show the resolved input action map", "Config/input.json as SDL scancodes; lists unsupported bindings (gamepad/mouse).", "akeir input map [--json]", true, false, true, cmdInputMap});
 }
 
 } // namespace pme::cli

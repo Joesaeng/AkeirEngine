@@ -20,9 +20,9 @@ pixelmatch 의 축소판: 픽셀의 채널 최대 차이(0~255)가 `perPixel×25
 
 ## 쓰는 곳
 
-- `game capture [--ticks N] [--width W --height H] [--out f.png] [--compare golden.png --diff d.png]` (Tools/CLI/SdlCommands.cpp)
-- `game test` 의 capture assertion (`TestRunnerOptions.capture/compare` hook) — golden 은 `Tests/Golden/<test>/<golden>_<WxH>.png`, `--update-golden` 으로 생성/갱신
-- `game run` 창 모드 (createForWindow)
+- `akeir capture [--ticks N] [--width W --height H] [--out f.png] [--compare golden.png --diff d.png]` (Tools/CLI/SdlCommands.cpp)
+- `akeir test` 의 capture assertion (`TestRunnerOptions.capture/compare` hook) — golden 은 `Tests/Golden/<test>/<golden>_<WxH>.png`, `--update-golden` 으로 생성/갱신
+- `akeir run` 창 모드 (createForWindow)
 
 ## 미구현
 

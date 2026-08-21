@@ -1,8 +1,8 @@
 // pme/render/Renderer2D.h — 2D 스프라이트(placeholder) 렌더러 + PNG capture. 설계 문서 §27 (capture 는 1급 기능), §27.1 (golden 비교), §20 (headless 에서도 capture).
 //
 //   두 가지 타깃:
-//     createForWindow(SDL_Window*)  — 창에 그린다 (가속 SDL_Renderer). `game run` (창 모드)
-//     createSoftware(w, h)          — SDL_Surface 에 CPU 로 그린다 (SDL_CreateSoftwareRenderer). **창도 GPU 도 필요 없다** → `game capture`, 테스트의 capture assertion.
+//     createForWindow(SDL_Window*)  — 창에 그린다 (가속 SDL_Renderer). `akeir run` (창 모드)
+//     createSoftware(w, h)          — SDL_Surface 에 CPU 로 그린다 (SDL_CreateSoftwareRenderer). **창도 GPU 도 필요 없다** → `akeir capture`, 테스트의 capture assertion.
 //                                     software rasterizer 이므로 같은 입력이면 같은 PNG 바이트 (golden 테스트의 전제, §27.1). ADR-0026.
 //   그리는 것 (Phase 2 PoC): SpriteRenderer 가 있는 entity 를 Transform 위치/스케일에 tint 색 사각형(또는 Collider2D 모양 크기)으로. 텍스처(Ref sprite)는 아직 로드하지 않는다.
 //   카메라: Camera2D.primary 인 entity 의 Transform.position 을 중심으로 orthoSize(세로 반높이, world 단위). 없으면 원점·10.

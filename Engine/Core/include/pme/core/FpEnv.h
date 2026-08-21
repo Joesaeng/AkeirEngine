@@ -3,7 +3,7 @@
 //   결정론 계약(T0/T1)의 전제: 모든 sim 스레드가 같은 rounding mode(round-to-nearest)와 같은 denormal 정책을 가진다.
 //   정책: round-to-nearest, denormals 보존(FTZ/DAZ 끔) — MSVC 기본값이며 Box2D/Jolt 의 기대와 일치.
 //   `normalizeFpEnv()` 는 현재 스레드를 이 정책으로 맞추고, `fpEnvStatus()` 는 검사 결과를 JSON 으로 돌려준다
-//   (`game version --json` / replay header 에 기록).
+//   (`akeir version --json` / replay header 에 기록).
 #pragma once
 
 #include "pme/core/Json.h"

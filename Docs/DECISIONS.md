@@ -71,9 +71,9 @@
 - **결정**: `pme::CommandError` = `Diagnostic` + `category` + `retryable` + `details`. 필드명은 Diagnostic 과 동일 (`ruleId`, `message.text`, `logical`, `physical`, `fixes`, `fingerprint`, `helpUri`). exit code 표는 `pme/core/ExitCodes.h`.
 - **참조**: §13, §79
 
-## ADR-0011 CLI 프로세스 모델 = Phase 0–3 은 one-shot in-process, Phase 4 부터 `game serve` 데몬
-- **상태**: 확정 (Phase 4 구현: `game serve` 가 있으면 모든 `game <cmd>` 가 자동 포워딩, 없으면 one-shot. ADR-0029).
-- **결정**: 지금은 `game <cmd>` 가 프로젝트를 직접 열고 닫는다. multi-call transaction(`tx begin … commit`)은 Phase 4 `game serve` 이후. Phase 3 의 transaction 은 in-process(test/Editor) 범위.
+## ADR-0011 CLI 프로세스 모델 = Phase 0–3 은 one-shot in-process, Phase 4 부터 `akeir serve` 데몬
+- **상태**: 확정 (Phase 4 구현: `akeir serve` 가 있으면 모든 `akeir <cmd>` 가 자동 포워딩, 없으면 one-shot. ADR-0029).
+- **결정**: 지금은 `akeir <cmd>` 가 프로젝트를 직접 열고 닫는다. multi-call transaction(`tx begin … commit`)은 Phase 4 `akeir serve` 이후. Phase 3 의 transaction 은 in-process(test/Editor) 범위.
 - **참조**: §9.1, §74 Phase 3/4, §88.1
 
 ## ADR-0012 Crash/행 진단 = Windows minidump + watchdog, exit 6/7
@@ -155,7 +155,7 @@
 
 ## ADR-0026 capture 는 SDL software renderer(CPU) 로 — 창·GPU 없이 결정적 PNG
 - **상태**: 확정 (Phase 2).
-- **결정**: `game capture` 와 테스트 capture assertion 은 `SDL_CreateSoftwareRenderer(SDL_Surface)` 로 그린다. SDL 은 `dummy` video driver 로 초기화(창 없음). 같은 world → 같은 PNG 바이트. 골든 이미지는 이 경로로만 만든다. §20 의 `offscreen` driver(EGL/GL)와 §27.1 의 software rasterizer(SwiftShader/WARP) 논의는 이 결정으로 대체한다 — 2D placeholder 렌더에는 CPU rasterizer 가 그대로 "software rasterizer" 다.
+- **결정**: `akeir capture` 와 테스트 capture assertion 은 `SDL_CreateSoftwareRenderer(SDL_Surface)` 로 그린다. SDL 은 `dummy` video driver 로 초기화(창 없음). 같은 world → 같은 PNG 바이트. 골든 이미지는 이 경로로만 만든다. §20 의 `offscreen` driver(EGL/GL)와 §27.1 의 software rasterizer(SwiftShader/WARP) 논의는 이 결정으로 대체한다 — 2D placeholder 렌더에는 CPU rasterizer 가 그대로 "software rasterizer" 다.
 - **근거**: §27.1 "CI 에서는 software rasterizer, 골든은 같은 rasterizer 로" 를 가장 싸게 만족한다. GPU 드라이버/WARP/ICD 설치 문제가 없고 headless 머신에서도 같은 결과. 비용: 고해상도·텍스처가 많아지면 느리다(PoC 에서는 무시).
 - **영향**: 창 모드(direct3d11 등)의 픽셀은 골든 비교에 쓰지 않는다. `capabilities.tools[].capture.enabled` 는 SDL 빌드에서만 true.
 - **참조**: §20, §27, §27.1
@@ -174,15 +174,15 @@
 
 ## ADR-0029 serve 전송 = loopback TCP 위 NDJSON JSON-RPC 2.0 + per-session token (HTTP 아님)
 - **상태**: 확정 (Phase 4). Streamable HTTP 는 외부 도구가 필요해질 때.
-- **결정**: `game serve` 는 127.0.0.1:<port>(기본 OS 선택) 에서 **한 줄 = 한 JSON-RPC 메시지** 로 듣는다. 요청마다 `token`(프로세스 시작 시 생성, `Cache/serve.json` 에 기록) 을 요구한다. `method` 는 CLI command id(`params.argv`) 또는 bus command id(`params.args`); 응답은 `{envelope, exitCode}`. `--stdio` 는 같은 프로토콜을 stdin/stdout 으로(token 없음). 외부 HTTP 라이브러리를 들이지 않고 Winsock 만 쓴다.
+- **결정**: `akeir serve` 는 127.0.0.1:<port>(기본 OS 선택) 에서 **한 줄 = 한 JSON-RPC 메시지** 로 듣는다. 요청마다 `token`(프로세스 시작 시 생성, `Cache/serve.json` 에 기록) 을 요구한다. `method` 는 CLI command id(`params.argv`) 또는 bus command id(`params.args`); 응답은 `{envelope, exitCode}`. `--stdio` 는 같은 프로토콜을 stdin/stdout 으로(token 없음). 외부 HTTP 라이브러리를 들이지 않고 Winsock 만 쓴다.
 - **근거**: §88.1 "stdio(로컬 CLI) + localhost JSON-RPC" 와 §46.2 "loopback + per-session token" 을 가장 작은 코드로 만족한다. 클라이언트는 CLI 자신과 Editor/MCP 뿐이라 HTTP 의 이점(브라우저, 프록시)이 없다. 같은 envelope 이 CLI stdout 과 RPC result 에 그대로 쓰인다(§12 "같은 구조").
 - **영향**: `Cache/serve.json` 을 읽을 수 있는 로컬 사용자만 접근 가능. `--bind 0.0.0.0` 은 제공하지 않는다. 데몬은 단일 스레드, 연결 순차 처리.
 - **참조**: §46.2, §88.1, §88.6
 
-## ADR-0030 MCP 서버는 C++ 네이티브(`game mcp`, stdio) — 공식 SDK sidecar 대신
+## ADR-0030 MCP 서버는 C++ 네이티브(`akeir mcp`, stdio) — 공식 SDK sidecar 대신
 - **상태**: 확정 (Phase 7 PoC). 클라이언트 호환 문제가 생기면 TypeScript SDK sidecar 로 감싼다(§46.1 원안).
-- **결정**: `game mcp` 가 ServeHost(단일 writer) 위에서 MCP 메서드(`server/discover`(2026-07-28), `initialize`(2025-xx 호환), `ping`, `tools/list`, `tools/call`, 빈 `resources/list`·`prompts/list`)를 newline-delimited JSON-RPC 로 직접 말한다. tool 은 `capabilities.tools[]` 의 `enabled` 항목을 그대로 노출(§15 pass-through), `tools/call` 결과는 `structuredContent = envelope`, `isError = !ok` (§46.2).
-- **근거**: 프로토콜 표면이 작고(메서드 5개) 우리 envelope 이 이미 MCP 결과 모양이라 SDK 가 줄여 주는 코드가 거의 없다. Node/Python 런타임 의존이 사라져 "`game` 하나로 전부" 가 유지된다. 2026-07-28 의 stateless 설계(§9.1 handle 인자)는 우리 tx/run handle 과 그대로 맞는다.
+- **결정**: `akeir mcp` 가 ServeHost(단일 writer) 위에서 MCP 메서드(`server/discover`(2026-07-28), `initialize`(2025-xx 호환), `ping`, `tools/list`, `tools/call`, 빈 `resources/list`·`prompts/list`)를 newline-delimited JSON-RPC 로 직접 말한다. tool 은 `capabilities.tools[]` 의 `enabled` 항목을 그대로 노출(§15 pass-through), `tools/call` 결과는 `structuredContent = envelope`, `isError = !ok` (§46.2).
+- **근거**: 프로토콜 표면이 작고(메서드 5개) 우리 envelope 이 이미 MCP 결과 모양이라 SDK 가 줄여 주는 코드가 거의 없다. Node/Python 런타임 의존이 사라져 "`akeir` 하나로 전부" 가 유지된다. 2026-07-28 의 stateless 설계(§9.1 handle 인자)는 우리 tx/run handle 과 그대로 맞는다.
 - **영향**: resources/prompts/progress/Tasks 는 미구현. tool 인자 스키마 검증은 하지 않는다(CLI 인자로 번역 후 명령이 검사).
 - **참조**: §46, §46.1, §46.2, §47
 
@@ -192,8 +192,8 @@
 - **근거**: Project 복사는 수백 entity 에서 ms 단위라 일관성(쓰기 중 읽기 없음)을 공짜로 얻는다. play world 상주(`run.step`)는 §88.2 의 promote 규칙과 함께 별도 설계가 필요해 미룬다.
 - **참조**: §88.1, §88.2
 
-## ADR-0032 이름 = MoltEngine (ME); 코드 접두어 `pme` 유지; 릴리즈 = git tag `ME0.1` + zip
-- **상태**: 확정 (2026-08-21, 사용자 결정).
-- **결정**: 엔진 이름은 **MoltEngine**, 약어 ME. 첫 릴리즈 ME0.1 = `v0.1.0` = "빈 프로젝트를 만드는 `game project init` 까지 포함한 상태". 저장소 디렉터리(`Project_ME`), C++ 네임스페이스 `pme`, CMake 타깃 접두어 `pme_`, 매크로 `PME_*` 는 바꾸지 않는다(13k LOC 전면 rename 은 위험 대비 이득이 없다). 사용자에게 보이는 곳(`game version`, envelope `meta.engine`, MCP serverInfo, README/Docs)만 MoltEngine. 릴리즈는 git tag(`ME0.1`, `v0.1.0`) + `scripts/package.py` 가 만드는 zip(`git archive` + `bin/game.exe` + 상대 경로 `.mcp.json` + QUICKSTART).
-- **근거**: 다음 세션이 zip 만 풀어서 "이 엔진으로 무언가를 만드는" 실험(§72)을 하기 위해 — 빌드 없이 바로 쓰는 바이너리와 맥락 없는 진입점(QUICKSTART)이 필요했다.
-- **참조**: §72, Docs/00-START-HERE.md
+## ADR-0032 이름 = AKEIR Engine (실행 파일 `akeir.exe`); 코드 접두어 `pme` 유지; 릴리즈 = git tag `v0.1.0` + zip
+- **상태**: 확정 (2026-08-22, 사용자 결정). 2026-08-21 에 MoltEngine/ME 로 정했다가 `moltengine.ai` 가 존재해 같은 날 개명.
+- **결정**: 엔진 이름 **AKEIR Engine**(표기 AKEIR, 발음 에이키어). 어원은 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는") — "인간의 손을 탈피한다(Molt of the human hand)"는 원래 의도를 한 단어로 담는다. 실행 파일은 `game.exe` → **`akeir.exe`** (엔진을 부르는 이름이 곧 CLI 이름; `akeir run`, `akeir mcp`). 저장소 디렉터리(`Project_ME`), C++ 네임스페이스 `pme`, CMake 타깃 접두어 `pme_`, 매크로 `PME_*`, 샘플 게임 네임스페이스 `game::` 은 바꾸지 않는다. 사용자에게 보이는 곳(`akeir version`, envelope `meta.engine`, MCP serverInfo, README/Docs, 설계 문서 `AKEIR.md`)만 AKEIR. 버전 정본은 git tag `v0.1.0` 하나(약어 태그 없음); 릴리즈는 `scripts/package.py` 가 만드는 zip(`git archive` + `bin/akeir.exe` + 상대 경로 `.mcp.json` + QUICKSTART; 리서치 자료·`.pdb` 제외).
+- **근거**: 웹/GitHub 검색에서 "Akeir Engine"/`AkeirEngine` 충돌 0건(2026-08-22). 다른 탈피 계열 후보(MoltEngine, Exuvia, Ecdysis, Instar, Apolysis)는 제품·게임·라이브러리와 충돌하거나(Instar 는 한국어로 인스타그램 연상) 발음이 어려웠다. 공개 저장소: https://github.com/Joesaeng/AkeirEngine.
+- **참조**: §72, Docs/00-START-HERE.md, QUICKSTART.md

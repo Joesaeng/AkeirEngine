@@ -99,7 +99,7 @@ Envelope cmdValidate(Context& ctx) {
             for (const auto& a : pick->artifactChanges) key += "|" + jcsDump(a);
             if (!seen.insert(key).second) continue;
             if (!pick->commands.empty() && pick->commands[0].op == "project.fmt") {
-                // canonical 재직렬화는 JSON 값이 바뀌지 않으므로 ChangeSet 으로 표현되지 않는다 → `game fmt` 와 같은 경로 (undo 대상 아님)
+                // canonical 재직렬화는 JSON 값이 바뀌지 않으므로 ChangeSet 으로 표현되지 않는다 → `akeir fmt` 와 같은 경로 (undo 대상 아님)
                 if (d.physical) fmtDocs.push_back(d.physical->uri);
                 continue;
             }
@@ -146,7 +146,7 @@ Envelope cmdValidate(Context& ctx) {
     }
     Json details = body;
     Envelope env = Envelope::failure("validate", CommandError::make(ErrorCategory::Validation, "VALIDATION_FAILED",
-        "Project has " + std::to_string(sum.error) + " error(s). Apply the MachineApplicable fixes with `game validate --fix` or fix the files.", details));
+        "Project has " + std::to_string(sum.error) + " error(s). Apply the MachineApplicable fixes with `akeir validate --fix` or fix the files.", details));
     env.changes = allChanges;
     return env;
 }
@@ -155,7 +155,7 @@ Envelope cmdFmt(Context& ctx) {
     Envelope fail;
     auto prj = openProject(ctx, fail, "project.fmt");
     if (!prj) return fail;
-    std::string only = ctx.args.positional(1, "");   // game fmt [path]
+    std::string only = ctx.args.positional(1, "");   // akeir fmt [path]
     std::vector<std::string> written, unchanged, failed;
     Json changes = Json::array();
     for (const auto& [path, doc] : prj->documents()) {
@@ -182,7 +182,7 @@ Envelope cmdFmt(Context& ctx) {
 }
 
 Envelope cmdSchema(Context& ctx) {
-    // game schema component <Name> | game schema --all | game schema wire-format <Name>
+    // akeir schema component <Name> | akeir schema --all | akeir schema wire-format <Name>
     registerBuiltinComponents();
     std::string sub = ctx.args.positional(1, "");
     std::string name = ctx.args.positional(2, "");
@@ -203,7 +203,7 @@ Envelope cmdSchema(Context& ctx) {
     Json comps = Json::object();
     for (const auto* m : Registry::global().all())
         comps[m->name] = ctx.args.has("all") ? m->toSchema() : Json{{"description", m->description}, {"requires", m->requiresComponents}, {"properties", m->props.size()}, {"$id", "game://schema/component/" + m->name + "/" + std::to_string(m->version)}};
-    return Envelope::success("schema.describe", Json{{"components", comps}, {"hint", "game schema component <Name> for the full JSON Schema + wire format; --all for every schema"}});
+    return Envelope::success("schema.describe", Json{{"components", comps}, {"hint", "akeir schema component <Name> for the full JSON Schema + wire format; --all for every schema"}});
 }
 
 Envelope cmdEntityList(Context& ctx) {
@@ -286,13 +286,13 @@ Envelope cmdExplain(Context& ctx) {
 } // namespace
 
 Envelope cmdRefs(Context& ctx) {
-    // game refs <selector> [--out]  — 누가 이 객체를 가리키는가 (§19). --out 이면 이 객체가 가리키는 것.
+    // akeir refs <selector> [--out]  — 누가 이 객체를 가리키는가 (§19). --out 이면 이 객체가 가리키는 것.
     Envelope fail;
     game::registerGameComponents();
     auto prj = openProject(ctx, fail, "refs");
     if (!prj) return fail;
     std::string sel = ctx.args.positional(1, "");
-    if (sel.empty()) return Envelope::failure("refs", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "game refs <id|name:X|path:A/B> [--out] [--json]"));
+    if (sel.empty()) return Envelope::failure("refs", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "akeir refs <id|name:X|path:A/B> [--out] [--json]"));
     auto ids = prj->resolveSelector(sel);
     if (ids.size() != 1) return Envelope::failure("refs", CommandError::make(ids.empty() ? ErrorCategory::NotFound : ErrorCategory::Usage, ids.empty() ? "OBJECT_NOT_FOUND" : "AMBIGUOUS_SELECTOR",
         ids.empty() ? "Nothing matches '" + sel + "'." : "'" + sel + "' matches several objects.", Json{{"selector", sel}, {"candidates", ids}}));
@@ -313,24 +313,24 @@ Envelope cmdRefs(Context& ctx) {
 
 void registerProjectCommands(std::vector<CommandSpec>& table) {
     table.push_back({"project.info", {"project", "info"}, "Query", "Project summary",
-        "Name, tick rate, seed, worlds, prefabs, registered components.", "game project info [--project DIR] [--json]", true, false, true, cmdProjectInfo});
+        "Name, tick rate, seed, worlds, prefabs, registered components.", "akeir project info [--project DIR] [--json]", true, false, true, cmdProjectInfo});
     table.push_back({"validate", {"validate"}, "Query", "Validate project data",
         "Runs all §29 checks (ids, schemas, requires, refs, prefab chains, canonical form). Errors → exit 3 with diagnostics + fixes. --fix applies MachineApplicable fixes through the CommandBus (undoable).",
-        "game validate [--fix [--dry-run]] [--project DIR] [--json]", true, false, true, cmdValidate});
+        "akeir validate [--fix [--dry-run]] [--project DIR] [--json]", true, false, true, cmdValidate});
     table.push_back({"project.fmt", {"fmt"}, "Mutation", "Rewrite files in canonical form",
         "Rewrites world/prefab files with the §5.3 canonical serializer (temp+rename). --dry-run lists files that would change.",
-        "game fmt [path] [--dry-run] [--json]", false, false, true, cmdFmt});
+        "akeir fmt [path] [--dry-run] [--json]", false, false, true, cmdFmt});
     table.push_back({"schema.describe", {"schema"}, "Query", "Component schemas",
         "JSON Schema 2020-12 (+x-*) and wire format for components (§14, §14.1).",
-        "game schema [component <Name> | wire-format <Name>] [--all] [--json]", true, false, true, cmdSchema});
+        "akeir schema [component <Name> | wire-format <Name>] [--all] [--json]", true, false, true, cmdSchema});
     table.push_back({"entity.list", {"entity", "list"}, "Query", "List entities",
-        "Entities across worlds with path, prefab and resolved component names.", "game entity list [--limit N] [--json]", true, false, true, cmdEntityList});
+        "Entities across worlds with path, prefab and resolved component names.", "akeir entity list [--limit N] [--json]", true, false, true, cmdEntityList});
     table.push_back({"refs", {"refs"}, "Query", "Reference graph of an object (§19)",
         "Who points at this id (prefab instances, children via parent, Ref properties, overrides, defaultWorld) and what it points at. Authoring documents only.",
-        "game refs <id|name:X|path:A/B> [--json]", true, false, true, cmdRefs});
+        "akeir refs <id|name:X|path:A/B> [--json]", true, false, true, cmdRefs});
     table.push_back({"explain", {"explain"}, "Query", "Explain an object (§18)",
         "Where it lives, prefab chain, overrides, children, resolved components and lifecycle info.",
-        "game explain <id|name:X|path:A/B> [--json]", true, false, true, cmdExplain});
+        "akeir explain <id|name:X|path:A/B> [--json]", true, false, true, cmdExplain});
 }
 
 } // namespace pme::cli

@@ -1,4 +1,4 @@
-// Tools/CLI/Mcp.cpp — `game mcp`: MCP 서버 (stdio, newline-delimited JSON-RPC). 설계 문서 §46 (MCP Adapter), §46.2 (Command API ↔ MCP 매핑), §47 (tool 15개, 2층 구조), §15 (capabilities pass-through).
+// Tools/CLI/Mcp.cpp — `akeir mcp`: MCP 서버 (stdio, newline-delimited JSON-RPC). 설계 문서 §46 (MCP Adapter), §46.2 (Command API ↔ MCP 매핑), §47 (tool 15개, 2층 구조), §15 (capabilities pass-through).
 //
 //   ▶ v3 (ADR-0030): 공식 SDK sidecar(§46.1) 대신 C++ 네이티브 — 같은 프로세스의 ServeHost(단일 writer) 위에 MCP 메서드만 올린다. 외부 런타임(Node/Python) 불필요.
 //   지원 메서드:
@@ -39,7 +39,7 @@ Json rpcErr(const Json& id, int code, const std::string& msg) { return Json{{"js
 Json rpcOk(const Json& id, Json result) { return Json{{"jsonrpc", "2.0"}, {"id", id}, {"result", std::move(result)}}; }
 
 std::string instructionsText() {
-    return "MoltEngine: AI-native game framework. Authoring data is JSON under the project (worlds, prefabs); every change goes through the Command API and returns a ChangeSet. "
+    return "AKEIR Engine: AI-native game framework. Authoring data is JSON under the project (worlds, prefabs); every change goes through the Command API and returns a ChangeSet. "
            "Start with `capabilities` (tools, busCommands = ops allowed in apply.changes[], error codes) and `project_info`. "
            "Use `query`/`inspect`/`explain` to read, `apply` to change (atomic batch; '$name' references earlier results; dryRun to preview), `validate` (fix:true to auto-fix) before `run`/`test`. "
            "`history` undoes. `tx` groups several apply calls into one undo entry. Errors come back as the same envelope with isError=true and error.ruleId.";
@@ -135,7 +135,7 @@ int runMcp(Context& ctx) {
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY);   // LF 만 (텍스트 모드는 \r\n 을 붙인다)
 #endif
-    PME_LOG(Info, "mcp", "ready", "game mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
+    PME_LOG(Info, "mcp", "ready", "akeir mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
     std::string line;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
@@ -154,7 +154,7 @@ int runMcp(Context& ctx) {
             std::string requested = params.value("protocolVersion", "2025-06-18");
             bool known = false; for (const char** v = kSupportedVersions; *v; ++v) if (requested == *v) known = true;
             resp = rpcOk(id, Json{{"protocolVersion", known ? requested : "2025-06-18"}, {"capabilities", Json{{"tools", Json{{"listChanged", false}}}}},
-                                  {"serverInfo", Json{{"name", "moltengine"}, {"title", "MoltEngine"}, {"version", PME_VERSION_STRING}}}, {"instructions", instructionsText()}});
+                                  {"serverInfo", Json{{"name", "akeir"}, {"title", "AKEIR Engine"}, {"version", PME_VERSION_STRING}}}, {"instructions", instructionsText()}});
         } else if (method == "notifications/initialized" || method.rfind("notifications/", 0) == 0) {
             continue;   // 알림에는 응답하지 않는다
         } else if (method == "ping") {
@@ -178,14 +178,14 @@ int runMcp(Context& ctx) {
         std::fputs(resp.dump().c_str(), stdout); std::fputc('\n', stdout); std::fflush(stdout);
         if (host.stopRequested()) break;
     }
-    PME_LOG(Info, "mcp", "stopped", "game mcp stopped", Json{{"requests", host.requests()}});
+    PME_LOG(Info, "mcp", "stopped", "akeir mcp stopped", Json{{"requests", host.requests()}});
     return kExitOk;
 }
 
 void registerMcpCommands(std::vector<CommandSpec>& t) {
     t.push_back({"mcp", {"mcp"}, "Meta", "MCP server over stdio (§46)",
-                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `game serve`). Register in an MCP client as: command=game, args=[\"mcp\",\"--project\",\"<dir>\"].",
-                 "game mcp [--project DIR] [--actor A] | game mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
+                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `akeir serve`). Register in an MCP client as: command=game, args=[\"mcp\",\"--project\",\"<dir>\"].",
+                 "akeir mcp [--project DIR] [--actor A] | akeir mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
 }
 
 } // namespace pme::cli

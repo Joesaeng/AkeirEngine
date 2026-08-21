@@ -35,7 +35,7 @@ public:
     bool push(const ChangeSet& cs, std::string* error = nullptr);
     bool markUndone(std::string* error = nullptr);   // cursor--
     bool markRedone(std::string* error = nullptr);   // cursor++
-    /// 최근 N 개 (cursor 기준 적용 여부 포함) — `game history`
+    /// 최근 N 개 (cursor 기준 적용 여부 포함) — `akeir history`
     Json listJson(std::size_t limit = 20) const;
     const ChangeSet* find(std::string_view id) const;
 

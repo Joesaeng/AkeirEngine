@@ -1,4 +1,4 @@
-// Tools/CLI/Serve.cpp — `game serve` 데몬(단일 writer) + 얇은 RPC 클라이언트 + ServeHost(디스패치; `game mcp` 와 공유). 설계 문서 §88.1, §9.1, §46.2, §13. 프로토콜은 Serve.h 머리말.
+// Tools/CLI/Serve.cpp — `akeir serve` 데몬(단일 writer) + 얇은 RPC 클라이언트 + ServeHost(디스패치; `akeir mcp` 와 공유). 설계 문서 §88.1, §9.1, §46.2, §13. 프로토콜은 Serve.h 머리말.
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -227,7 +227,7 @@ int runServe(Context& ctx) {
             Json probe; int code = 0;
             Args a; a.positionals = {"serve", "status"};
             if (tryRemote(a, ctx.projectDir, "serve.status", probe, code))
-                return printFail(Envelope::failure("serve", CommandError::make(ErrorCategory::Conflict, "SERVE_ALREADY_RUNNING", "Another `game serve` holds this project (pid " + std::to_string(existing->pid) + ", port " + std::to_string(existing->port) + ").", existing->toJson())));
+                return printFail(Envelope::failure("serve", CommandError::make(ErrorCategory::Conflict, "SERVE_ALREADY_RUNNING", "Another `akeir serve` holds this project (pid " + std::to_string(existing->pid) + ", port " + std::to_string(existing->port) + ").", existing->toJson())));
             std::error_code ec; fs::remove(ServeInfo::path(ctx.projectDir), ec);   // stale
         }
     }
@@ -264,7 +264,7 @@ int runServe(Context& ctx) {
     Envelope helloOut = Envelope::success("serve", started);
     for (auto& d : hello.warnings) helloOut.withWarning(d);
     std::fputs(helloOut.toJson().dump().c_str(), stdout); std::fputc('\n', stdout); std::fflush(stdout);
-    PME_LOG(Info, "serve", "listening", "game serve ready", Json{{"port", host.info().port}, {"pid", host.info().pid}});
+    PME_LOG(Info, "serve", "listening", "akeir serve ready", Json{{"port", host.info().port}, {"pid", host.info().pid}});
 
     const long long idleMs = ctx.args.getInt("idle-timeout").value_or(0);
     auto lastActivity = std::chrono::steady_clock::now();
@@ -309,7 +309,7 @@ int runServe(Context& ctx) {
         std::error_code ec; fs::remove(ServeInfo::path(ctx.projectDir), ec);
 #endif
     }
-    PME_LOG(Info, "serve", "stopped", "game serve stopped", Json{{"requests", host.requests()}});
+    PME_LOG(Info, "serve", "stopped", "akeir serve stopped", Json{{"requests", host.requests()}});
     return kExitOk;
 }
 
@@ -373,7 +373,7 @@ Envelope cmdServe(Context& ctx) {
 
 Envelope cmdServeStatus(Context& ctx) {
     auto info = ServeInfo::load(ctx.projectDir);
-    if (!info) return Envelope::failure("serve.status", CommandError::make(ErrorCategory::NotFound, "SERVE_NOT_RUNNING", "No `game serve` for this project (no Cache/serve.json).", Json{{"hint", "game serve"}}));
+    if (!info) return Envelope::failure("serve.status", CommandError::make(ErrorCategory::NotFound, "SERVE_NOT_RUNNING", "No `akeir serve` for this project (no Cache/serve.json).", Json{{"hint", "akeir serve"}}));
     Json env; int code = 0;
     if (!tryRemote(ctx.args, ctx.projectDir, "serve.status", env, code))
         return Envelope::failure("serve.status", CommandError::make(ErrorCategory::NotFound, "SERVE_NOT_RUNNING", "Cache/serve.json existed but the process did not answer; removed the stale file.", info->toJson()));
@@ -383,7 +383,7 @@ Envelope cmdServeStatus(Context& ctx) {
 Envelope cmdServeStop(Context& ctx) {
     Json env; int code = 0;
     if (!tryRemote(ctx.args, ctx.projectDir, "serve.stop", env, code))
-        return Envelope::failure("serve.stop", CommandError::make(ErrorCategory::NotFound, "SERVE_NOT_RUNNING", "No running `game serve` for this project."));
+        return Envelope::failure("serve.stop", CommandError::make(ErrorCategory::NotFound, "SERVE_NOT_RUNNING", "No running `akeir serve` for this project."));
     return Envelope::success("serve.stop", env.value("result", Json::object()));
 }
 
@@ -391,10 +391,10 @@ Envelope cmdServeStop(Context& ctx) {
 
 void registerServeCommands(std::vector<CommandSpec>& t) {
     t.push_back({"serve", {"serve"}, "Meta", "Run the resident Command host (§88.1)",
-                 "Loads the project once, holds the single CommandBus, listens on 127.0.0.1:<port> (NDJSON JSON-RPC, per-session token in Cache/serve.json). While it runs, every `game <cmd>` in this project is forwarded to it, so `tx begin/commit` and `run status` work across calls. --stdio uses stdin/stdout instead (Editor embedding).",
-                 "game serve [--port P] [--stdio] [--idle-timeout ms] [--actor A]", false, false, false, cmdServe});
-    t.push_back({"serve.status", {"serve", "status"}, "Query", "Is a daemon running?", "", "game serve status [--json]", true, false, true, cmdServeStatus});
-    t.push_back({"serve.stop", {"serve", "stop"}, "RuntimeControl", "Stop the daemon", "", "game serve stop", false, false, true, cmdServeStop});
+                 "Loads the project once, holds the single CommandBus, listens on 127.0.0.1:<port> (NDJSON JSON-RPC, per-session token in Cache/serve.json). While it runs, every `akeir <cmd>` in this project is forwarded to it, so `tx begin/commit` and `run status` work across calls. --stdio uses stdin/stdout instead (Editor embedding).",
+                 "akeir serve [--port P] [--stdio] [--idle-timeout ms] [--actor A]", false, false, false, cmdServe});
+    t.push_back({"serve.status", {"serve", "status"}, "Query", "Is a daemon running?", "", "akeir serve status [--json]", true, false, true, cmdServeStatus});
+    t.push_back({"serve.stop", {"serve", "stop"}, "RuntimeControl", "Stop the daemon", "", "akeir serve stop", false, false, true, cmdServeStop});
 }
 
 } // namespace pme::cli

@@ -1,7 +1,7 @@
 // pme/core/ExitCodes.h — CLI exit code 표. 설계 문서 §13.
 //
 //   exit code 는 보조 신호다. envelope 은 항상 error.ruleId 를 들고 있다.
-//   `game capabilities --json` 의 result.exitCodes 가 이 표를 그대로 노출한다.
+//   `akeir capabilities --json` 의 result.exitCodes 가 이 표를 그대로 노출한다.
 #pragma once
 
 namespace pme {
@@ -10,7 +10,7 @@ enum ExitCode : int {
     kExitOk = 0,                 // ok
     kExitCommandFailed = 1,      // 도메인 오류. envelope 은 stdout
     kExitUsage = 2,              // usage / argument error (stderr)
-    kExitFindings = 3,           // validation/test failed with findings (game validate, game test)
+    kExitFindings = 3,           // validation/test failed with findings (akeir validate, akeir test)
     kExitConfirmationRequired = 4, // 파괴적 작업을 --yes 없이 호출. error.details.confirmCommand
     kExitNotFound = 5,           // 모르는 id / handle
     kExitCrash = 6,              // crash (minidump 경로 포함, §88.4)

@@ -1,6 +1,6 @@
 // pme/runtime/DemoSimulation.h — 결정론 루프 검증용 최소 시뮬레이션 (placeholder).
 // 설계 문서 §20.1 / §22.2 의 루프·해시 계약을 Phase 1 World 가 생기기 전에 실측하기 위한 것.
-// `game run --headless` 는 프로젝트가 로드되지 않았을 때 이것을 돌린다 (result.simulation = "demo").
+// `akeir run --headless` 는 프로젝트가 로드되지 않았을 때 이것을 돌린다 (result.simulation = "demo").
 // Phase 1 이후에는 테스트 전용으로 남는다.
 #pragma once
 

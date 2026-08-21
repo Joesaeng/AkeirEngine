@@ -37,7 +37,7 @@ public:
     /// 현재 SDL 키보드 상태로 InputFrame 을 만든다. SDL_PumpEvents 는 호출자가(Platform::pumpEvents).
     InputFrame sample(std::int64_t tick) const;
     const std::vector<InputAction>& actions() const { return actions_; }
-    Json toJson() const;   // 디버그/`game input map` 용
+    Json toJson() const;   // 디버그/`akeir input map` 용
 
 private:
     std::vector<InputAction> actions_;

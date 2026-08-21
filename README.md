@@ -1,6 +1,6 @@
-# MoltEngine (ME) 0.1 — AI-Native Game Framework
+# AKEIR Engine 0.1 — AI-Native Game Framework
 
-> 저장소 디렉터리명은 `Project_ME`, 엔진 이름은 **MoltEngine**, 코드 네임스페이스/타깃 접두어는 `pme`. 릴리즈: https://github.com/Joesaeng/MoltEngine/releases (태그 `ME0.1` = `v0.1.0`, zip 에 빌드된 `bin/game.exe` 포함 — `QUICKSTART.md`).
+> **AKEIR** ← 그리스어 ἄχειρ(acheir, "손이 없는") / ἀχειροποίητος("사람 손으로 만들어지지 않은"). 발음 에이키어. 저장소 디렉터리명은 `Project_ME`, 코드 네임스페이스/타깃 접두어는 `pme`, CLI 실행 파일은 `akeir.exe`. 릴리즈: https://github.com/Joesaeng/AKEIR Engine/releases (태그 `v0.1.0` = `v0.1.0`, zip 에 빌드된 `bin/akeir.exe` 포함 — `QUICKSTART.md`).
 
 AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 프로젝트 데이터 + Command API + headless 실행**만으로 게임을 만들 수 있게 하는 개인용 C++ 게임 프레임워크 PoC.
 
@@ -9,7 +9,7 @@ AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 �
 
 | 무엇 | 어디 |
 |---|---|
-| 설계 문서 (정본, §0–§89) | [`MoltEngine.md`](MoltEngine.md) |
+| 설계 문서 (정본, §0–§89) | [`AKEIR.md`](AKEIR.md) |
 | 읽는 순서 / 저장소 지도 | [`Docs/00-START-HERE.md`](Docs/00-START-HERE.md) |
 | 내려진 결정 (ADR) | [`Docs/DECISIONS.md`](Docs/DECISIONS.md) |
 | 현재 진행 상태 / 다음 할 일 | [`Docs/STATUS.md`](Docs/STATUS.md) |
@@ -17,20 +17,20 @@ AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 �
 | 코드 ↔ 설계 § 대응 | [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) |
 | 코딩 규약 | [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md) |
 
-릴리즈 zip 을 받았다면 `QUICKSTART.md` (빌드 없이 `bin/game.exe`). 소스에서 빠른 시작 (Windows, VS2022):
+릴리즈 zip 을 받았다면 `QUICKSTART.md` (빌드 없이 `bin/akeir.exe`). 소스에서 빠른 시작 (Windows, VS2022):
 
 ```bash
 scripts\build.cmd msvc-headless all
 build\msvc-headless\Tests\pme_tests.exe
-build\msvc-headless\bin\game.exe version --json
+build\msvc-headless\bin\akeir.exe version --json
 ```
 
-상태 요약 (2026-08-21): Phase 0·1·2·3·4·5 와 MCP 서버(Phase 7 일부)까지 구현됨 — authoring JSON → reflection → Flecs/Box2D play world, Command/ChangeSet/undo, 데이터화 테스트, SDL3 창·software capture, `game serve`(상주 RPC), `game mcp`(stdio MCP). 자세한 것은 `Docs/STATUS.md`.
+상태 요약 (2026-08-21): Phase 0·1·2·3·4·5 와 MCP 서버(Phase 7 일부)까지 구현됨 — authoring JSON → reflection → Flecs/Box2D play world, Command/ChangeSet/undo, 데이터화 테스트, SDL3 창·software capture, `akeir serve`(상주 RPC), `akeir mcp`(stdio MCP). 자세한 것은 `Docs/STATUS.md`.
 
 ```bash
 cd Game
-..\build\msvc-headless\bin\game.exe run --headless --ticks 600 --json     # 결정론 실행 (finalHash 0xbc23e49a65efb2e8)
-..\build\msvc-headless\bin\game.exe set name:Goblin Movement.speed 4.5     # 모든 고블린 속도 (prefab 편집, undo 가능)
-..\build\msvc-headless\bin\game.exe test --json                            # Tests/**/*.test.json
-..\build\msvc-headless\bin\game.exe mcp                                    # MCP 서버 (stdio)
+..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json     # 결정론 실행 (finalHash 0xbc23e49a65efb2e8)
+..\build\msvc-headless\bin\akeir.exe set name:Goblin Movement.speed 4.5     # 모든 고블린 속도 (prefab 편집, undo 가능)
+..\build\msvc-headless\bin\akeir.exe test --json                            # Tests/**/*.test.json
+..\build\msvc-headless\bin\akeir.exe mcp                                    # MCP 서버 (stdio)
 ```

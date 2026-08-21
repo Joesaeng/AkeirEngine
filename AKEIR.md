@@ -1,4 +1,6 @@
-# MoltEngine (ME) 설계 문서 — AI-Native Game Framework
+# AKEIR Engine 설계 문서 — AI-Native Game Framework
+
+> **이름**: AKEIR ← 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는")을 읽기 쉽게 쓴 것. 표기 AKEIR, 발음 에이키어. 2026-08-22 개명(이전 가칭 MoltEngine — "사람의 손을 탈피한다"는 뜻은 그대로). 코드 접두어 `pme`(Project ME)는 유지.
 ## Unreal / Unity의 인간 중심 에디터를 우회하지 않고, AI가 직접 조작하는 게임 제작 환경
 
 > 상태: Architecture / PoC Design Draft **v2 (리서치 보강판, 검증 반영)** + ▶ v3 구현 주석 (§89 끝, Phase 3 까지)  
@@ -100,7 +102,7 @@ Scene / Actor / Component / Asset
 - §3 "라이브러리 선택은 후순위" → **ECS/substrate에 한해 틀렸다.** Renderer·Audio·Image 로더는 후순위가 맞지만, ECS/substrate 선택(Flecs vs EnTT, 혹은 C++ 런타임을 직접 만들지 않는 선택)이 §12–§19, §25, §26의 60–70%를 결정한다. §3.1에 spike로 명시했다.
 - §72 "Tool call 수가 적을수록 좋음"을 1순위 지표로 둔 것 → **측정 결과와 다르다.** 2026년 게임 제작 agent 벤치마크(GameCraft-Bench)에서 tool 사용량과 품질의 상관은 r≈0.016이고, 오히려 screenshot 검사 횟수가 디버깅 성과와 상관이 있으며, visual feedback 유무가 성공률을 41.1%→52.0%로 올렸다(GameDevBench). §72를 다시 썼다.
 
-마지막으로, 리서치가 드러낸 것은 "라이브러리"보다 **아직 주인이 없는 아키텍처 결정**이 PoC를 막는다는 점이다 — Command Bus의 프로세스/동시성 모델, authoring world와 play world의 관계, headless 테스트의 입력 주입, AI가 쓴 C++의 크래시 진단, `game build`의 설계. 이들은 §88에 모았다. **§74 Phase 1이 시작되기 전에 §88의 결정 대부분이 내려져야 한다.**
+마지막으로, 리서치가 드러낸 것은 "라이브러리"보다 **아직 주인이 없는 아키텍처 결정**이 PoC를 막는다는 점이다 — Command Bus의 프로세스/동시성 모델, authoring world와 play world의 관계, headless 테스트의 입력 주입, AI가 쓴 C++의 크래시 진단, `akeir build`의 설계. 이들은 §88에 모았다. **§74 Phase 1이 시작되기 전에 §88의 결정 대부분이 내려져야 한다.**
 
 ---
 
@@ -168,7 +170,7 @@ CommandResult SetProperty(
 그다음 이것을 CLI에서:
 
 ```bash
-game set entity_01j5xq… /components/Transform/position/0 300
+akeir set entity_01j5xq… /components/Transform/position/0 300
 ```
 
 으로 노출할 수 있고,
@@ -614,7 +616,7 @@ Cache/
   pretty on-disk 형식을 해시하지 않는다.
 ```
 
-`game fmt` 명령은 파일을 이 규약으로 재직렬화하고, `game validate`는 파일이 재직렬화 결과와 byte-identical하지 않으면 `JSON_NOT_CANONICAL`을 낸다 (fix = `game fmt`).
+`akeir fmt` 명령은 파일을 이 규약으로 재직렬화하고, `akeir validate`는 파일이 재직렬화 결과와 byte-identical하지 않으면 `JSON_NOT_CANONICAL`을 낸다 (fix = `akeir fmt`).
 
 ---
 
@@ -769,7 +771,7 @@ Persistent ID = <type>_<26-char Crockford base32 of a UUIDv7>        (TypeID v0.
 
 왜 UUIDv4/ULID가 아니라 TypeID(UUIDv7)인가: 시간순 정렬 가능(ULID와 같음), RFC 표준(UUIDv7), prefix로 타입이 읽힘(Stripe 스타일), 공개된 grammar가 있어 hallucinated ID를 **로컬에서 형식 검사로 거부**할 수 있다.
 
-**결정적 런타임에서의 ID 생성** (§22): play 중 runtime이 spawn한 entity에 UUIDv7(벽시계 기반)을 주면 두 run이 달라진다. runtime-spawned entity의 persistent id는 `(worldSeed, tick, 순번)`에서 파생한 결정적 UUID(version 8 custom)로 만들고, `game promote`(§88.2)로 authoring에 승격될 때만 UUIDv7로 다시 발급한다.
+**결정적 런타임에서의 ID 생성** (§22): play 중 runtime이 spawn한 entity에 UUIDv7(벽시계 기반)을 주면 두 run이 달라진다. runtime-spawned entity의 persistent id는 `(worldSeed, tick, 순번)`에서 파생한 결정적 UUID(version 8 custom)로 만들고, `akeir promote`(§88.2)로 authoring에 승격될 때만 UUIDv7로 다시 발급한다.
 
 ## 7.2 ▶ v2: ID의 위치 — 파일 안 vs sidecar
 
@@ -782,12 +784,12 @@ Persistent ID = <type>_<26-char Crockford base32 of a UUIDv7>        (TypeID v0.
 중복은 **파일을 셸 수준에서 복사할 때** 생긴다 — AI 에이전트가 가장 자주 하는 일이다. Godot 4.4는 "UID duplicate detected" 경고만 내고 자동 수정이 없다(issue #102490). Unity는 조용히 한쪽 GUID를 재발급해 참조를 끊는다. 둘 다 피한다.
 
 ```text
-1. game validate / 프로젝트 스캔은 DUPLICATE_PERSISTENT_ID 를 두 경로와 함께 보고한다.
+1. akeir validate / 프로젝트 스캔은 DUPLICATE_PERSISTENT_ID 를 두 경로와 함께 보고한다.
 2. 해결은 절대 조용히 하지 않는다. 고쳐지기 전까지 그 id의 resolve는 ERROR.
-3. game id fix --keep <path>
+3. akeir id fix --keep <path>
    기본 휴리스틱: reference graph(§19)에서 참조되는 쪽 / git history가 오래된 쪽의 id를 유지,
    다른 쪽에 새 UUIDv7 발급, ChangeSet으로 기록 (undo 가능)
-4. Command layer의 복사(game prefab clone, game asset copy, game entity duplicate)는 항상 새 id를 발급한다.
+4. Command layer의 복사(akeir prefab clone, akeir asset copy, akeir entity duplicate)는 항상 새 id를 발급한다.
    → Command를 통한 복사는 충돌하지 않는다.
 ```
 
@@ -883,7 +885,7 @@ Bevy는 0.17에서 method 이름을 `bevy/verb`에서 `world.verb_noun`으로 �
 
 **정식 command id는 §8의 짧은 `<noun>.<verb>` 이름**(`entity.create`, `component.add`, `property.set`, `prefab.create`, `asset.import` …)이다 — envelope의 `command`, batch의 `changes[].op`, ChangeSet의 `intent.op`, fix의 `commands[].op` 모두 이 id를 쓴다. BRP 스타일 이름(`world.spawn_entity` ≡ `entity.create`, `world.insert_components` ≡ `component.add`, `world.mutate_components` ≡ `property.set`, `world.despawn_entity` ≡ `entity.delete`, `world.reparent_entities` ≡ `entity.reparent`, `world.query` ≡ `query`)은 RPC가 **받아들이는 alias**다 — BRP를 본 agent에게 익숙하도록. BRP에 없는 command(prefab, asset, tx, history)는 alias가 없다.
 
-CLI는 `game query --with Health --without Collider`처럼 id의 noun/verb를 서브커맨드로 편다. **MCP tool은 command 1:1이 아니다** — §47의 tools[] 집합(`query`, `apply`, `tx` …)만 tool이고 개별 command는 `apply.changes[].op`로 노출된다; tool 이름은 `.`을 `_`로 바꾼다(`run.status` → `run_status`). bevy_brp_mcp의 1:1 매핑 방식과 다른 이유는 §47.
+CLI는 `akeir query --with Health --without Collider`처럼 id의 noun/verb를 서브커맨드로 편다. **MCP tool은 command 1:1이 아니다** — §47의 tools[] 집합(`query`, `apply`, `tx` …)만 tool이고 개별 command는 `apply.changes[].op`로 노출된다; tool 이름은 `.`을 `_`로 바꾼다(`run.status` → `run_status`). bevy_brp_mcp의 1:1 매핑 방식과 다른 이유는 §47.
 
 ## 8.2 ▶ v2: Command 적용 시점 — 프레임 안의 고정된 지점
 
@@ -940,23 +942,23 @@ Rollback
 CLI 예:
 
 ```bash
-game tx begin
+akeir tx begin
 # → { "ok": true, "result": { "tx": "tx_01j5…", "expiresAt": "…" } }
 
-game entity create --name Goblin --tx tx_01j5…
-game component add @last Collider --tx tx_01j5…
-game component add @last Health --tx tx_01j5…
-game set @last /components/Health/max 100 --tx tx_01j5…
-game prefab create @last --name Goblin --tx tx_01j5…
+akeir entity create --name Goblin --tx tx_01j5…
+akeir component add @last Collider --tx tx_01j5…
+akeir component add @last Health --tx tx_01j5…
+akeir set @last /components/Health/max 100 --tx tx_01j5…
+akeir prefab create @last --name Goblin --tx tx_01j5…
 
-game tx commit tx_01j5…
+akeir tx commit tx_01j5…
 ```
 
 (`GAME_TX` 환경변수로 `--tx`를 생략할 수 있다.)
 
 ## 9.1 ▶ v2: Transaction은 명시적 handle이다
 
-초안의 `game tx begin … game tx commit`은 별도의 CLI 호출에 걸쳐 있으므로 **상주 프로세스**(§88.1)와 **명시적 handle**을 전제한다. MCP 2026-07-28은 프로토콜 수준 세션을 제거했고, 상태가 필요한 서버에 "server-minted opaque handle을 일반 인자로 주고받으라"고 명시했다 (SEP-2567). 우리 `tx_…`가 정확히 그것이다.
+초안의 `akeir tx begin … akeir tx commit`은 별도의 CLI 호출에 걸쳐 있으므로 **상주 프로세스**(§88.1)와 **명시적 handle**을 전제한다. MCP 2026-07-28은 프로토콜 수준 세션을 제거했고, 상태가 필요한 서버에 "server-minted opaque handle을 일반 인자로 주고받으라"고 명시했다 (SEP-2567). 우리 `tx_…`가 정확히 그것이다.
 
 - `tx.begin`은 opaque handle과 TTL을 돌려준다. 모든 Mutation command는 `tx` 인자를 받는다.
 - 만료되거나 모르는 handle은 `TX_UNKNOWN_OR_EXPIRED` 오류(§13, `error.ruleId`)로 돌려주고, AI는 새 tx를 시작한다.
@@ -1011,9 +1013,9 @@ transaction rollback
 또는:
 
 ```bash
-game history
-game undo 3
-game redo 1
+akeir history
+akeir undo 3
+akeir redo 1
 ```
 
 AI가 자기 행동을 되돌릴 수 있다.
@@ -1049,7 +1051,7 @@ Redo(cs) = Apply(cs.ops)          // intent를 재실행하지 않는다. effect
 이 문서의 시나리오는 AI와 사람(Editor)이 **같은 프로젝트를 동시에** 건드린다. Loro의 `UndoManager`와 Figma의 원칙은 같다: undo는 **자기 변경만** 되돌린다.
 
 - 모든 ChangeSet에 `actor`(`ai:claude#42`, `human:editor`, `system:migrate`)를 태깅한다.
-- `game undo --actor ai:*`는 해당 actor의 최신 ChangeSet의 `touched` pointer가 이후 다른 actor의 ops와 겹치지 않을 때만 허용한다. 겹치면 `UNDO_CONFLICT` diagnostic(겹친 cs id 포함)을 돌려준다.
+- `akeir undo --actor ai:*`는 해당 actor의 최신 ChangeSet의 `touched` pointer가 이후 다른 actor의 ops와 겹치지 않을 때만 허용한다. 겹치면 `UNDO_CONFLICT` diagnostic(겹친 cs id 포함)을 돌려준다.
 - 일반적인 selective undo(commutation / rebase)는 **비목표**다. jiff 같은 라이브러리도 experimental로 표시한다.
 - Redo stack은 새 mutation이 commit되면 버린다(선형 history). Figma식 "undo modifies redo history"는 멀티유저 전용이라 도입하지 않는다.
 
@@ -1064,27 +1066,27 @@ GUI 없는 상태에서 프로젝트의 거의 모든 작업이 가능해야 한
 예:
 
 ```bash
-game project info
-game world list
-game entity list
+akeir project info
+akeir world list
+akeir entity list
 
-game entity create Enemy
-game entity delete entity_01j5xq…          # 또는 name:Enemy, path:Arena/Enemy, 고유 prefix
+akeir entity create Enemy
+akeir entity delete entity_01j5xq…          # 또는 name:Enemy, path:Arena/Enemy, 고유 prefix
 
-game component list entity_01j5xq…
-game component add entity_01j5xq… Health
-game component remove entity_01j5xq… Health
+akeir component list entity_01j5xq…
+akeir component add entity_01j5xq… Health
+akeir component remove entity_01j5xq… Health
 
-game get entity_01j5xq… /components/Transform/position
-game set entity_01j5xq… /components/Transform/position "[10,0,5]"
-game set name:Enemy Transform.position "[10,0,5]"    # dotted path는 입력 sugar. 출력은 항상 JSON Pointer
+akeir get entity_01j5xq… /components/Transform/position
+akeir set entity_01j5xq… /components/Transform/position "[10,0,5]"
+akeir set name:Enemy Transform.position "[10,0,5]"    # dotted path는 입력 sugar. 출력은 항상 JSON Pointer
 
-game prefab create entity_01j5xq… --name EnemyBasic
+akeir prefab create entity_01j5xq… --name EnemyBasic
 
-game validate
-game build
-game run
-game test
+akeir validate
+akeir build
+akeir run
+akeir test
 ```
 
 ▶ v2: Godot CLI에서 차용할 플래그 — `--fixed-fps <n>`(실시간 동기화 해제), `--time-scale`, `--quit-after <ticks>`, `--disable-render-loop`, `--benchmark-file <json>`, `--log-file`, `--check-only`(파싱/검증만). 그리고 Godot이 **못 하는** 것을 계약으로 둔다: **모든 Command와 모든 Editor-facing API는 `--headless`에서 동일하게 동작한다. "Editor 전용" 함수 분류를 만들지 않는다.** Godot은 `EditorScript`/`EditorInterface`가 `--headless --script`에서 안 돌고, `--headless --editor` + tool script로 우회해야 하며 "editor ready" 신호가 없어(proposal #14502, 2026-03) headless 자동화가 취약하다. 이 문서에서 Command layer가 유일한 editor-facing API인 이유다.
@@ -1096,7 +1098,7 @@ game test
 사람용:
 
 ```bash
-game entity create Enemy
+akeir entity create Enemy
 ```
 
 ```text
@@ -1109,7 +1111,7 @@ Name: Enemy
 AI용:
 
 ```bash
-game entity create Enemy --json
+akeir entity create Enemy --json
 ```
 
 ▶ v2: 초안의 예시를 **규범적 envelope**로 교체한다. 이 하나의 구조가 `--json` 출력이자 MCP `structuredContent`이며, `schema/envelope.schema.json`(`$id`: `game://schema/envelope/1`, JSON Schema 2020-12)으로 공개되어 모든 tool의 `outputSchema`가 이를 참조한다. **CLI와 MCP가 같은 schema로 검증되는 것**이 §48 동등성을 기계적으로 검사할 수 있는 유일한 방법이다.
@@ -1156,7 +1158,7 @@ Claude Code는 MCP tool 출력을 기본 **25,000 토큰**에서 자르고 10,00
 
 - 기본 `--limit 50`, `--fields` 투영, `inspect --response-format concise|detailed` (concise 기본, ≈ 1/3 토큰)
 - 긴 문자열은 `…`로 자르고 `meta.truncated`
-- world 전체 dump는 기본 금지. `game dump world`는 `--all` 또는 파일로 쓰고 경로만 돌려준다
+- world 전체 dump는 기본 금지. `akeir dump world`는 `--all` 또는 파일로 쓰고 경로만 돌려준다
 - screenshot은 CLI에서는 파일 경로로 (MCP는 image content를 돌려줄 수 있으나 토큰 상한은 같다)
 - 목표: 보통 명령 출력 < 2K 토큰, 상한 25K 훨씬 아래
 
@@ -1193,7 +1195,7 @@ Error occurred.
         "applicability": "MachineApplicable",
         "isPreferred": true,
         "commands": [ { "op": "component.add", "args": { "entity": "entity_01j5xq…", "component": "Transform" } } ],
-        "cli": "game component add entity_01j5xq… Transform --json"
+        "cli": "akeir component add entity_01j5xq… Transform --json"
       }
     ],
     "fingerprint": "sha256:3c1f…",
@@ -1207,7 +1209,7 @@ AI가 오류를 읽고 바로 고칠 수 있다.
 
 규칙:
 
-- **`error`는 §79 `Diagnostic`에 `category` / `retryable` / `details`를 더한 것이다.** 필드명은 §79와 같다 (`ruleId`, `level`, `message.text`, `logical`, `physical`, `fixes`, `fingerprint`, `helpUri`). `ruleId`는 안정적인 SCREAMING_SNAKE 식별자이며 reflection/diagnostic 시스템이 생성하는 **registry**에서 나온다 (`game rules --json`으로 조회).
+- **`error`는 §79 `Diagnostic`에 `category` / `retryable` / `details`를 더한 것이다.** 필드명은 §79와 같다 (`ruleId`, `level`, `message.text`, `logical`, `physical`, `fixes`, `fingerprint`, `helpUri`). `ruleId`는 안정적인 SCREAMING_SNAKE 식별자이며 reflection/diagnostic 시스템이 생성하는 **registry**에서 나온다 (`akeir rules --json`으로 조회).
 - `category` ∈ `usage | validation | not_found | conflict | precondition | crash | timeout | internal | cancelled`.
 - `message.text`는 agent에게 **고치는 법**을 말한다. 내부 정보는 `details`로 (RFC 9457의 `detail` 지침).
 - `fixes[]`는 항상 Command 형태와 CLI 형태를 함께 준다. `applicability`는 rustc JSON 진단의 4단계(§79)를 따른다 — agent는 `MachineApplicable`만 자동 적용한다.
@@ -1216,13 +1218,13 @@ AI가 오류를 읽고 바로 고칠 수 있다.
 
 **MCP 매핑** — 가장 중요한 규칙: 도메인 오류는 JSON-RPC error가 아니라 **`isError: true`인 tool result**로 돌려준다. 규격 원문: "Otherwise, the LLM would not be able to see that an error occurred and self-correct." 같은 envelope이 `structuredContent`와 `content[0].text`에 들어간다. JSON-RPC error는 모르는 tool / malformed params에만 쓴다.
 
-**Exit code** (작고 고정된 표, `game capabilities`에 포함):
+**Exit code** (작고 고정된 표, `akeir capabilities`에 포함):
 
 ```text
 0   ok
 1   command failed (도메인 오류, envelope은 stdout)
 2   usage / argument error (stderr)
-3   validation/test failed with findings (game validate, game test)
+3   validation/test failed with findings (akeir validate, akeir test)
 4   confirmation required (파괴적 작업을 --yes 없이 호출. error.details.confirmCommand에 재실행 명령)
 5   not found (모르는 id / handle)
 6   crash (minidump 경로 포함, §88.4)
@@ -1238,7 +1240,7 @@ exit code는 보조 신호다. envelope은 항상 `error.ruleId`를 들고 있�
 
 모든 component는 schema를 제공한다.
 
-▶ v2: 초안의 schema는 비표준 어휘(`"type": "float"`, `"min"`, `"runtimeOnly"`)였다. MCP 2026-07-28은 tool `inputSchema`/`outputSchema`를 **JSON Schema 2020-12**로 정의한다(`$schema` 없으면 2020-12, SEP-2106으로 전체 어휘 허용). glaze와 reflect-cpp도 2020-12 키워드를 낸다. 같은 문서를 §14(component schema) · §15(`game help --json`) · §44(`game describe`) · §46(MCP tools/list) · Inspector UI 생성 · `game validate`에 **그대로** 쓰려면 표준 어휘여야 한다. 엔진 전용 메타데이터는 `x-` 접두어로 분리한다.
+▶ v2: 초안의 schema는 비표준 어휘(`"type": "float"`, `"min"`, `"runtimeOnly"`)였다. MCP 2026-07-28은 tool `inputSchema`/`outputSchema`를 **JSON Schema 2020-12**로 정의한다(`$schema` 없으면 2020-12, SEP-2106으로 전체 어휘 허용). glaze와 reflect-cpp도 2020-12 키워드를 낸다. 같은 문서를 §14(component schema) · §15(`akeir help --json`) · §44(`akeir describe`) · §46(MCP tools/list) · Inspector UI 생성 · `akeir validate`에 **그대로** 쓰려면 표준 어휘여야 한다. 엔진 전용 메타데이터는 `x-` 접두어로 분리한다.
 
 ```json
 {
@@ -1264,7 +1266,7 @@ exit code는 보조 신호다. envelope은 항상 `error.ruleId`를 들고 있�
 그러면 AI는 다음을 query할 수 있다.
 
 ```bash
-game schema component Health
+akeir schema component Health
 ```
 
 검증기: jsoncons(BSL-1.0, draft 4 ~ 2020-12, JSON Pointer/Patch/JSONPath 동봉). valijson·pboettch는 draft-07까지라 부적합, blaze는 AGPL-3.0. 2020-12에서 `format`은 기본적으로 annotation이다 — `require_format_validation`을 켜거나 의존하지 않는다.
@@ -1298,10 +1300,10 @@ registry.wire_format <type>   — 실제 명령 인자로 보내야 하는 JSON�
 AI가 documentation을 전부 읽을 필요가 없어야 한다.
 
 ```bash
-game capabilities
+akeir capabilities
 ```
 
-▶ v2: 초안은 command 이름 목록만 돌려줬다. Bevy의 `rpc.discover`가 정확히 그렇게(이름만, params는 빈 배열 — PR #18068) 구현되어 있고, agent에게 불충분하다고 문서화되어 있다. **이름 목록은 capability discovery가 아니다.** `game capabilities --json`은 **완전한 tool descriptor**를 내고, MCP adapter의 `tools/list`는 이것의 pass-through다.
+▶ v2: 초안은 command 이름 목록만 돌려줬다. Bevy의 `rpc.discover`가 정확히 그렇게(이름만, params는 빈 배열 — PR #18068) 구현되어 있고, agent에게 불충분하다고 문서화되어 있다. **이름 목록은 capability discovery가 아니다.** `akeir capabilities --json`은 **완전한 tool descriptor**를 내고, MCP adapter의 `tools/list`는 이것의 pass-through다.
 
 ```json
 {
@@ -1320,7 +1322,7 @@ game capabilities
                           "additionalProperties": false },
         "outputSchema": { "$ref": "game://schema/envelope/1#/$defs/QueryResult" },
         "annotations": { "readOnlyHint": true, "destructiveHint": false, "idempotentHint": true, "openWorldHint": false },
-        "cli": "game query [--with T…] [--without T…] [--expr E]",
+        "cli": "akeir query [--with T…] [--without T…] [--expr E]",
         "exitCodes": [0, 1, 2]
       }
     ],
@@ -1333,7 +1335,7 @@ game capabilities
                                                             "tx": {"type":"string","pattern":"^tx_[0-7][0-9a-hjkmnp-tv-z]{25}$"} },
                           "required": ["name"], "additionalProperties": false },
         "resultSchema": { "$ref": "game://schema/envelope/1#/$defs/EntityCreateResult" },
-        "cli": "game entity create <name> [--world ID] [--tx ID]"
+        "cli": "akeir entity create <name> [--world ID] [--tx ID]"
       }
     ],
     "exitCodes": { "0": "ok", "1": "…" },
@@ -1344,16 +1346,16 @@ game capabilities
 
 규칙:
 
-- **두 층**이다: `tools[]`는 MCP에 노출되는 15개 tool(§47), `commands[]`는 전체 Command 목록(`apply.changes[].op`의 `oneOf`이자 `game://schema/commands` resource). MCP `tools/list`는 `tools[]`의 기계적 pass-through다. Bevy의 `rpc.discover`와 달리 **params/result schema를 전부 채운다.** (OpenRPC 1.3.2 문서는 `commands[]`에서 생성해 `game capabilities --format openrpc`로 낼 수 있다.)
+- **두 층**이다: `tools[]`는 MCP에 노출되는 15개 tool(§47), `commands[]`는 전체 Command 목록(`apply.changes[].op`의 `oneOf`이자 `game://schema/commands` resource). MCP `tools/list`는 `tools[]`의 기계적 pass-through다. Bevy의 `rpc.discover`와 달리 **params/result schema를 전부 채운다.** (OpenRPC 1.3.2 문서는 `commands[]`에서 생성해 `akeir capabilities --format openrpc`로 낼 수 있다.)
 - 결정적 순서 (MCP SHOULD; prompt cache hit rate).
 - `inputSchema`에 `additionalProperties: false`. component 타입, property path, enum 값은 reflection에서 생성한 `enum` / `pattern`으로 넣어 잘못된 호출을 **호출 전에** 막는다 (Arcjet: hallucinated id를 로컬에서 거부).
 - `annotations`는 MCP 2026-07-28 `ToolAnnotations`(기본값 readOnly=false, destructive=true, idempotent=false, openWorld=true; 클라이언트는 untrusted로 취급). 우리 규칙: get/query/dump/explain/refs/schema/validate/capture → `readOnlyHint:true`; create/add/set → `destructiveHint:false`; delete/asset.delete/checkpoint.restore → `destructiveHint:true`; `property.set`/idempotencyKey 있는 `apply` → `idempotentHint:true`; 전부 `openWorldHint:false`.
-- **tool 집합은 프로세스 수명 동안 고정이다.** MCP 2026-07-28: tools/list는 "다른 요청의 부작용으로 바뀌면 안 된다". 프로젝트별 어휘(component 타입, enum)는 tool 정의를 재생성하는 게 아니라 `game schema` / `schema` resource와 inputSchema의 enum으로 노출한다.
+- **tool 집합은 프로세스 수명 동안 고정이다.** MCP 2026-07-28: tools/list는 "다른 요청의 부작용으로 바뀌면 안 된다". 프로젝트별 어휘(component 타입, enum)는 tool 정의를 재생성하는 게 아니라 `akeir schema` / `schema` resource와 inputSchema의 enum으로 노출한다.
 
 그리고:
 
 ```bash
-game help world.spawn_entity --json
+akeir help world.spawn_entity --json
 ```
 
 으로 세부 schema를 얻는다.
@@ -1369,11 +1371,11 @@ AI가 Hierarchy를 뒤질 필요가 없어야 한다.
 예:
 
 ```bash
-game query --with Health
+akeir query --with Health
 ```
 
 ```bash
-game query \
+akeir query \
     --with EnemyAI \
     --without Collider
 ```
@@ -1396,11 +1398,11 @@ game query \
 **Flecs를 채택하면**(§3.1) 위 구조에 선택적 `expr` 필드를 더해 Flecs Query Language 문자열을 그대로 받는다. 이미 runtime에 파싱되고 REST로 노출되는 언어다.
 
 ```bash
-game query --expr "EnemyAI, !Collider"
-game query --expr "Enemy, ?Collider, (ChildOf, Encounter_05)"
-game query --expr "Health, \$this ~= \"Goblin\""
-game query --expr "Position(up ChildOf), Sprite"
-game query --expr "EnemyAI, !Collider" --explain      # query plan JSON
+akeir query --expr "EnemyAI, !Collider"
+akeir query --expr "Enemy, ?Collider, (ChildOf, Encounter_05)"
+akeir query --expr "Health, \$this ~= \"Goblin\""
+akeir query --expr "Position(up ChildOf), Sprite"
+akeir query --expr "EnemyAI, !Collider" --explain      # query plan JSON
 ```
 
 (AND `,` / NOT `!` / OR `||` / optional `?` / pair `(R, T)` / wildcard `*` `_` / traversal `up` `cascade` / 변수 `$var` join / 이름 매칭 `~=`.)
@@ -1424,7 +1426,7 @@ game query --expr "EnemyAI, !Collider" --explain      # query plan JSON
 }
 ```
 
-snapshot 안에서의 **선택**(assertion이 아님)에는 JSONPath를 쓴다 (§26.1): `game inspect snapshot:813 --jsonpath '$.entities[?(@.components.EnemyAI.state=="Chasing")].id'`. 목표 문법은 RFC 9535이고 구현 후보 jsoncons는 Goessner 방언을 표방하므로 Phase 5에서 compliance suite로 확인한다.
+snapshot 안에서의 **선택**(assertion이 아님)에는 JSONPath를 쓴다 (§26.1): `akeir inspect snapshot:813 --jsonpath '$.entities[?(@.components.EnemyAI.state=="Chasing")].id'`. 목표 문법은 RFC 9535이고 구현 후보 jsoncons는 Goessner 방언을 표방하므로 Phase 5에서 compliance suite로 확인한다.
 
 ---
 
@@ -1435,7 +1437,7 @@ snapshot 안에서의 **선택**(assertion이 아님)에는 JSONPath를 쓴다 (
 하지만 장기적으로는:
 
 ```bash
-game query "enemies without collision"
+akeir query "enemies without collision"
 ```
 
 같은 자연어를 내부 deterministic query로 변환할 수 있다.
@@ -1459,7 +1461,7 @@ Query Engine
 각 오브젝트의 존재 이유와 관계를 쉽게 볼 수 있어야 한다.
 
 ```bash
-game explain entity_01j5xqd6…
+akeir explain entity_01j5xqd6…
 ```
 
 출력:
@@ -1489,7 +1491,7 @@ References:
 
 AI가 Context를 얻기 굉장히 쉬워진다.
 
-▶ v2: GameEngineBench(2026-07, 실제 UE5 C++ 프로젝트 9개에서 agent 평가)에서 **모든 모델이 못 푼 31개 과제**는 authority(어느 머신에서 실행되는가), replication, object lifecycle(초기화/정리 순서), subsystem 등록 시점에 집중됐다. "컴파일되는 코드라도 잘못된 머신에서 실행되거나, 로컬 상태만 갱신하거나, 정리가 너무 늦거나, 다른 시스템이 기대하기 전에 component를 등록하지 않으면 실패한다." 따라서 `game explain`과 `game describe component X`는 requires/provides뿐 아니라 다음을 machine-readable로 노출한다.
+▶ v2: GameEngineBench(2026-07, 실제 UE5 C++ 프로젝트 9개에서 agent 평가)에서 **모든 모델이 못 푼 31개 과제**는 authority(어느 머신에서 실행되는가), replication, object lifecycle(초기화/정리 순서), subsystem 등록 시점에 집중됐다. "컴파일되는 코드라도 잘못된 머신에서 실행되거나, 로컬 상태만 갱신하거나, 정리가 너무 늦거나, 다른 시스템이 기대하기 전에 component를 등록하지 않으면 실패한다." 따라서 `akeir explain`과 `akeir describe component X`는 requires/provides뿐 아니라 다음을 machine-readable로 노출한다.
 
 ```text
 Lifecycle:
@@ -1503,7 +1505,7 @@ Depends on systems:
   PhysicsSystem (must be initialized first)
 ```
 
-Flecs를 채택하면 `game explain`은 `GET /entity/<path>?values=true&inherited=true&refs=*&matches=true&doc=true&type_info=true`(`ecs_entity_to_json`의 serialize_inherited / serialize_refs / serialize_matches / serialize_doc 옵션)의 얇은 포매터다. 남는 일은 텍스트 포맷과 asset-as-entity 규약(§19)뿐이다.
+Flecs를 채택하면 `akeir explain`은 `GET /entity/<path>?values=true&inherited=true&refs=*&matches=true&doc=true&type_info=true`(`ecs_entity_to_json`의 serialize_inherited / serialize_refs / serialize_matches / serialize_doc 옵션)의 얇은 포매터다. 남는 일은 텍스트 포맷과 asset-as-entity 규약(§19)뿐이다.
 
 ---
 
@@ -1526,7 +1528,7 @@ Texture
 다음 명령이 가능해진다.
 
 ```bash
-game refs asset_01j5xq9a…
+akeir refs asset_01j5xq9a…
 ```
 
 ```text
@@ -1540,7 +1542,7 @@ world_01j5xqb2… (TestArena)      /entities/entity_01j5…/set/~1components~1Sp
 삭제 전에:
 
 ```bash
-game asset delete asset_01j5xq9a…
+akeir asset delete asset_01j5xq9a…
 ```
 
 하면:
@@ -1554,7 +1556,7 @@ AI가 asset dependency를 안정적으로 처리할 수 있다.
 
 ▶ v2:
 
-- **Reference graph는 authoring JSON 문서에서 빌드한다** (파일 안의 모든 `*_01j…` 형태 값 + schema의 `x-ref` 표시). runtime world와 무관하게 `game refs`가 headless에서 동작해야 한다.
+- **Reference graph는 authoring JSON 문서에서 빌드한다** (파일 안의 모든 `*_01j…` 형태 값 + schema의 `x-ref` 표시). runtime world와 무관하게 `akeir refs`가 headless에서 동작해야 한다.
 - Flecs를 채택하면 runtime 측에서는 asset을 entity로 모델링하고(`asset_01j…` = scope `assets.texture` 아래 entity), 참조를 relationship pair(`(Uses, assets.texture.goblin)`)로 두어 `serialize_refs`, `OnDeleteTarget` trait(Remove | Delete | Panic), `Acyclic` trait(순환 금지)을 그대로 쓸 수 있다. 그러나 이는 authoring 그래프의 **검증용 미러**이지 source가 아니다.
 - **Sub-asset 주소** (§88.7): glTF 하나에 mesh/material/animation이 여럿 들어 있다. 참조는 `asset_01j…#<kind>/<name>`(예 `#meshes/Body`, `#animations/Run`, `#sprites/goblin_idle`)이고, sidecar(§37)가 sub-asset의 **안정적 이름 목록**을 가진다. 재import 시 index가 아니라 이름으로 매칭한다 (index·생성 순서에 묶인 sub-asset 참조는 재import 시 깨질 수 있다는 것이 근거 — 리서치에서 특정 버그를 직접 확인한 것은 아님).
 - 삭제 guard는 `--force`가 있어도 **조용히 참조를 끊지 않는다.** `asset.delete --force`는 끊긴 참조마다 `REF_DANGLING` diagnostic을 ChangeSet과 함께 돌려준다.
@@ -1566,7 +1568,7 @@ AI가 asset dependency를 안정적으로 처리할 수 있다.
 이 시스템에서 가장 중요한 기능 중 하나.
 
 ```bash
-game run --headless
+akeir run --headless
 ```
 
 이 실행되어야 한다.
@@ -1605,7 +1607,7 @@ Bevy의 대응물: `--no-render` ≈ `MinimalPlugins` + `ScheduleRunnerPlugin`, 
 ## 20.1 ▶ v2: Headless 루프는 accumulator가 없다
 
 ```bash
-game run --world TestArena --headless \
+akeir run --world TestArena --headless \
     --seed 381251 \
     --ticks 3600          # --frames 는 --ticks 의 alias. render frame이 아니라 simulation tick
     --tick-rate 60 \
@@ -1660,7 +1662,7 @@ Fail
 테스트에서는 seed를 명시할 수 있어야 한다.
 
 ```bash
-game run \
+akeir run \
     --world TestArena \
     --seed 381251 \
     --frames 3600 \
@@ -1756,9 +1758,9 @@ run.replay/
 ```
 
 ```bash
-game replay record --out run.replay …     # == run + 기록
-game replay play   run.replay --headless  # 입력만 재생
-game replay verify run.replay --json      # 재생하며 hashes.jsonl과 비교, 첫 divergent tick 보고
+akeir replay record --out run.replay …     # == run + 기록
+akeir replay play   run.replay --headless  # 입력만 재생
+akeir replay verify run.replay --json      # 재생하며 hashes.jsonl과 비교, 첫 divergent tick 보고
 ```
 
 규칙: play 중 AI/CLI가 보낸 Command도 tick 번호가 붙어 `inputs.jsonl`에 들어간다 (§8 Command = 입력). header의 `engineGitHash`/`fpFlagsHash`가 다르면 `verify`는 T0 보장 불가를 경고한다. GameCraft-Bench가 제출물로 요구하는 "재생 가능한 입력 trace(JSON)"와 같은 artifact이므로 테스트·벤치마크·judge 검토에 같은 파일을 쓴다 (§72).
@@ -1809,7 +1811,7 @@ game replay verify run.replay --json      # 재생하며 hashes.jsonl과 비교,
 실행:
 
 ```bash
-game test GoblinBasicCombat
+akeir test GoblinBasicCombat
 ```
 
 ## 23.1 ▶ v2: Assertion 의미론
@@ -1838,7 +1840,7 @@ Phase 5:  고정 비교 문법 (언어가 아니다)
 
 근거: 2026-06 연구(arXiv 2606.16827)에서 LLM의 pass@1은 high-resource 언어 59–89%, Lua급 low-resource 27–84%, **새로 만든 "no-resource" 언어 0–1%** 다. 자체 DSL은 AI가 가장 못 쓰는 것이다. 위 고정 문법은 "언어"가 아니라 비교기이며, 그 이상은 기성 언어에 올린다.
 
-**입력** (`inputs`): action map은 `Config/input.json`에 schema로 정의한다 (§88.3). `hold / press / release / axis`를 tick 기준으로 기술하고, 실행 시 §22.3 replay의 `inputs.jsonl`로 변환된다. 따라서 **`game replay record`로 사람이 플레이한 세션을 그대로 테스트 fixture로 저장**할 수 있다.
+**입력** (`inputs`): action map은 `Config/input.json`에 schema로 정의한다 (§88.3). `hold / press / release / axis`를 tick 기준으로 기술하고, 실행 시 §22.3 replay의 `inputs.jsonl`로 변환된다. 따라서 **`akeir replay record`로 사람이 플레이한 세션을 그대로 테스트 fixture로 저장**할 수 있다.
 
 **이벤트** (`events`): Bevy `bevy_ci_testing`(`CI_TESTING_CONFIG` ron, frame-indexed `AppExit`/`Screenshot`/`NamedEvent`)에서 차용. `GAME_TEST_CONFIG=<file>` 환경변수로 같은 바이너리가 플래그 없이 CI에서 돈다.
 
@@ -1895,14 +1897,14 @@ Phase 5:  고정 비교 문법 (언어가 아니다)
 
 AI는 snapshot을 읽고 원인을 분석할 수 있다. 결정성 실패는 "hash가 다르다"가 아니라 **"몇 tick, 어느 entity의 어느 property가 어떻게 다른가"** 를 준다.
 
-`game test --junit results.xml`: testsuite = 디렉터리, testcase{classname=`Tests.Combat`, name, file, time}, `<failure message="goblin-dies @ tick 813">`에 bindings, artifact마다 `<system-out>[[ATTACHMENT|Tests/.results/…/tick_0813.png]]</system-out>`. Exit code는 §13 표를 따른다 (0 pass / 3 failures). gdUnit4의 0/100/101 관례처럼 CI가 분기할 수 있게.
+`akeir test --junit results.xml`: testsuite = 디렉터리, testcase{classname=`Tests.Combat`, name, file, time}, `<failure message="goblin-dies @ tick 813">`에 bindings, artifact마다 `<system-out>[[ATTACHMENT|Tests/.results/…/tick_0813.png]]</system-out>`. Exit code는 §13 표를 따른다 (0 pass / 3 failures). gdUnit4의 0/100/101 관례처럼 CI가 분기할 수 있게.
 
 ---
 
 # 25. State Dump
 
 ```bash
-game dump entity_01j5xqd6…
+akeir dump entity_01j5xqd6…
 ```
 
 ```json
@@ -1932,7 +1934,7 @@ game dump entity_01j5xqd6…
 특정 tick 상태를 저장한다.
 
 ```bash
-game snapshot --tick 813
+akeir snapshot --tick 813
 ```
 
 (▶ v2: `snapshot:N`의 N은 tick이다. `--frame`은 `--tick`의 alias.)
@@ -1940,7 +1942,7 @@ game snapshot --tick 813
 이 snapshot으로:
 
 ```bash
-game inspect snapshot:813 entity_01j5xqd6…
+akeir inspect snapshot:813 entity_01j5xqd6…
 ```
 
 할 수 있다.
@@ -1974,10 +1976,10 @@ AI가 “그 순간 무슨 일이 있었는가”를 분석하기 쉬워진다.
 
 규칙:
 1. float는 JSON에서 shortest-round-trip 문자열, hash에는 bit pattern.
-2. 모든 배열은 persistentId 순 정렬 → 두 snapshot을 `game snapshot diff a b`(RFC 6902 출력, §51 기계 재사용)로 비교 가능.
+2. 모든 배열은 persistentId 순 정렬 → 두 snapshot을 `akeir snapshot diff a b`(RFC 6902 출력, §51 기계 재사용)로 비교 가능.
 3. Box2D는 SaveState가 없으므로 snapshot에서의 “복원”은 **world 재생성**(body를 같은 순서로 재생성)으로 정의한다. Jolt를 쓰면 `PhysicsSystem::SaveState` blob을 `physics.blob`으로 추가한다.
-4. Flecs를 채택하면 `game snapshot` = `ecs_world_to_json`, `game inspect snapshot:N` = scratch world에 `ecs_world_from_json` 로드 후 같은 serializer. **주의**: Flecs v4는 snapshot addon을 제거했고 `ecs_entity_from_json`은 현재 `ids`와 `values`만 복원한다. inherited 값, DontFragment component, pair with data, doc/uuid 메타데이터의 round-trip fidelity를 **Phase 1 테스트로 확인**한다.
-5. 선택(query)은 JSONPath: `game inspect snapshot:813 --jsonpath '$.entities[?(@.components.EnemyAI.state=="Chasing")].id'`. 목표 문법은 RFC 9535; 구현 후보 jsoncons는 Goessner 방언이므로 Phase 5에서 jsonpath-compliance-test-suite로 확인하고 미달이면 지원 부분집합을 명시한다. assertion은 §23.1의 문법.
+4. Flecs를 채택하면 `akeir snapshot` = `ecs_world_to_json`, `akeir inspect snapshot:N` = scratch world에 `ecs_world_from_json` 로드 후 같은 serializer. **주의**: Flecs v4는 snapshot addon을 제거했고 `ecs_entity_from_json`은 현재 `ids`와 `values`만 복원한다. inherited 값, DontFragment component, pair with data, doc/uuid 메타데이터의 round-trip fidelity를 **Phase 1 테스트로 확인**한다.
+5. 선택(query)은 JSONPath: `akeir inspect snapshot:813 --jsonpath '$.entities[?(@.components.EnemyAI.state=="Chasing")].id'`. 목표 문법은 RFC 9535; 구현 후보 jsoncons는 Goessner 방언이므로 Phase 5에서 jsonpath-compliance-test-suite로 확인하고 미달이면 지원 부분집합을 명시한다. assertion은 §23.1의 문법.
 6. **세 가지 직렬화 소비자**(§88.8에 정의): authoring / snapshot / save. reflection 기반 serializer 하나에 `PropFlags` 기반 visibility mask 셋이다.
 
 ---
@@ -1987,13 +1989,13 @@ AI가 “그 순간 무슨 일이 있었는가”를 분석하기 쉬워진다.
 AI에게 게임의 시각 결과도 제공해야 한다.
 
 ```bash
-game capture frame.png
+akeir capture frame.png
 ```
 
 또는:
 
 ```bash
-game capture \
+akeir capture \
     --camera Gameplay \
     --width 1024 \
     --height 1024
@@ -2010,7 +2012,7 @@ game capture \
 
 루프를 만들 수 있다.
 
-▶ v2: 이 루프는 부가 기능이 아니라 **성공률을 좌우하는 1급 기능**이다. GameDevBench(ICML 2026)에서 visual feedback만으로 GPT-5.4의 성공률이 41.1% → 52.0%, GameCraft-Bench에서 screenshot 검사 횟수가 많은 agent가 디버깅 성과가 좋았고(tool call 총량과 품질의 상관은 r≈0.016), Play2Code(코딩 agent + 플레이하는 GUI agent)는 agentic coding 단독 대비 +14.6p. `game capture`와 `game test`의 snapshot은 **Phase 5**에 들어간다.
+▶ v2: 이 루프는 부가 기능이 아니라 **성공률을 좌우하는 1급 기능**이다. GameDevBench(ICML 2026)에서 visual feedback만으로 GPT-5.4의 성공률이 41.1% → 52.0%, GameCraft-Bench에서 screenshot 검사 횟수가 많은 agent가 디버깅 성과가 좋았고(tool call 총량과 품질의 상관은 r≈0.016), Play2Code(코딩 agent + 플레이하는 GUI agent)는 agentic coding 단독 대비 +14.6p. `akeir capture`와 `akeir test`의 snapshot은 **Phase 5**에 들어간다.
 
 ## 27.1 ▶ v2: Vision 검사용 capture vs Golden-image 회귀 테스트
 
@@ -2027,7 +2029,7 @@ Tests/Golden/<test>/<platform>_<backend>_<WxH>.png     (Unreal 식 Platform_RHI_
 비교 알고리즘 = pixelmatch 식 perceptual per-pixel threshold(기본 0.1) + AA-pixel 제외 + mismatch ratio
                (+ 선택: Unity ImageAssert 식 average-error 상한)
 출력 artifact: expected.png, actual.png, diff.png, { mismatchedPixels, ratio, maxLocalRatio }
-CLI: game capture --compare golden.png --json
+CLI: akeir capture --compare golden.png --json
 ```
 
 결정성 규칙: 고정 해상도, TAA/temporal effect 없음, MSAA 없음 또는 고정 sample 수, 파티클 RNG는 seeded, capture 전 pre-roll tick(Bevy headless_renderer는 40), 그리고 **CI에서는 software rasterizer** — Vulkan은 SwiftShader/lavapipe, Windows D3D12는 WARP(Windows 10 1709+ 내장, `IDXGIFactory4::EnumWarpAdapter`로 선택; 최신 WARP는 NuGet `Microsoft.Direct3D.WARP`로 테스트 가능, 재배포 불가) — 단 SDL_GPU에서의 선택 경로는 §20 참조. 골든은 같은 rasterizer로 생성하며 개발자 GPU로 만들지 않는다. Unreal이 기본 tolerance를 Low로 둔 이유가 "TAA 때문에 모든 픽셀이 매번 조금씩 다르다"는 것이다.
@@ -2062,7 +2064,7 @@ CLI: game capture --compare golden.png --json
 
 라이브러리: Quill v12의 `JsonFileSink`는 named args를 JSON key로 네이티브 출력하지만 기본 키 이름(`timestamp`/`log_level`/`message`…)이 OTel 이름과 다르므로 `JsonFileSink`를 상속해 `generate_json_message()`를 override한다. spdlog는 JSON sink가 없고 `set_pattern`의 `%v`가 escape되지 않으므로 쓰려면 custom formatter로 JSON을 직접 만들어야 한다.
 
-`game log query --event nav.* --entity entity_01j5xqd6… --tick 800..820` 으로 JSONL을 질의한다. **MCP Logging(`notifications/message`)에는 싣지 않는다** — 2026-07-28에서 deprecated (§1).
+`akeir log query --event nav.* --entity entity_01j5xqd6… --tick 800..820` 으로 JSONL을 질의한다. **MCP Logging(`notifications/message`)에는 싣지 않는다** — 2026-07-28에서 deprecated (§1).
 
 단순 문자열:
 
@@ -2079,7 +2081,7 @@ LogTemp: Warning...
 게임 실행 전 데이터만으로 찾을 수 있는 문제는 미리 잡는다.
 
 ```bash
-game validate
+akeir validate
 ```
 
 검사 예:
@@ -2111,10 +2113,10 @@ INFO    3
 AI용:
 
 ```bash
-game validate --json
+akeir validate --json
 ```
 
-▶ v2: `game validate`와 `game lint`(§62)는 **SARIF 2.1.0의 rule/result 분리**를 따르는 rule registry다.
+▶ v2: `akeir validate`와 `akeir lint`(§62)는 **SARIF 2.1.0의 rule/result 분리**를 따르는 rule registry다.
 
 ```json
 { "id": "REF_DANGLING", "name": "DanglingReference",
@@ -2124,19 +2126,19 @@ game validate --json
   "fixable": "MachineApplicable" }
 ```
 
-- `game rules --json`으로 규칙 목록을 조회한다 (§15 discovery와 같은 원리).
+- `akeir rules --json`으로 규칙 목록을 조회한다 (§15 discovery와 같은 원리).
 - 출력은 §12 envelope이다. error가 없으면 `ok:true`, `result: { diagnostics: [ …§79 Diagnostic… ], summary: { error:0, warning:5, note:3 } }`; error가 하나라도 있으면 `ok:false`, `error: { ruleId: "VALIDATION_FAILED", category: "validation", details: { summary, diagnostics: [ … ] } }`. 사람용 출력의 INFO는 NOTE로 쓴다(§79 Severity).
 - `--format sarif`는 진짜 SARIF 2.1.0을 낸다 → GitHub code scanning / VS Code SARIF viewer가 공짜로 붙는다.
-- `game validate --fix`는 `MachineApplicable` fix만 **하나의 Transaction 안에서** 적용하고 재검증, 새 오류가 생기면 rollback. (ESLint `--fix`처럼 자동 적용 가능한 fix만 적용한다는 점만 같다 — ESLint는 rollback하지 않는다.) `--fix=maybe`로 `MaybeIncorrect`까지. 내부적으로는 `apply`(Mutation)로 dispatch된다.
+- `akeir validate --fix`는 `MachineApplicable` fix만 **하나의 Transaction 안에서** 적용하고 재검증, 새 오류가 생기면 rollback. (ESLint `--fix`처럼 자동 적용 가능한 fix만 적용한다는 점만 같다 — ESLint는 rollback하지 않는다.) `--fix=maybe`로 `MaybeIncorrect`까지. 내부적으로는 `apply`(Mutation)로 dispatch된다.
 - `--baseline .game/lint-baseline.json`은 fingerprint로 기존 finding을 억제한다 (SARIF §3.27.16–17).
-- Flecs를 채택하면 runtime 측 규칙은 **alerts addon**(query + message template + severity → per-entity alert instance, Explorer에 표시)으로 구현하고, `game validate --json`이 `EcsAlertInstance`를 §79 Diagnostic으로 감싼다. `EcsMemberRanges`의 warning/error 2단은 §29의 WARNING/ERROR와 1:1이다. 파일 수준 검사(중복 id, 파일 없음, schemaVersion)는 world 밖이므로 자체 validator에 남는다.
+- Flecs를 채택하면 runtime 측 규칙은 **alerts addon**(query + message template + severity → per-entity alert instance, Explorer에 표시)으로 구현하고, `akeir validate --json`이 `EcsAlertInstance`를 §79 Diagnostic으로 감싼다. `EcsMemberRanges`의 warning/error 2단은 §29의 WARNING/ERROR와 1:1이다. 파일 수준 검사(중복 id, 파일 없음, schemaVersion)는 world 밖이므로 자체 validator에 남는다.
 
 리서치에서 드러난 **추가 검사 항목** (일부는 Godot/Unity 이슈 트래커의 실제 실패 모드 — 중복 ID, cache key 입력 누락 — 나머지는 §5/§7/§34/§53 규약에서 파생):
 
 ```text
 DUPLICATE_PERSISTENT_ID            (§7.3, 해결 명령 포함)
 ID_FORMAT_INVALID                  (TypeID grammar)
-JSON_NOT_CANONICAL                 (§5.3, fix = game fmt)
+JSON_NOT_CANONICAL                 (§5.3, fix = akeir fmt)
 PREFAB_OVERRIDE_TARGET_MISSING     (§34: set 경로가 resolved base에 없음)
 PREFAB_OVERRIDE_TYPE_MISMATCH
 PREFAB_CHAIN_TOO_DEEP / PREFAB_CHAIN_CYCLE
@@ -2195,7 +2197,7 @@ Phase 6b — ImGui viewport만
   공간 편집(gizmo, 배치)만 ImGui로 만들고 Command layer를 호출한다.
 ```
 
-**단, Explorer의 편집은 REST PUT으로 runtime world를 직접 건드리며 Command/Undo layer를 우회한다.** 이것이 §32와 충돌하는 유일한 지점이다. 규칙: Explorer/REST는 **play world(§88.2)의 read-mostly 디버깅**에만 쓴다. authoring 변경이 필요하면 custom http handler가 CommandBus를 감싸거나, Explorer 편집을 "remote history"로 기록한 뒤 `game promote`로 승격한다.
+**단, Explorer의 편집은 REST PUT으로 runtime world를 직접 건드리며 Command/Undo layer를 우회한다.** 이것이 §32와 충돌하는 유일한 지점이다. 규칙: Explorer/REST는 **play world(§88.2)의 read-mostly 디버깅**에만 쓴다. authoring 변경이 필요하면 custom http handler가 CommandBus를 감싸거나, Explorer 편집을 "remote history"로 기록한 뒤 `akeir promote`로 승격한다.
 
 ---
 
@@ -2301,9 +2303,9 @@ Prefab은 텍스트로 명확히 표현되어야 한다.
 3. "base 값으로 되돌림"은 **키 삭제**로만 표현한다. Editor는 base와 같은 값을 override로 기록하지 않는다. Godot은 기본값만 생략하는 방식이라 "unset"과 "override to same value"를 구분 못 해 확인된 core 버그(#94912: base 수정 시 자식에 암묵 override 생성)가 있다.
 4. `set`은 경로가 resolved base에 **존재해야** 한다 (아니면 `PREFAB_OVERRIDE_TARGET_MISSING`, fix = `add`). `add`는 존재하지 않아야 한다.
 5. 배열은 기본적으로 **통째로 교체**한다. index 수준 op(`/points/1`)는 고정 길이 수학 배열(vec/quat/color)에만 허용 — O3DE의 per-index patch가 알려진 취약점이다. gameplay 배열(patrol point, loot table)에 부분 override가 필요하면 요소에 `key`를 두고 `/points/{key}`로 주소지정하는 keyed array를 **그때** 설계한다 (현재 비목표).
-6. base에서 `remove`한 component를 손자가 다시 `add`하는 것은 합법이며 체인 순서로 해석한다. 체인 깊이 상한 + cycle 검사는 `game validate`.
+6. base에서 `remove`한 component를 손자가 다시 `add`하는 것은 합법이며 체인 순서로 해석한다. 체인 깊이 상한 + cycle 검사는 `akeir validate`.
 7. world의 entity 인스턴스도 **같은 세 키**(`prefab` + `set/add/remove`)를 쓴다 (§6). 그래서 §18 Explain이 `Source: prefab → overrides`를 같은 코드로 보여준다.
-8. `game prefab flatten <id>`는 resolve 결과를 독립 prefab으로 만든다 (AI가 "복사본"을 원할 때).
+8. `akeir prefab flatten <id>`는 resolve 결과를 독립 prefab으로 만든다 (AI가 "복사본"을 원할 때).
 9. 3단계 체인(base → elite → instance) 테스트를 §23 시나리오에 포함한다.
 
 Runtime(Flecs)은 이 의미론을 그대로 구현할 필요가 없다 — authoring 단계에서 resolve/flatten한 뒤 인스턴스화하면 된다. Flecs v4 prefab의 기본이 Override(복사)인 것과 충돌하지 않는다.
@@ -2313,7 +2315,7 @@ Runtime(Flecs)은 이 의미론을 그대로 구현할 필요가 없다 — auth
 # 35. Prefab Diff
 
 ```bash
-game prefab diff name:Goblin name:GoblinElite
+akeir prefab diff name:Goblin name:GoblinElite
 ```
 
 ```text
@@ -2420,7 +2422,7 @@ key = sha256( sourceBytesHash
 # 38. Asset Import CLI
 
 ```bash
-game asset import Assets/Textures/goblin.png \
+akeir asset import Assets/Textures/goblin.png \
     --importer Texture2D \
     --filter nearest
 ```
@@ -2439,7 +2441,7 @@ game asset import Assets/Textures/goblin.png \
 }
 ```
 
-▶ v2: `game asset import --all --json`은 CI/headless에서 동작해야 한다 (Godot `--import` 대응). `game cache gc`(manifest에 없는 key 삭제)와 `game cache verify`(key 재계산 — Unity `-consistencyCheck` 대응)를 둔다. Cache/ 산출물은 ChangeSet 대상이 아니다 (재생성 가능).
+▶ v2: `akeir asset import --all --json`은 CI/headless에서 동작해야 한다 (Godot `--import` 대응). `akeir cache gc`(manifest에 없는 key 삭제)와 `akeir cache verify`(key 재계산 — Unity `-consistencyCheck` 대응)를 둔다. Cache/ 산출물은 ChangeSet 대상이 아니다 (재생성 가능).
 
 ---
 
@@ -2471,7 +2473,7 @@ efsw (MIT, ReadDirectoryChangesW / inotify / FSEvents / kqueue, 2026-08 활성)
   → 변경 파일 schema validate (§29)
   → 성공: Command layer의 project.reload_document command로 적용 → ChangeSet 남김 (actor=system:watcher), undo 가능
   → 실패: structured diagnostic만 내고 이전 상태 유지
-headless/CI: watcher 대신 `game reload <path>` + std::filesystem::last_write_time 폴링(1s)
+headless/CI: watcher 대신 `akeir reload <path>` + std::filesystem::last_write_time 폴링(1s)
 ```
 
 **핵심 규칙: hot reload도 Command를 통해 들어온다.** 숨은 mutation 경로가 있으면 §84-5/6이 깨진다. 외부 편집으로 바뀐 파일의 `base` hash가 달라지므로 진행 중이던 AI transaction은 commit 시 `BASE_MISMATCH`를 받는다 (§9.2).
@@ -2508,7 +2510,7 @@ AI는 사람이 아니므로 재시작 비용에 덜 민감하다.
 
 **결정**: Phase 0–5는 (a). AI 루프 1회(수정 → 빌드 → headless run → 결과)가 **측정상 60초를 넘으면** (b)를 Game/ DLL에 한정해 도입한다. 그 전에 확인할 것: DLL 경계에서 reflection registry(static initializer)와 EnTT meta context / Flecs world가 어떻게 공유되는지 — 어떤 리서치도 이 상호작용을 검증하지 않았다 (§88.5).
 
-빌드 시간 자체는 Game/를 별도 타깃으로, PCH, unity build, ccache/sccache, 그리고 §59의 좁은 헤더(Engine 내부 헤더를 Game/에 노출하지 않음)로 줄인다. `game build --json`의 설계는 §88.5.
+빌드 시간 자체는 Game/를 별도 타깃으로, PCH, unity build, ccache/sccache, 그리고 §59의 좁은 헤더(Engine 내부 헤더를 Game/에 노출하지 않음)로 줄인다. `akeir build --json`의 설계는 §88.5.
 
 ---
 
@@ -2570,7 +2572,7 @@ endif()
 # Jolt: set(CROSS_PLATFORM_DETERMINISTIC ON) 는 T2가 필요할 때만
 ```
 
-`game project info --json`은 `fpFlagsHash`(적용된 플래그 문자열의 hash)를 노출해 replay header(§22.3)와 비교할 수 있게 한다.
+`akeir project info --json`은 `fpFlagsHash`(적용된 플래그 문자열의 hash)를 노출해 replay header(§22.3)와 비교할 수 있게 한다.
 
 기타 빌드 결정: C++ 표준 floor는 **C++20**(EnTT v4 요구) — glaze를 쓰면 C++23. CMake ≥ 3.28(EnTT), 4.x 사용 시 구형 3rd-party에 `CMAKE_POLICY_VERSION_MINIMUM=3.5`. 의존성은 CPM.cmake(버전 + SHA 고정) 또는 vcpkg manifest **중 하나만**. 컴파일러는 §88.5.
 
@@ -2725,7 +2727,7 @@ Phase 1에서는 좌측 열 전부를 구현한다. Flecs 식 `warning_range` / 
 정직하게: "한 struct → JSON + JSON Schema + validation + CLI"는 이미 **reflect-cpp(v0.25.0)와 glaze(v8.1.0)가 제공**한다. Epic(UFUNCTION metadata → MCP tool), Unity([attribute] 등록 tool), IvanMurzak([AiTool]), soft-ue-cli(argparse → MCP schema)도 "metadata → tool schema"를 한다. **이것은 차별점이 아니라 table stakes다.**
 
 - **JSON Schema 생성기**: 직접 쓰지 말고 glaze `glz::write_json_schema<T>()` 또는 reflect-cpp `rfl::json::to_schema<T>()`를 검토한다. 단 둘 다 type-static이므로 PropertyMeta 테이블의 `x-` 확장은 후처리로 합친다.
-- **Config / CLI 인자 파싱**: `project.json`, `Config/*.json`, `game run --seed --frames` 류는 reflect-cpp `rfl::cli::read<Args>`로 struct 하나에서 JSON + CLI 동시 처리.
+- **Config / CLI 인자 파싱**: `project.json`, `Config/*.json`, `akeir run --seed --frames` 류는 reflect-cpp `rfl::cli::read<Args>`로 struct 하나에서 JSON + CLI 동시 처리.
 - **남는 고유 요구**: 문자열 주소 지정 runtime registry(SetProperty / CLI / MCP의 동적 경로). 이것이 만들어야 할 것이다.
 
 ---
@@ -2739,7 +2741,7 @@ API 자체가 self-describing 해야 한다.
 예:
 
 ```bash
-game describe component EnemyAI
+akeir describe component EnemyAI
 ```
 
 ```json
@@ -2758,7 +2760,7 @@ game describe component EnemyAI
 }
 ```
 
-(▶ v2: `game describe`의 출력은 §14의 schema 그대로다 — 별도 형식이 아니다.)
+(▶ v2: `akeir describe`의 출력은 §14의 schema 그대로다 — 별도 형식이 아니다.)
 
 ---
 
@@ -2767,7 +2769,7 @@ game describe component EnemyAI
 긴 문서가 필요한 경우:
 
 ```bash
-game docs search "prefab override"
+akeir docs search "prefab override"
 ```
 
 처럼 엔진 문서 자체를 검색할 수 있게 만들 수 있다.
@@ -2806,18 +2808,18 @@ MCP 서버 안에 게임 로직을 넣지 않는다.
 초안은 MCP adapter를 C++ 코드가 `CommandBus.Execute`를 직접 호출하는 것으로 암시했다. 그러나 **Tier-1 C++ MCP SDK는 없고**(TS / Python / Go / C#, Rust beta), 유지보수자는 2026-07-28 breaking revision을 앞두고 "직접 구현은 상당한 uplift"를 경고했다. 더 얇고 안전한 실현:
 
 ```text
-Command Core 호스트 (C++)  ──  game serve --rpc 127.0.0.1:<port>     (JSON-RPC 2.0 over HTTP, BRP 스타일; §88.1)
+Command Core 호스트 (C++)  ──  akeir serve --rpc 127.0.0.1:<port>     (JSON-RPC 2.0 over HTTP, BRP 스타일; §88.1)
                            ──  game <cmd> --json                      (CLI)
                                     ▲
 MCP sidecar (TypeScript 또는 Python 공식 SDK, < 300 lines)
-  tools/list  = `game capabilities --json` 의 tools[] pass-through (15개, §47)
+  tools/list  = `akeir capabilities --json` 의 tools[] pass-through (15개, §47)
   tools/call  = RPC 호출(또는 spawn) → envelope 그대로 structuredContent
   resources   = game://schema/commands (전체 command + argsSchema), game://schema/component/*, game://snapshot/*
 ```
 
 - §48(CLI/MCP 동등성)이 **구조적으로** 성립한다: sidecar에는 schema도 로직도 없다.
 - in-process C++ MCP는 규격이 안정된 뒤에만 고려한다.
-- Flecs REST를 MCP backend로 직접 쓰지 않는다 (Undo/Transaction 없음). Bevy식 in-engine JSON-RPC는 `game serve`가 그 역할이고, MCP는 그 위의 어댑터다.
+- Flecs REST를 MCP backend로 직접 쓰지 않는다 (Undo/Transaction 없음). Bevy식 in-engine JSON-RPC는 `akeir serve`가 그 역할이고, MCP는 그 위의 어댑터다.
 
 ## 46.2 ▶ v2: Command API ↔ MCP 2026-07-28 매핑
 
@@ -2902,7 +2904,7 @@ set_property(...)
 와
 
 ```bash
-game set ...
+akeir set ...
 ```
 
 가 같은 Command를 호출한다.
@@ -2912,7 +2914,7 @@ game set ...
 ▶ v2: 동등성은 의도가 아니라 **테스트**여야 한다. `Tests/Contract/`:
 
 ```text
-game capabilities --json 의 tools[] 모든 항목에 대해 (commands[]는 apply를 통해 간접 검증):
+akeir capabilities --json 의 tools[] 모든 항목에 대해 (commands[]는 apply를 통해 간접 검증):
   1. 같은 project fixture에 CLI `--json`과 MCP `tools/call`을 동일 인자로 실행
   2. 둘 다 tool의 outputSchema(같은 2020-12 validator)로 검증
   3. structuredContent == CLI envelope (meta.durationMs 제외) 를 deep-equal assert
@@ -2981,7 +2983,7 @@ apply
 - 호출당 op 상한(예 500). 초과하면 `meta.truncated` 안내 또는 `run.start` 식 job handle / MCP Tasks.
 - `changes[]`의 각 항목은 op별 `oneOf` schema로 검증된다 (§47).
 
-OpenAI("항상 순서대로 호출되는 함수는 합쳐라"), Anthropic(batching / 토큰 권고), MCP 2026-07-28의 stateless handle 지침과 일치하며 CLI(`game apply changes.json`)와 MCP 의미론이 같다.
+OpenAI("항상 순서대로 호출되는 함수는 합쳐라"), Anthropic(batching / 토큰 권고), MCP 2026-07-28의 stateless handle 지침과 일치하며 CLI(`akeir apply changes.json`)와 MCP 의미론이 같다.
 
 ---
 
@@ -2990,7 +2992,7 @@ OpenAI("항상 순서대로 호출되는 함수는 합쳐라"), Anthropic(batchi
 AI가 대량 수정 전에 결과를 확인할 수 있어야 한다.
 
 ```bash
-game apply changes.json --dry-run
+akeir apply changes.json --dry-run
 ```
 
 출력 (사람용):
@@ -3010,7 +3012,7 @@ Validation:
 ▶ v2: Dry-run은 "시뮬레이션"이 아니라 **fork된 메모리 모델에 실제 command를 실행하고 commit만 생략**하는 것이다. 별도 simulate 코드를 만들면 실제 경로와 어긋난다.
 
 ```text
-game apply changes.json --dry-run
+akeir apply changes.json --dry-run
   = ProjectModel fork = model.Clone()          // 개인 프로젝트 규모의 JSON이면 복사 비용 무시 가능
     CommandBus.Execute(fork, commands) → ChangeSet
     Validate(fork) → diagnostics
@@ -3021,13 +3023,13 @@ game apply changes.json --dry-run
 - 출력의 핵심은 summary가 아니라 **ops 자체**다 (AI가 적용 전 diff를 읽는다). `--summary-only`로 축약.
 - `nlohmann::json::patch()`(복사본 반환, strong exception guarantee)가 문서 단위 dry-run 원시 연산이고 `patch_inplace()`가 commit 경로다.
 - kubectl처럼 `--dry-run=client`(schema/인자 검증만, 프로젝트 로드 없음)와 `--dry-run=server`(위의 전체 실행)를 구분한다.
-- dry-run 결과의 ChangeSet id(`cs_…`; 그 안의 `base` hash를 포함)를 `game apply --if-match <cs-id>`에 넘기면 "dry-run 이후 아무것도 안 바뀌었음"을 보장한다.
+- dry-run 결과의 ChangeSet id(`cs_…`; 그 안의 `base` hash를 포함)를 `akeir apply --if-match <cs-id>`에 넘기면 "dry-run 이후 아무것도 안 바뀌었음"을 보장한다.
 - 파괴적 op를 `--yes` 없이 호출하면 exit 4 + `error.ruleId = CONFIRMATION_REQUIRED` + `details.confirmCommand`(정확한 재실행 명령). 비-TTY agent를 깨뜨리는 interactive prompt는 없다 (Arcjet 패턴).
 
 그다음 실제 적용:
 
 ```bash
-game apply changes.json --if-match cs_01j5…
+akeir apply changes.json --if-match cs_01j5…
 ```
 
 ---
@@ -3038,7 +3040,7 @@ game apply changes.json --if-match cs_01j5…
 
 ▶ v2: 초안의 `{path, property, before, after}`는 구조 변경을 표현 못 하고, AI용 diff와 git diff의 관계가 정의되지 않았다. **두 종류의 diff**를 명시한다.
 
-**Semantic diff = ChangeSet.ops** (§78). `game diff --format changeset`, 또는 `--format json-patch`(doc/before를 뺀 순수 RFC 6902).
+**Semantic diff = ChangeSet.ops** (§78). `akeir diff --format changeset`, 또는 `--format json-patch`(doc/before를 뺀 순수 RFC 6902).
 
 ```json
 {
@@ -3051,7 +3053,7 @@ game apply changes.json --if-match cs_01j5…
 
 **File diff = `git diff`** (`--format unified`). 이것이 의미 있으려면 §5.3 canonical serialization이 필요하다 — Editor / CLI / AI 어느 경로로 저장해도 **같은 바이트**가 나와야 한다 (Unity Force Text + UnityYAMLMerge, Godot tscn이 VCS 친화성을 위해 하는 일).
 
-`game diff <checkpoint|cs-id> [<cs-id>]`: 두 시점 사이 ChangeSet들을 compose해 보여주고, 검증용으로 `json::diff(before_doc, after_doc)`를 돌려 `patch(before, ops) == after`를 assert한다.
+`akeir diff <checkpoint|cs-id> [<cs-id>]`: 두 시점 사이 ChangeSet들을 compose해 보여주고, 검증용으로 `json::diff(before_doc, after_doc)`를 돌려 `patch(before, ops) == after`를 assert한다.
 
 AI 자기검증에 매우 유용하다.
 
@@ -3062,13 +3064,13 @@ AI 자기검증에 매우 유용하다.
 AI 작업 시작 전:
 
 ```bash
-game checkpoint create before_enemy_balance
+akeir checkpoint create before_enemy_balance
 ```
 
 수정 후 문제가 있으면:
 
 ```bash
-game checkpoint restore before_enemy_balance
+akeir checkpoint restore before_enemy_balance
 ```
 
 Git과 별도로 runtime/editor 수준 checkpoint를 둘 수도 있다.
@@ -3078,17 +3080,17 @@ Git과 별도로 runtime/editor 수준 checkpoint를 둘 수도 있다.
 ▶ v2: "초기에는 Git commit"은 동작하지만 AI가 수십 번 checkpoint를 만들면 사용자 git history가 오염되고, 바이너리 asset이 undo blob store와 이중 저장된다. **파일 해시 기반 content-addressed snapshot**이 수십 줄이면 되고 undo blob store와 objects 디렉터리를 공유한다.
 
 ```text
-game checkpoint create <name>
+akeir checkpoint create <name>
   → Source 파일(Worlds/, Prefabs/, Data/, Assets/, Config/, project.json — Cache/ 제외)을 순회
   → 각 파일 sha256 → Cache/objects/<sha256> 에 없으면 복사 (dedupe; §78 undo blob store와 같은 디렉터리)
   → Cache/checkpoints/<name>.json = { createdAt, historyCursor: "cs_…", files: { path: sha256 } }
-game checkpoint restore <name>
+akeir checkpoint restore <name>
   → manifest와 현재 hash 비교 → 달라진 파일만 temp+rename 복원, 없는 파일 삭제
   → 복원 자체를 하나의 ChangeSet(actor=system:checkpoint, ops=file.replace/…)으로 history에 기록 → restore도 undo 가능
 ```
 
 - 이것은 git의 blob/tree를 최소 구현한 것이다. 나중에 libgit2(`git_blob_create_from_buffer` → `git_treebuilder_insert/write` → `git_commit_create(ref="refs/game/checkpoints/<name>")` → `git_checkout_tree`)로 교체 가능하되, 사용자 git history를 오염시키지 않도록 **별도 ref namespace 또는 별도 bare repo**(`Cache/.gitcheck`)를 쓴다.
-- Checkpoint = event sourcing의 snapshot. checkpoint 이전 history는 `game history compact`로 잘라낼 수 있다. Blender처럼 "완전 상대적" undo(목표 step까지 중간 step을 전부 로드)가 되지 않도록 N개 ChangeSet마다 자동 checkpoint를 찍어 임의 시점 복원을 O(변경 파일 수)로 만든다.
+- Checkpoint = event sourcing의 snapshot. checkpoint 이전 history는 `akeir history compact`로 잘라낼 수 있다. Blender처럼 "완전 상대적" undo(목표 step까지 중간 step을 전부 로드)가 되지 않도록 N개 ChangeSet마다 자동 checkpoint를 찍어 임의 시점 복원을 O(변경 파일 수)로 만든다.
 - Godot의 `.godot/` 캐시 손상 사례(2025-03 블로그)처럼, checkpoint는 **파생 캐시를 포함하지 않는다.**
 
 ---
@@ -3106,8 +3108,8 @@ game checkpoint restore <name>
 엔진 업데이트 후:
 
 ```bash
-game migrate --to latest --dry-run [paths…]
-game migrate --to latest
+akeir migrate --to latest --dry-run [paths…]
+akeir migrate --to latest
 ```
 
 가능하게 한다.
@@ -3127,7 +3129,7 @@ AI가 migration log를 볼 수 있어야 한다.
 ```
 
 동작:
-- **로드 시에는 항상 메모리로 migrate**한다 (옛 프로젝트가 돌아야 한다). 디스크에 쓰는 것은 `game migrate`(명시적, ChangeSet `actor=system:migrate` + `Migrations/log/<timestamp>.json`) 또는 Command가 어차피 그 파일을 저장할 때만.
+- **로드 시에는 항상 메모리로 migrate**한다 (옛 프로젝트가 돌아야 한다). 디스크에 쓰는 것은 `akeir migrate`(명시적, ChangeSet `actor=system:migrate` + `Migrations/log/<timestamp>.json`) 또는 Command가 어차피 그 파일을 저장할 때만.
 - `--dry-run`은 §50과 같은 경로로 ops를 낸다 (Godot `--validate-conversion-3to4` 패턴). 실제 실행 전에 자동 checkpoint(`pre-migrate-<ts>`).
 - 손실 없는 변환(rename, default 채움)은 `before`가 있으므로 undo 가능. 손실 있는 변환은 ChangeSet에 `"lossy": true`를 표시해 undo 대신 checkpoint restore를 안내.
 - **Unreal 규칙 차용**: 최신 schemaVersion이 쓴 파일을 구버전 바이너리가 열면 `SCHEMA_VERSION_NEWER_THAN_ENGINE` 구조화 오류로 거부한다. best-effort 로드 금지.
@@ -3390,7 +3392,7 @@ Game/**
 
 금지: Luau에서 ECS storage 직접 접근, 렌더/물리 호출, 파일 I/O. Luau에는 Command Layer의 Query/Get/Set만 바인딩한다. 바인딩은 sol2 같은 대형 래퍼가 아니라 얇은 수동 바인딩(Luau C API).
 
-도입 시점: **Phase 5 이후**, 그리고 §23.1 고정 문법이 부족하다고 측정될 때만. Luau를 넣는 순간 `game lint`에 `luau-analyze` 타입체크를 포함한다. Luau 특유의 타입 문법을 현재 모델이 얼마나 잘 쓰는지는 공개 벤치마크가 없으므로 도입 전 20개 과제짜리 자체 eval을 한다.
+도입 시점: **Phase 5 이후**, 그리고 §23.1 고정 문법이 부족하다고 측정될 때만. Luau를 넣는 순간 `akeir lint`에 `luau-analyze` 타입체크를 포함한다. Luau 특유의 타입 문법을 현재 모델이 얼마나 잘 쓰는지는 공개 벤치마크가 없으므로 도입 전 20개 과제짜리 자체 eval을 한다.
 
 ---
 
@@ -3399,7 +3401,7 @@ Game/**
 예:
 
 ```bash
-game lint
+akeir lint
 ```
 
 검사:
@@ -3424,7 +3426,7 @@ game lint
 - Engine 내부 헤더를 Game/에서 include (§59/§61 경계)
 - component struct가 aggregate가 아님 (§42.2 규칙)
 
-`game lint`도 §29의 rule registry / SARIF / `--fix` / `--baseline` 규약을 그대로 따른다.
+`akeir lint`도 §29의 rule registry / SARIF / `--fix` / `--baseline` 규약을 그대로 따른다.
 
 ---
 
@@ -3454,7 +3456,7 @@ Crash dump / Watchdog   ← ▶ v2 (§88.4)
 예:
 
 ```bash
-game trace entity_01j5xqd6… --ticks 300
+akeir trace entity_01j5xqd6… --ticks 300
 ```
 
 출력:
@@ -3473,7 +3475,7 @@ AI debugging에 매우 강력하다.
 
 ```json
 {"displayTimeUnit":"ms","traceEvents":[
- {"ph":"M","pid":1,"tid":1,"name":"process_name","args":{"name":"game --headless TestArena"}},
+ {"ph":"M","pid":1,"tid":1,"name":"process_name","args":{"name":"akeir --headless TestArena"}},
  {"ph":"M","pid":1,"tid":1,"name":"thread_name","args":{"name":"Sim"}},
  {"ph":"X","pid":1,"tid":1,"ts":1650000.0,"dur":1800.0,"name":"EnemyAI::Update","cat":"system","args":{"tick":813}},
  {"ph":"i","s":"t","pid":1,"tid":1,"ts":1650120.0,"name":"StateChange","cat":"entity",
@@ -3482,14 +3484,14 @@ AI debugging에 매우 강력하다.
 ]}
 ```
 
-제약: `ts`/`dur`는 마이크로초, `X`/`B-E` 이벤트는 중첩되어야 함(겹치되 중첩 안 되면 Perfetto가 overflow track으로 보냄), thread당 `tid` 하나. entity 이벤트는 `ph:"i"` + `cat:"entity"`라서 `game trace entity_… --ticks 300`은 `args.entity` 필터일 뿐이다. 크래시 시 마지막 N개 이벤트를 flush한다 (§88.4).
+제약: `ts`/`dur`는 마이크로초, `X`/`B-E` 이벤트는 중첩되어야 함(겹치되 중첩 안 되면 Perfetto가 overflow track으로 보냄), thread당 `tid` 하나. entity 이벤트는 `ph:"i"` + `cat:"entity"`라서 `akeir trace entity_… --ticks 300`은 `args.entity` 필터일 뿐이다. 크래시 시 마지막 N개 이벤트를 flush한다 (§88.4).
 
 ---
 
 # 65. Profiler 출력도 구조화
 
 ```bash
-game profile --ticks 1000 --json
+akeir profile --ticks 1000 --json
 ```
 
 ▶ v2: **Profiler = Tracy** (v0.14.0, 2026-08-09, BSD-3). 자체 profiler 포맷은 §70 규칙("현재 게임에 필요한가?")에 걸린다. 엔진은 `ZoneScopedN("EnemyAI::Update")`, `FrameMark`, `TracyPlot("entities", n)`, 0.14의 `TracySectionEnter/Leave`(run phase)만 심는다.
@@ -3502,7 +3504,7 @@ AI 분석:  Tracy MCP server (PR #1347, 2026-05 merge — zones / frames / plots
           ※ Python sidecar(FastMCP + pybind11). Python 의존이 싫으면 game profile --json 이 csvexport만 감싼다.
 ```
 
-`game profile --ticks 1000 --json`은 csvexport를 감싼 래퍼다. 초안의 `{name, avg_ms, max_ms}`는 **평균이 아니라 백분위**로:
+`akeir profile --ticks 1000 --json`은 csvexport를 감싼 래퍼다. 초안의 `{name, avg_ms, max_ms}`는 **평균이 아니라 백분위**로:
 
 ```json
 {
@@ -3542,12 +3544,12 @@ Compare
 명령:
 
 ```bash
-game benchmark Combat100
+akeir benchmark Combat100
 ```
 
 ▶ v2: 초안의 단일 `delta` 퍼센트는 **노이즈를 쫓게 만든다.** Google Benchmark의 `compare.py`는 Mann–Whitney U 검정에 **≥ 9회 반복**을 요구하고("requires LARGE (no less than 9) number of repetitions to be meaningful"), Criterion.rs는 bootstrap t-test(α 0.05)에 `noise_threshold`(예 ±1%)를 더해 "유의하지만 무시할 만한" 변화를 걸러낸다.
 
-`game benchmark Combat100 --repetitions 10 --out bench.json`은 **Google Benchmark JSON 호환** 형식(`context{date, host_name, num_cpus, cpu_scaling_enabled, library_version}`, `benchmarks[]{name, run_type:"iteration"|"aggregate", repetition_index, iterations, real_time, cpu_time, time_unit, aggregate_name:"mean"|"median"|"stddev"|"cv"|"p95"}` — p95는 `ComputeStatistics` 식 custom statistic)으로 써서 `compare.py benchmarks baseline.json candidate.json --dump_to_json diff.json`이 그대로 돈다. 자체 출력:
+`akeir benchmark Combat100 --repetitions 10 --out bench.json`은 **Google Benchmark JSON 호환** 형식(`context{date, host_name, num_cpus, cpu_scaling_enabled, library_version}`, `benchmarks[]{name, run_type:"iteration"|"aggregate", repetition_index, iterations, real_time, cpu_time, time_unit, aggregate_name:"mean"|"median"|"stddev"|"cv"|"p95"}` — p95는 `ComputeStatistics` 식 custom statistic)으로 써서 `compare.py benchmarks baseline.json candidate.json --dump_to_json diff.json`이 그대로 돈다. 자체 출력:
 
 ```json
 {
@@ -3849,7 +3851,7 @@ det_fp_flags INTERFACE target + FPU env assert (§41)   ← ▶ v2: 첫 TU부터
 ```text
 창 열림 / --headless 로 창 없이 tick 루프 작동
 키 입력 가능
-game run --headless --ticks 60 --json 이 envelope을 내고 exit 0
+akeir run --headless --ticks 60 --json 이 envelope을 내고 exit 0
 강제 crash 시 minidump 경로가 envelope에 실리고 exit 6
 ```
 
@@ -3874,8 +3876,8 @@ RngStream / 결정적 EntityId allocator (§22.2)
 성공:
 
 ```text
-game schema component Transform --json  → JSON Schema 2020-12 (reflection에서 생성)
-game registry wire_format Transform     → spawn 예시 + mutation path 목록
+akeir schema component Transform --json  → JSON Schema 2020-12 (reflection에서 생성)
+akeir registry wire_format Transform     → spawn 예시 + mutation path 목록
 JSON World Load / Save 가 PropertyMeta 테이블만으로 동작 (component별 수작업 serializer 0개)
 x-runtimeOnly 속성이 저장 파일에 나타나지 않음
 Round-trip: project JSON → world → serialize → byte-identical (§5.3)
@@ -3884,7 +3886,7 @@ Flecs 채택 시: project JSON → Flecs world → ecs_world_to_json → ecs_wor
 
 이후 Phase와의 의존 관계:
 - Phase 3 Command: `SetProperty`는 registry의 set으로 구현, Validation은 minimum/maximum/required로 구현
-- Phase 4 CLI: `game help <cmd> --json`, `game describe component X`는 같은 테이블을 출력
+- Phase 4 CLI: `akeir help <cmd> --json`, `akeir describe component X`는 같은 테이블을 출력
 - Phase 6 Editor: Inspector는 PropertyMeta를 순회해 위젯 선택 (uiMin/uiMax → slider, enumOptions → combo, refType → picker)
 - Phase 7 MCP: tools/list inputSchema = §14 schema 그대로
 
@@ -3910,7 +3912,7 @@ Render Layer
 ```text
 Command Bus (CommandKind 분리, ChangeBuilder, CommandApply 단계 §8)
 ChangeSet (§78)  /  write-ahead journal + temp+rename commit (§9.2)
-Transaction (명시적 handle §9.1) — 이 Phase에서는 in-process(test/Editor) 범위. CLI 다중 호출 tx는 Phase 4 `game serve` 이후
+Transaction (명시적 handle §9.1) — 이 Phase에서는 in-process(test/Editor) 범위. CLI 다중 호출 tx는 Phase 4 `akeir serve` 이후
 Undo = inverse(ops), actor 태깅, context별 history (§10)
 Validation (rule registry, SARIF, --fix §29)
 Query (BRP 구조 + Flecs expr §16)
@@ -3927,8 +3929,8 @@ Dry-run = fork + execute (§50)
 create / delete / add / remove / get / set / query / validate / run
 envelope (§12) · error + exit code (§13) · capabilities descriptor (§15)
 non-TTY → JSON 기본, --fields / --jq / --limit / --cursor
-game serve --rpc (Command Core 호스트, §88.1)
-game build --json (§88.5)
+akeir serve --rpc (Command Core 호스트, §88.1)
+akeir build --json (§88.5)
 ```
 
 Editor 없이 프로젝트 수정 가능.
@@ -3970,8 +3972,8 @@ Console
 
 ```text
 MCP sidecar (공식 TS/Python SDK, < 300 lines, §46.1)
-  tools/list = game capabilities --json
-  tools/call = game serve RPC → envelope
+  tools/list = akeir capabilities --json
+  tools/call = akeir serve RPC → envelope
 Contract test (§48)
 §72 비교 실험 (A1 / A2 / A3 / B / C)
 ```
@@ -4253,7 +4255,7 @@ struct Diagnostic
 }
 ```
 
-AI 루프 정책: `game validate --fix`는 `MachineApplicable`만 적용, `MaybeIncorrect`는 `--fix=maybe`, `HasPlaceholders`는 절대 자동 적용 안 함. `--format sarif`로 진짜 SARIF 2.1.0을 낸다 (§29). 컴파일러 진단(§88.5)도 같은 구조로 변환한다.
+AI 루프 정책: `akeir validate --fix`는 `MachineApplicable`만 적용, `MaybeIncorrect`는 `--fix=maybe`, `HasPlaceholders`는 절대 자동 적용 안 함. `--format sarif`로 진짜 SARIF 2.1.0을 낸다 (§29). 컴파일러 진단(§88.5)도 같은 구조로 변환한다.
 
 AI 친화성에 직접 영향을 준다.
 
@@ -4277,46 +4279,46 @@ Collider 없는 Enemy를 전부 찾아서
 AI:
 
 ```bash
-game query --with EnemyAI --without Collider --fields id,name,path --json
+akeir query --with EnemyAI --without Collider --fields id,name,path --json
 ```
 
 결과 확인.
 
 ```bash
-game tx begin --json            # → tx_01j5…
+akeir tx begin --json            # → tx_01j5…
 ```
 
 수정 (한 번에, dry-run 먼저).
 
 ```bash
-game apply fixes.json --tx tx_01j5… --dry-run --json     # changes[] 를 읽고 확인
-game apply fixes.json --tx tx_01j5… --if-match cs_01j5… --json
+akeir apply fixes.json --tx tx_01j5… --dry-run --json     # changes[] 를 읽고 확인
+akeir apply fixes.json --tx tx_01j5… --if-match cs_01j5… --json
 ```
 
 검증.
 
 ```bash
-game validate --tx tx_01j5… --json
+akeir validate --tx tx_01j5… --json
 ```
 
 테스트.
 
 ```bash
-game test CollisionSuite --json
+akeir test CollisionSuite --json
 ```
 
 성공.
 
 ```bash
-game tx commit tx_01j5… --json
+akeir tx commit tx_01j5… --json
 ```
 
 실패했다면:
 
 ```bash
-game tx rollback tx_01j5…
+akeir tx rollback tx_01j5…
 # 또는 commit 후 발견했다면
-game undo --actor ai:* --json      # 다른 actor와 겹치면 UNDO_CONFLICT
+akeir undo --actor ai:* --json      # 다른 actor와 겹치면 UNDO_CONFLICT
 ```
 
 사람은 Editor를 한 번도 클릭하지 않는다.
@@ -4513,12 +4515,12 @@ NO면 버린다.
 - [ ] 크래시 핸들러: minidump + 마지막 N trace 이벤트 flush + exit code 6/7 + watchdog (§88.4)
 
 **Phase 1 — World + Reflection + 데이터 모델**
-- [ ] Persistent ID: TypeID/UUIDv7 grammar, 형식 검사, 중복 정책, `game id fix` (§7)
+- [ ] Persistent ID: TypeID/UUIDv7 grammar, 형식 검사, 중복 정책, `akeir id fix` (§7)
 - [ ] Reflection registry: `REFLECT_COMPONENT` / `PropertyMeta` / runtime 등록 (§42.2)
 - [ ] Transform (첫 reflected component, aggregate struct)
 - [ ] World, entities = id-keyed object, 계층 = parent + order (§5.3)
 - [ ] JSON load / save — reflection 기반 serializer 하나 + visibility mask 3종 (§26.1)
-- [ ] Canonical serialization + `game fmt` + round-trip byte-identical 테스트 (§5.3)
+- [ ] Canonical serialization + `akeir fmt` + round-trip byte-identical 테스트 (§5.3)
 - [ ] JSON Schema 2020-12 생성 + `registry.wire_format` (§14, §14.1)
 - [ ] Box2D v3.1.1 통합 (PhysicsWorld 인터페이스 뒤) — 또는 목표 게임이 3D면 Jolt (§57)
 - [ ] `RngStream` (xoshiro256** + SplitMix64 seeding, per-system) + 결정적 EntityId allocator (§22.2)
@@ -4545,25 +4547,25 @@ NO면 버린다.
 **Phase 4 — CLI**
 - [ ] envelope + `--output` + non-TTY JSON 기본 + `--fields` / `--jq` / `--limit` / `--cursor` (§12)
 - [ ] 오류 envelope + exit code 표 (§13)
-- [ ] `game capabilities --json` = 완전한 tool descriptor (§15)
-- [ ] `game serve --rpc` (Command Core 호스트, loopback + token, §88.1)
-- [ ] `game build --json` → 컴파일러 진단을 §79 Diagnostic으로 (§88.5)
+- [ ] `akeir capabilities --json` = 완전한 tool descriptor (§15)
+- [ ] `akeir serve --rpc` (Command Core 호스트, loopback + token, §88.1)
+- [ ] `akeir build --json` → 컴파일러 진단을 §79 Diagnostic으로 (§88.5)
 - [ ] Data hot reload via efsw → `project.reload_document` command (§39)
-- [ ] Asset import sidecar + cache key + `game cache gc/verify` (§37–§38)
+- [ ] Asset import sidecar + cache key + `akeir cache gc/verify` (§37–§38)
 
 **Phase 5 — Headless + Test + Capture**
 - [ ] `--headless --ticks --seed --threads --hash-every` (§20.1)
 - [ ] `world.Hash()` + system sub-hash (§22.2)
 - [ ] CI: run-twice + threads 1 vs N hash diff, 첫 divergent tick/path 보고 (§22.2, §24)
-- [ ] `game replay record / play / verify` (§22.3)
+- [ ] `akeir replay record / play / verify` (§22.3)
 - [ ] Test Scenario: setup/as, inputs, events, determinism, assertion 고정 문법 + 시점 (§23)
 - [ ] `results.json` + `--junit` (§24)
-- [ ] Snapshot 포맷 + `game snapshot diff` + JSONPath inspect (§26.1)
+- [ ] Snapshot 포맷 + `akeir snapshot diff` + JSONPath inspect (§26.1)
 - [ ] Screenshot capture + golden 비교 + software rasterizer 설정 (§27.1)
-- [ ] Tracy 계측 + `tracy-capture` headless + `game profile --json` (§65)
-- [ ] Chrome trace `trace.json` + `game trace` (§64)
-- [ ] `game benchmark` Google Benchmark JSON + Mann–Whitney + noise threshold (§66)
-- [ ] `game lint` 결정성 규칙 (§62)
+- [ ] Tracy 계측 + `tracy-capture` headless + `akeir profile --json` (§65)
+- [ ] Chrome trace `trace.json` + `akeir trace` (§64)
+- [ ] `akeir benchmark` Google Benchmark JSON + Mann–Whitney + noise threshold (§66)
+- [ ] `akeir lint` 결정성 규칙 (§62)
 
 **Phase 6 — Editor**
 - [ ] (Flecs) `flecs::Rest` + Explorer 확인, **Explorer 편집은 play world 한정** (§31)
@@ -4757,14 +4759,14 @@ NO면 버린다.
 
 ## 88.1 Command Bus의 프로세스 / 동시성 모델
 
-문서는 암묵적으로 **상주 프로세스**를 요구한다: `game tx begin … commit`이 별도 CLI 호출에 걸치고(§9), `game dump` / `game snapshot --tick 813` / `game set`이 실행 중인 시뮬레이션을 대상으로 하며(§20, §25, §26), Editor는 in-process로 CommandBus를 호출하고(§32), HTTP/RPC와 MCP가 peer로 나열된다(§1). 그러나 이들이 어떻게 공존하는지는 정의되지 않았다.
+문서는 암묵적으로 **상주 프로세스**를 요구한다: `akeir tx begin … commit`이 별도 CLI 호출에 걸치고(§9), `akeir dump` / `akeir snapshot --tick 813` / `akeir set`이 실행 중인 시뮬레이션을 대상으로 하며(§20, §25, §26), Editor는 in-process로 CommandBus를 호출하고(§32), HTTP/RPC와 MCP가 peer로 나열된다(§1). 그러나 이들이 어떻게 공존하는지는 정의되지 않았다.
 
 > **권장 기본값**:
 > ```text
-> game serve            — Command Core 호스트 (데몬). 프로젝트 lock 보유. loopback JSON-RPC + per-session token (§46.2)
+> akeir serve            — Command Core 호스트 (데몬). 프로젝트 lock 보유. loopback JSON-RPC + per-session token (§46.2)
 > game <cmd>            — 얇은 클라이언트. 데몬이 있으면 RPC, 없으면 one-shot in-process (파일 lock 획득)
 > GameEditor            — 데몬 + ImGui UI 한 프로세스
-> game run --headless   — 데몬의 자식 또는 데몬 자신이 runtime을 host (play world §88.2)
+> akeir run --headless   — 데몬의 자식 또는 데몬 자신이 runtime을 host (play world §88.2)
 > ```
 > - **단일 writer**: 데몬이 프로젝트의 유일한 writer. Editor / CLI / MCP / file watcher 모두 데몬의 CommandBus로 들어온다.
 > - 명령은 프레임 경계(CommandApply 단계, §8.2)에서만 적용 — 결정론 계약과 양립하는 유일한 선택.
@@ -4774,11 +4776,11 @@ NO면 버린다.
 
 ## 88.2 Authoring world vs Play world
 
-§11 `game set`은 authoring 데이터를 바꾸고, §25 `game dump`는 runtime 값(`Health.current: 24`)을 보여주며, §26은 실행 중 프레임을 snapshot하고, §23은 테스트 run 안에서 entity를 spawn한다. world가 하나인지 둘인지, play 중 `game set`이 무엇을 바꾸는지(파일? live sim? 둘 다?), play 변경이 stop 시 버려지는지(Unity 모델) — 초안에는 정의되지 않았다. (runtime-spawned entity의 persistent id는 v2 §7.1에서 결정적 UUIDv8 → `promote` 시 UUIDv7로 정했다.)
+§11 `akeir set`은 authoring 데이터를 바꾸고, §25 `akeir dump`는 runtime 값(`Health.current: 24`)을 보여주며, §26은 실행 중 프레임을 snapshot하고, §23은 테스트 run 안에서 entity를 spawn한다. world가 하나인지 둘인지, play 중 `akeir set`이 무엇을 바꾸는지(파일? live sim? 둘 다?), play 변경이 stop 시 버려지는지(Unity 모델) — 초안에는 정의되지 않았다. (runtime-spawned entity의 persistent id는 v2 §7.1에서 결정적 UUIDv8 → `promote` 시 UUIDv7로 정했다.)
 
 > **권장 기본값**:
-> - **둘이다.** Authoring document model(JSON, ChangeSet, history)과 Play world(ECS runtime). `game run`은 authoring에서 play world를 빌드한다.
-> - play 중 mutation은 **`remote` history**(§10.1)에 기록되고 stop 시 버려진다. 남기고 싶으면 `game promote <entity|changes>`가 authoring ChangeSet을 만든다 (이때 runtime-spawned entity는 UUIDv7을 새로 받는다, §7.1).
+> - **둘이다.** Authoring document model(JSON, ChangeSet, history)과 Play world(ECS runtime). `akeir run`은 authoring에서 play world를 빌드한다.
+> - play 중 mutation은 **`remote` history**(§10.1)에 기록되고 stop 시 버려진다. 남기고 싶으면 `akeir promote <entity|changes>`가 authoring ChangeSet을 만든다 (이때 runtime-spawned entity는 UUIDv7을 새로 받는다, §7.1).
 > - deterministic run 중의 live edit은 tick-stamped command로 replay에 기록된다 (§22.3). 아니면 replay가 깨진다.
 > - reflection flag는 `runtimeOnly` 하나가 아니라 **visibility matrix**다 — 정의는 §88.8 한 곳에.
 > - Flecs Explorer / REST는 play world만 본다 (§31).
@@ -4794,8 +4796,8 @@ NO면 버린다.
 >                "Attack": { "type": "button", "bindings": [ { "key": "Space" }, { "mouse": "left" } ] } } }
 > ```
 > - sim은 **device 입력을 절대 직접 읽지 않는다.** `InputFrame { tick, actions: {MoveX: 1.0, Attack: pressed} }`만 받는다. device → action 변환은 sim 밖(platform layer)이다.
-> - §23 `inputs` 블록과 `game input inject --tick N --action Attack`이 `InputFrame`을 만든다.
-> - `game replay record`로 사람이 플레이한 세션을 `inputs.jsonl`로 저장 → 그대로 테스트 fixture (§22.3). bevy_brp_extras의 `send_keys` / mouse 주입과 GameCraft-Bench의 demo trace가 같은 개념이다.
+> - §23 `inputs` 블록과 `akeir input inject --tick N --action Attack`이 `InputFrame`을 만든다.
+> - `akeir replay record`로 사람이 플레이한 세션을 `inputs.jsonl`로 저장 → 그대로 테스트 fixture (§22.3). bevy_brp_extras의 `send_keys` / mouse 주입과 GameCraft-Bench의 demo trace가 같은 개념이다.
 
 ## 88.4 크래시 / 행 / UB 진단
 
@@ -4804,16 +4806,16 @@ NO면 버린다.
 > **권장 기본값**:
 > - Windows: `SetUnhandledExceptionFilter` + `MiniDumpWriteDump` → `Cache/crash/<run>.dmp` + 심볼화된 스택을 §13 envelope(`category: "crash"`, exit 6)에. 마지막 N개 trace 이벤트(§64)와 마지막 tick snapshot을 flush.
 > - `--timeout <dur>` watchdog: 초과 시 스택 dump + exit 7 (`category: "timeout"`).
-> - 빌드 flavor: `game build --sanitize asan,ubsan` (clang-cl), CI에서 주기 실행. MSVC는 `/fsanitize=address`.
+> - 빌드 flavor: `akeir build --sanitize asan,ubsan` (clang-cl), CI에서 주기 실행. MSVC는 `/fsanitize=address`.
 > - exit code 표(§13)가 crash(6) / timeout(7) / findings(3: validation·test) / 도메인 오류(1)를 구분한다 — §72의 "오류 복구율" 측정의 전제.
 
-## 88.5 `game build` — AI 루프의 일부
+## 88.5 `akeir build` — AI 루프의 일부
 
 Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clang-cl"을 각각 다른 이유로 미결로 남겼다: C++26 reflection 실험(GCC 16 / Bloomberg clang-p2996 fork만), glaze C++23 호환, Live++/cr.h, `/fp:precise` vs `-ffp-contract`.
 
 > **권장 기본값**:
 > - **MSVC(VS2022+)를 기본**, clang-cl을 CI의 두 번째 컴파일러로 (sanitizer, SARIF 진단, reflection 실험). 둘 다 `det_fp_flags`를 통과해야 한다.
-> - `game build --json`은 CMake/ninja를 감싸고 컴파일러 진단을 **§79 Diagnostic으로 변환**한다: clang `-fdiagnostics-format=sarif`, MSVC `/diagnostics:column` + SARIF log (`/experimental:log`). 파일·줄·컬럼·fix-it이 같은 모양으로 agent에게 간다.
+> - `akeir build --json`은 CMake/ninja를 감싸고 컴파일러 진단을 **§79 Diagnostic으로 변환**한다: clang `-fdiagnostics-format=sarif`, MSVC `/diagnostics:column` + SARIF log (`/experimental:log`). 파일·줄·컬럼·fix-it이 같은 모양으로 agent에게 간다.
 > - **루프 latency 예산**: 수정 → 빌드 → headless run → 진단까지 **60초**. 넘으면 §39 cr.h DLL reload를 고려. 측정값을 §72에 "seconds per loop"로 기록.
 > - Game/는 처음엔 **static lib**. DLL로 바꾸는 것은 cr.h 도입 시점에, reflection registry(static initializer)와 EnTT meta context / Flecs world가 DLL 경계를 넘어 공유되는지 확인한 뒤.
 
@@ -4837,7 +4839,7 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 
 초안에서는 Save/Load가 §2.1 이후 한 번도 등장하지 않았다. v2는 §26.1·§42.2에 소비자/플래그만 추가했고, 포맷 결정은 여기서 한다. save 파일은 runtimeOnly 상태와 RNG/tick을 포함해야 하고(§22), authoring 파일은 제외해야 하며, snapshot은 그 사이다.
 
-> **권장 기본값**: reflection 기반 serializer **하나** + visibility mask 셋. **정의(유일)**: authoring = `!RuntimeOnly && !Transient`; snapshot = `!Transient`; save = `Save && !Transient` (§42.2 `PropFlags`). §26.1·§88.2는 이 정의를 참조한다. save = "다른 mask를 쓴 snapshot" + 게임 정의 헤더. save 버전은 §53과 같은 per-component version + rename table. save 파일도 §5.3 canonical JSON(또는 같은 키 규칙의 binary)으로, `game save inspect`가 동작해야 한다.
+> **권장 기본값**: reflection 기반 serializer **하나** + visibility mask 셋. **정의(유일)**: authoring = `!RuntimeOnly && !Transient`; snapshot = `!Transient`; save = `Save && !Transient` (§42.2 `PropFlags`). §26.1·§88.2는 이 정의를 참조한다. save = "다른 mask를 쓴 snapshot" + 게임 정의 헤더. save 버전은 §53과 같은 per-component version + rename table. save 파일도 §5.3 canonical JSON(또는 같은 키 규칙의 binary)으로, `akeir save inspect`가 동작해야 한다.
 
 ## 88.9 파일 granularity, canonical 순서, 텍스트 데이터의 규모
 
@@ -4845,9 +4847,9 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 
 > **권장 기본값**:
 > - 시작은 world당 1파일, prefab당 1파일. entity object 키 순서 = **id 정렬** (§5.3).
-> - world가 N entity(예 2,000)를 넘거나 procedural content가 들어오면 `Worlds/Main/<chunk>.world.json`로 분할 — chunk 경계는 공간이 아니라 **authoring 단위**(encounter, region). 분할은 `game world split` command로만.
+> - world가 N entity(예 2,000)를 넘거나 procedural content가 들어오면 `Worlds/Main/<chunk>.world.json`로 분할 — chunk 경계는 공간이 아니라 **authoring 단위**(encounter, region). 분할은 `akeir world split` command로만.
 > - `entity.delete`의 `before`가 subtree 전체를 포함하므로, ChangeSet 크기가 임계(예 1MB)를 넘으면 `ops`를 `Cache/objects/`(§78 blob store)로 빼고 history에는 참조만 둔다.
-> - `game validate` / `game query`가 JSON 재파싱 대신 binary cache(§54)를 써야 하는 규모는 측정 후 결정 (§65).
+> - `akeir validate` / `akeir query`가 JSON 재파싱 대신 binary cache(§54)를 써야 하는 규모는 측정 후 결정 (§65).
 
 ## 88.10 (EnTT 채택 시) 자체 query 문법 — 만들지 않는다
 
@@ -4928,15 +4930,15 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 | §10 | history 는 프로젝트당 선형 스택(`Cache/history/history.jsonl` + `cursor.json`). undo/redo 는 history 에 push 하지 않고 cursor 만 움직인다; 새 commit 이 redo 꼬리를 버린다. `--actor X` undo 는 최근 항목이 다른 actor 면 거부. |
 | §23, §23.1 | 구현: `pme::expr::Expr`(CEL 부분집합 자체 evaluator). **undefined 멤버는 오류**(has() 밖). "tick N 의 snapshot" = N tick 을 돌린 뒤. `always` 첫 위반에서 run 중단 + 나머지 assert 는 중단 시점에 note 와 함께 평가. setup 에 `entity`(기존 entity binding) 추가, `spawn` 은 `set` 포인터 맵·`name`·`tags` 지원. `inputs.untilTick` 생략 시 다음 `release` 까지. enum 값은 reflection 문자열(소문자) (ADR-0023, 0024). |
 | §22.2, §24 | run-twice 결정성: 어긋나면 A 를 divergent tick 까지 재실행해 snapshot diff(entity/path/a/b) + `firstDivergentSystem`. `threads` 는 1 (단일 스레드) (ADR-0025). `run.gpuBackend/projectRev` 는 미기록. |
-| §20, §27, §27.1 | 구현: `--no-render`/`--offscreen` 대신 **`game run --headless`(SDL 미초기화)** 와 **software renderer capture**(SDL `dummy` driver + `SDL_CreateSoftwareRenderer`; 창·GPU 없이 byte-deterministic PNG). `offscreen` GL driver 와 WARP/SwiftShader 논의는 2D PoC 에서 불필요 (ADR-0026). 렌더 API 는 SDL_Renderer (ADR-0027). `videoDriver` 보고는 유지. 비교는 perPixel + maxMismatchRatio 만 (AA 제외/local window 미구현). |
-| §20.1, §22.3 | 창 모드 `game run --record inputs.jsonl` 이 tick 당 InputFrame(JSONL) 을 쓰고 `--headless --replay` 가 같은 finalHash 를 냄을 확인 (90 tick). |
+| §20, §27, §27.1 | 구현: `--no-render`/`--offscreen` 대신 **`akeir run --headless`(SDL 미초기화)** 와 **software renderer capture**(SDL `dummy` driver + `SDL_CreateSoftwareRenderer`; 창·GPU 없이 byte-deterministic PNG). `offscreen` GL driver 와 WARP/SwiftShader 논의는 2D PoC 에서 불필요 (ADR-0026). 렌더 API 는 SDL_Renderer (ADR-0027). `videoDriver` 보고는 유지. 비교는 perPixel + maxMismatchRatio 만 (AA 제외/local window 미구현). |
+| §20.1, §22.3 | 창 모드 `akeir run --record inputs.jsonl` 이 tick 당 InputFrame(JSONL) 을 쓰고 `--headless --replay` 가 같은 finalHash 를 냄을 확인 (90 tick). |
 | §23, §24 | 테스트 파일에 `"requires": ["renderer"]` 추가 — renderer 가 없는 빌드에서 `skipped` (ADR-0028). capture assertion 은 `at` 에서만; golden 경로 `Tests/Golden/<test>/<golden>_<WxH>.png`, `--update-golden`. |
 | §88.3 | `Config/input.json` 의 gamepad/mouse 바인딩은 파싱만 하고 `unsupported` 로 보고 (키보드만 구현). |
-| §88.1, §9.1, §46.2 | 구현: `game serve` = loopback TCP **NDJSON JSON-RPC**(HTTP 아님) + per-session token(`Cache/serve.json`), 모든 `game <cmd>` 자동 포워딩(`--local` 로 우회), `--stdio`. tx = TTL 있는 opaque handle, 만료/미지 → `TX_UNKNOWN_OR_EXPIRED`; one-shot 에서 `--tx` → `TX_REQUIRES_SERVE`. `run.start` → `result.run` + `run status` (ADR-0029, 0031). named pipe·HTTP·watcher 는 미구현. |
-| §46, §46.1, §47 | 구현: sidecar 대신 **`game mcp`(C++ 네이티브 stdio MCP)**. `server/discover`(2026-07-28) + `initialize`(2025-xx) 둘 다 응답. tools = `capabilities.tools[].enabled`, `tools/call` → `structuredContent` envelope + `isError`. resources/prompts/Tasks 미구현 (ADR-0030). |
+| §88.1, §9.1, §46.2 | 구현: `akeir serve` = loopback TCP **NDJSON JSON-RPC**(HTTP 아님) + per-session token(`Cache/serve.json`), 모든 `akeir <cmd>` 자동 포워딩(`--local` 로 우회), `--stdio`. tx = TTL 있는 opaque handle, 만료/미지 → `TX_UNKNOWN_OR_EXPIRED`; one-shot 에서 `--tx` → `TX_REQUIRES_SERVE`. `run.start` → `result.run` + `run status` (ADR-0029, 0031). named pipe·HTTP·watcher 는 미구현. |
+| §46, §46.1, §47 | 구현: sidecar 대신 **`akeir mcp`(C++ 네이티브 stdio MCP)**. `server/discover`(2026-07-28) + `initialize`(2025-xx) 둘 다 응답. tools = `capabilities.tools[].enabled`, `tools/call` → `structuredContent` envelope + `isError`. resources/prompts/Tasks 미구현 (ADR-0030). |
 | §15, §47 | `capabilities` 에 `busCommands[]`(Mutation command + args JSON Schema = `apply.changes[].op` 의 oneOf) 추가. `tools[]` 15개에 `enabled` 플래그. |
 
-**검증 (2026-08-21)**: v2 추가 내용을 7개 에이전트가 리서치 원문·웹 1차 출처로 fact-check하고 전체 일관성을 점검했다 — 130건(high 2, medium 37, low 91) 중 거의 전부를 반영했다. 검증 목록은 저장소 밖의 작업 자료에 있고, 구현에 영향을 준 항목은 아래와 Docs/DECISIONS.md 에 남겼다. 구현에 영향을 준 수정: `game capabilities`의 tools[]/commands[] 2층 구조(§15/§47), §74 Phase 0 구성, ChangeSet `replace`의 `value` 필드(§78), §13 오류 객체 = §79 Diagnostic + α, command id 정식 명명(§8.1), `CommandKind::Meta`(§8), tx commit의 compose 규칙(§9.2).
+**검증 (2026-08-21)**: v2 추가 내용을 7개 에이전트가 리서치 원문·웹 1차 출처로 fact-check하고 전체 일관성을 점검했다 — 130건(high 2, medium 37, low 91) 중 거의 전부를 반영했다. 검증 목록은 저장소 밖의 작업 자료에 있고, 구현에 영향을 준 항목은 아래와 Docs/DECISIONS.md 에 남겼다. 구현에 영향을 준 수정: `akeir capabilities`의 tools[]/commands[] 2층 구조(§15/§47), §74 Phase 0 구성, ChangeSet `replace`의 `value` 필드(§78), §13 오류 객체 = §79 Diagnostic + α, command id 정식 명명(§8.1), `CommandKind::Meta`(§8), tx commit의 compose 규칙(§9.2).
 
 ---
 

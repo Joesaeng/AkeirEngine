@@ -1,6 +1,6 @@
-// Tools/CLI/InitCommand.cpp — `game project init`: 빈 프로젝트 생성. 설계 문서 §5 (프로젝트 구조), §5.3 (canonical), §6 (world 문서), §7 (id), §88.3 (input.json).
+// Tools/CLI/InitCommand.cpp — `akeir project init`: 빈 프로젝트 생성. 설계 문서 §5 (프로젝트 구조), §5.3 (canonical), §6 (world 문서), §7 (id), §88.3 (input.json).
 //
-//   game project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force] [--json]
+//   akeir project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force] [--json]
 //     DIR 기본값 = ./<name>. 이미 비어 있지 않으면 DIR_NOT_EMPTY (--force 로 덮어쓰기 허용; 기존 파일은 지우지 않고 같은 이름만 덮어쓴다).
 //   만드는 것:
 //     project.json                  { name, tickRate, seed, defaultWorld, writable }
@@ -9,7 +9,7 @@
 //     Config/input.json             MoveX/MoveY(axis, WASD·화살표) + Attack(Space) — 내장 PlayerController 가 읽는 action 이름
 //     .gitignore                    Cache/  Tests/.results/
 //     README.md                     다음에 할 명령 (entity create / prefab create / run / test / mcp)
-//   이 command 는 CommandBus 를 거치지 않는다 — 아직 프로젝트가 없기 때문. 만든 뒤 `game validate` 를 돌려 결과를 envelope 에 싣는다.
+//   이 command 는 CommandBus 를 거치지 않는다 — 아직 프로젝트가 없기 때문. 만든 뒤 `akeir validate` 를 돌려 결과를 envelope 에 싣는다.
 #include "Commands.h"
 #include "GameSystems.h"
 #include "pme/core/Id.h"
@@ -47,23 +47,23 @@ bool writeText(const fs::path& p, const std::string& text, std::string* err) {
 }
 
 std::string projectReadme(const std::string& name) {
-    return "# " + name + " — MoltEngine project\n\n"
-           "Authoring data lives in this directory as canonical JSON (Worlds/, Prefabs/, Config/). Change Worlds/Prefabs/Config through the `game` CLI (or the MCP server), not by hand; test scenarios in Tests/ are written by hand (format: Engine/Testing/README.md in the engine folder).\n"
-           "`game` below means the engine's bin\\game.exe — add that folder to PATH or use the full path.\n\n"
+    return "# " + name + " — AKEIR Engine project\n\n"
+           "Authoring data lives in this directory as canonical JSON (Worlds/, Prefabs/, Config/). Change Worlds/Prefabs/Config through the `akeir` CLI (or the MCP server), not by hand; test scenarios in Tests/ are written by hand (format: Engine/Testing/README.md in the engine folder).\n"
+           "`akeir` below means the engine's bin\\akeir.exe — add that folder to PATH or use the full path.\n\n"
            "```bash\n"
-           "game validate --json                                   # checks ids, schemas, refs; exit 3 + fixes on errors\n"
-           "game schema --all --json                               # every component and its properties\n"
-           "game prefab create Hero --components \"{\\\"Collider2D\\\":{\\\"shape\\\":\\\"circle\\\",\\\"radius\\\":0.4},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"dynamic\\\"},\\\"Movement\\\":{\\\"speed\\\":5},\\\"PlayerController\\\":{}}\" --json\n"
-           "game prefab instantiate name:Hero --name Player --position 0,0,0 --json\n"
-           "game entity create Wall --components \"{\\\"Collider2D\\\":{\\\"size\\\":[10,1]},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"static\\\"},\\\"Transform\\\":{\\\"position\\\":[0,-5,0]}}\" --json   # a collider needs a (static) RigidBody2D to block anything\n"
-           "game run --headless --ticks 600 --json                 # deterministic run, result.finalHash\n"
-           "game run                                                # window (SDL build): WASD / arrows, ESC to quit\n"
-           "game capture --ticks 120 --out Cache/capture/f.png --json\n"
-           "game test --json                                        # Tests/**/*.test.json\n"
-           "game undo --json                                        # every change above is one undo step\n"
-           "game mcp                                                # MCP server over stdio for AI clients\n"
+           "akeir validate --json                                   # checks ids, schemas, refs; exit 3 + fixes on errors\n"
+           "akeir schema --all --json                               # every component and its properties\n"
+           "akeir prefab create Hero --components \"{\\\"Collider2D\\\":{\\\"shape\\\":\\\"circle\\\",\\\"radius\\\":0.4},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"dynamic\\\"},\\\"Movement\\\":{\\\"speed\\\":5},\\\"PlayerController\\\":{}}\" --json\n"
+           "akeir prefab instantiate name:Hero --name Player --position 0,0,0 --json\n"
+           "akeir entity create Wall --components \"{\\\"Collider2D\\\":{\\\"size\\\":[10,1]},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"static\\\"},\\\"Transform\\\":{\\\"position\\\":[0,-5,0]}}\" --json   # a collider needs a (static) RigidBody2D to block anything\n"
+           "akeir run --headless --ticks 600 --json                 # deterministic run, result.finalHash\n"
+           "akeir run                                                # window (SDL build): WASD / arrows, ESC to quit\n"
+           "akeir capture --ticks 120 --out Cache/capture/f.png --json\n"
+           "akeir test --json                                        # Tests/**/*.test.json\n"
+           "akeir undo --json                                        # every change above is one undo step\n"
+           "akeir mcp                                                # MCP server over stdio for AI clients\n"
            "```\n\n"
-           "Start from `game capabilities --json` (tools, busCommands, error codes) and `game project info --json`. Selectors: id | bare name | name:<n> | path:<World/Parent/Child>.\n"
+           "Start from `akeir capabilities --json` (tools, busCommands, error codes) and `akeir project info --json`. Selectors: id | bare name | name:<n> | path:<World/Parent/Child>.\n"
            "Combat needs Health on BOTH sides: EnemyAI only damages targets that carry a Health component.\n"
            "Cache/ holds derived data (undo history, crash dumps, captures) and can be deleted.\n";
 }
@@ -72,7 +72,7 @@ Envelope cmdProjectInit(Context& ctx) {
     registerBuiltinComponents();
     game::registerGameComponents();
     const std::string name = ctx.args.positional(2, "");
-    if (name.empty()) return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "game project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force]"));
+    if (name.empty()) return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "akeir project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force]"));
     for (char c : name) if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' || c == ' '))
         return Envelope::failure("project.init", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "Project name may contain letters, digits, space, '_' and '-'.", Json{{"name", name}}));
     fs::path dir = fs::absolute(ctx.args.getOr("dir", name));
@@ -120,7 +120,7 @@ Envelope cmdProjectInit(Context& ctx) {
     std::vector<std::string> written = {"project.json", "Worlds/Main.world.json"};
     auto put = [&](const char* rel, const std::string& text) { if (writeText(dir / rel, text, &err)) written.push_back(rel); };
     if (auto j = parseJson(kDefaultInputJson)) { if (auto text = canonicalDump(*j)) put("Config/input.json", *text); }
-    put(".gitignore", "# MoltEngine derived data (undo history, journal, crash dumps, captures, serve lock) — safe to delete\nCache/\nTests/.results/\n");
+    put(".gitignore", "# AKEIR Engine derived data (undo history, journal, crash dumps, captures, serve lock) — safe to delete\nCache/\nTests/.results/\n");
     put("README.md", projectReadme(name));
     for (const char* keep : {"Prefabs/.gitkeep", "Tests/.gitkeep", "Data/.gitkeep", "Assets/.gitkeep"}) put(keep, "");
 
@@ -132,7 +132,7 @@ Envelope cmdProjectInit(Context& ctx) {
     validation["summary"] = summarize(diags).toJson();
 
     Json r = Json{{"name", name}, {"dir", dir.generic_string()}, {"tickRate", tickRate}, {"seed", seed}, {"defaultWorld", worldId}, {"camera", camId}, {"files", written}, {"validation", validation},
-                  {"next", Json::array({"cd " + dir.generic_string(), "game capabilities --json", "game schema --all --json", "game prefab create <Name> --components {...} --json", "game run --headless --ticks 600 --json"})}};
+                  {"next", Json::array({"cd " + dir.generic_string(), "akeir capabilities --json", "akeir schema --all --json", "akeir prefab create <Name> --components {...} --json", "akeir run --headless --ticks 600 --json"})}};
     Envelope env = Envelope::success("project.init", r);
     for (auto& d : diags) env.withWarning(d);
     return env;
@@ -143,7 +143,7 @@ Envelope cmdProjectInit(Context& ctx) {
 void registerInitCommands(std::vector<CommandSpec>& t) {
     t.push_back({"project.init", {"project", "init"}, "Mutation", "Create an empty project",
                  "Writes project.json, Worlds/Main.world.json (MainCamera), Config/input.json (MoveX/MoveY/Attack), empty Prefabs/Tests/Data/Assets, .gitignore and README. Does not need an existing project.",
-                 "game project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force] [--json]", false, false, false, cmdProjectInit});
+                 "akeir project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force] [--json]", false, false, false, cmdProjectInit});
 }
 
 } // namespace pme::cli

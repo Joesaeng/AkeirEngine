@@ -2,7 +2,7 @@
 // §9 (Transaction: fork → execute → compose → commit), §9.2 (commit 절차), §10 (undo/redo = inverse(ops)), §49 (apply batch, $name 참조, idempotencyKey),
 // §50 (dry-run = fork 에서 실행, 저장 없이 ChangeSet 반환), §78 (ChangeSet), §88.1 (Phase 3 tx 는 in-process).
 //
-//   CLI / Editor / MCP 는 전부 이 클래스만 호출한다. 파일을 직접 고치는 다른 엔진 경로는 없다 (`game fmt` 제외).
+//   CLI / Editor / MCP 는 전부 이 클래스만 호출한다. 파일을 직접 고치는 다른 엔진 경로는 없다 (`akeir fmt` 제외).
 //
 //   실행 모델 (Mutation):
 //     1. fork = project 문서 맵의 복사본             (Query 는 fork 없이 project 를 읽는다)

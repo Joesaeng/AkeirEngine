@@ -1,4 +1,4 @@
-// Tools/CLI/Serve.h — `game serve` 데몬 + 얇은 클라이언트 + ServeHost. 설계 문서 §88.1 (상주 프로세스, 단일 writer, `game <cmd>` 는 데몬이 있으면 RPC), §9.1 (tx = opaque handle + TTL),
+// Tools/CLI/Serve.h — `akeir serve` 데몬 + 얇은 클라이언트 + ServeHost. 설계 문서 §88.1 (상주 프로세스, 단일 writer, `akeir <cmd>` 는 데몬이 있으면 RPC), §9.1 (tx = opaque handle + TTL),
 // §46.2 (loopback + per-session token), §13 (exit code 는 envelope 에서).
 //
 //   전송 (ADR-0029): 127.0.0.1:<port> TCP, **NDJSON JSON-RPC 2.0** (요청 한 줄 ↔ 응답 한 줄). HTTP 가 아니다 — 외부 라이브러리 없이 Winsock 만 쓴다.
@@ -9,7 +9,7 @@
 //   발견: <project>/Cache/serve.json = {pid, port, token, startedAt, projectDir}. 클라이언트는 이 파일이 있고 연결되면 RPC, 아니면 파일을 지우고 one-shot.
 //   `--local` 을 주면 데몬을 무시하고 in-process 로 실행한다 (데몬이 잠근 파일을 두 프로세스가 쓰면 BASE_MISMATCH 로 드러난다).
 //   `--stdio` 면 소켓 대신 stdin/stdout 으로 같은 NDJSON (Editor 임베딩용; token 검사 없음). 이때 envelope 출력은 stdout 이 아니라 RPC 응답이다.
-//   `game mcp` (Mcp.cpp) 는 같은 ServeHost 위에 MCP 메서드(initialize/tools/list/tools/call)를 올린다.
+//   `akeir mcp` (Mcp.cpp) 는 같은 ServeHost 위에 MCP 메서드(initialize/tools/list/tools/call)를 올린다.
 #pragma once
 
 #include "Commands.h"
@@ -69,7 +69,7 @@ bool tryRemote(const Args& args, const std::string& projectDir, const std::strin
 
 void registerServeCommands(std::vector<CommandSpec>& table);
 
-/// Mcp.cpp — `game mcp` (stdio MCP 서버, ServeHost 위에)
+/// Mcp.cpp — `akeir mcp` (stdio MCP 서버, ServeHost 위에)
 int runMcp(Context& ctx);
 void registerMcpCommands(std::vector<CommandSpec>& table);
 

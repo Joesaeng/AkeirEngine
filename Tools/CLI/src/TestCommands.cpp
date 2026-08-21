@@ -1,6 +1,6 @@
-// Tools/CLI/TestCommands.cpp — `game test`: Game/Tests/**/*.test.json 을 실행해 results.json(+JUnit) 을 쓴다. 설계 문서 §23, §23.1, §24, §22.2.
+// Tools/CLI/TestCommands.cpp — `akeir test`: Game/Tests/**/*.test.json 을 실행해 results.json(+JUnit) 을 쓴다. 설계 문서 §23, §23.1, §24, §22.2.
 //
-//   game test [filter] [--junit results.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]
+//   akeir test [filter] [--junit results.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]
 //   결과 디렉터리 기본값: <project>/Tests/.results/<run_id>/  (results.json, artifacts/<test>/tick_NNNN.snapshot.json)
 //   exit code: 전부 통과 0, 실패/오류 있으면 3 (§13 findings), 테스트가 없으면 5 (not found)
 #include "Commands.h"
@@ -80,7 +80,7 @@ Envelope cmdTest(Context& ctx) {
 void registerTestCommands(std::vector<CommandSpec>& t) {
     t.push_back({"test", {"test"}, "Query", "Run data-driven test scenarios (§23)",
                  "Runs Tests/**/*.test.json: setup (spawn/bind), scripted inputs, assertions on frame snapshots (always/eventually/at), run-twice determinism. Writes results.json (+ --junit). Exit 3 on failures.",
-                 "game test [filter] [--junit out.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]", true, false, true, cmdTest});
+                 "akeir test [filter] [--junit out.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]", true, false, true, cmdTest});
 }
 
 } // namespace pme::cli

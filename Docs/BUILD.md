@@ -47,7 +47,7 @@ ctest --preset msvc-headless
 
 | 경로 | 내용 |
 |---|---|
-| `build/<preset>/bin/game.exe` | CLI (§11). `msvc-release` 는 static CRT(`/MT`) 라 VC++ 재배포 없이 다른 PC 에서 돈다 — 릴리즈 zip 의 `bin/game.exe` |
+| `build/<preset>/bin/akeir.exe` | CLI (§11). `msvc-release` 는 static CRT(`/MT`) 라 VC++ 재배포 없이 다른 PC 에서 돈다 — 릴리즈 zip 의 `bin/akeir.exe` |
 | `build/<preset>/Tests/pme_tests.exe` | doctest 단위 테스트 |
 | `build/<preset>/compile_commands.json` | clangd 등용 |
 
@@ -60,16 +60,16 @@ build\msvc-headless\Tests\pme_tests.exe --list-test-cases
 scripts\build.cmd msvc-headless test                 # ctest 경유 (doctest_discover_tests 로 케이스별 등록)
 ```
 
-테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다. **TEST_CASE 이름에 `;` 금지** — `doctest_discover_tests` 가 CMake 목록 구분자로 쪼개 그 테스트를 조용히 건너뛴다(ME0.1 검증에서 발견). 정본은 `pme_tests.exe` 직접 실행.
+테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다. **TEST_CASE 이름에 `;` 금지** — `doctest_discover_tests` 가 CMake 목록 구분자로 쪼개 그 테스트를 조용히 건너뛴다(v0.1.0 검증에서 발견). 정본은 `pme_tests.exe` 직접 실행.
 
 ## CLI 스모크 테스트 (Phase 0 성공 기준, §74)
 
 ```bash
-build\msvc-headless\bin\game.exe version --json            # exit 0, envelope
-build\msvc-headless\bin\game.exe capabilities --json       # tools[] / commands[] / exitCodes
-build\msvc-headless\bin\game.exe nope                      # exit 2, UNKNOWN_COMMAND
-build\msvc-headless\bin\game.exe debug crash-test          # exit 6, Cache/crash/*.dmp, error.details.minidump
-build\msvc-headless\bin\game.exe debug hang-test --timeout 2s   # exit 7 after 2s
+build\msvc-headless\bin\akeir.exe version --json            # exit 0, envelope
+build\msvc-headless\bin\akeir.exe capabilities --json       # tools[] / commands[] / exitCodes
+build\msvc-headless\bin\akeir.exe nope                      # exit 2, UNKNOWN_COMMAND
+build\msvc-headless\bin\akeir.exe debug crash-test          # exit 6, Cache/crash/*.dmp, error.details.minidump
+build\msvc-headless\bin\akeir.exe debug hang-test --timeout 2s   # exit 7 after 2s
 ```
 
 stdout 이 TTY 가 아니면 JSON 한 줄(envelope), TTY 면 pretty JSON. `--json` 으로 강제. 로그는 stderr(JSONL).
@@ -77,27 +77,27 @@ stdout 이 TTY 가 아니면 JSON 한 줄(envelope), TTY 면 pretty JSON. `--jso
 ## 새 프로젝트 만들기
 
 ```bash
-build\msvc-headless\bin\game.exe project init MyGame --dir C:\work\MyGame --json   # project.json, Worlds/Main.world.json(MainCamera), Config/input.json, README
+build\msvc-headless\bin\akeir.exe project init MyGame --dir C:\work\MyGame --json   # project.json, Worlds/Main.world.json(MainCamera), Config/input.json, README
 cd C:\work\MyGame
-C:\Project\Project_ME\build\msvc-headless\bin\game.exe prefab create Hero --components "{\"Collider2D\":{\"shape\":\"circle\"},\"RigidBody2D\":{\"type\":\"dynamic\",\"gravityScale\":0},\"Movement\":{\"speed\":5},\"PlayerController\":{}}" --json
-C:\Project\Project_ME\build\msvc-headless\bin\game.exe prefab instantiate name:Hero --name Player --json
-C:\Project\Project_ME\build\msvc-headless\bin\game.exe run --headless --ticks 600 --json
+C:\Project\Project_ME\build\msvc-headless\bin\akeir.exe prefab create Hero --components "{\"Collider2D\":{\"shape\":\"circle\"},\"RigidBody2D\":{\"type\":\"dynamic\",\"gravityScale\":0},\"Movement\":{\"speed\":5},\"PlayerController\":{}}" --json
+C:\Project\Project_ME\build\msvc-headless\bin\akeir.exe prefab instantiate name:Hero --name Player --json
+C:\Project\Project_ME\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json
 ```
-사용할 수 있는 component 는 `game schema --all --json` (내장 5종 + 샘플 게임의 Health/Movement/PlayerController/EnemyAI — CLI 가 `Game/Source` 를 정적으로 링크하므로 새 프로젝트에서도 보인다). 새 component/system 은 C++ 로 추가하고 다시 빌드해야 한다 (`Game/Source/README.md`).
+사용할 수 있는 component 는 `akeir schema --all --json` (내장 5종 + 샘플 게임의 Health/Movement/PlayerController/EnemyAI — CLI 가 `Game/Source` 를 정적으로 링크하므로 새 프로젝트에서도 보인다). 새 component/system 은 C++ 로 추가하고 다시 빌드해야 한다 (`Game/Source/README.md`).
 
 ## 샘플 프로젝트로 Phase 1 확인 (§71 시나리오의 headless 부분)
 
 ```bash
 cd Game
-..\build\msvc-headless\bin\game.exe project info --json
-..\build\msvc-headless\bin\game.exe validate --json                 # ok:true; 오류면 exit 3 + fixes
-..\build\msvc-headless\bin\game.exe fmt --dry-run --json            # canonical 이 아닌 파일 목록
-..\build\msvc-headless\bin\game.exe schema component Health --json   # JSON Schema 2020-12 + wireFormat
-..\build\msvc-headless\bin\game.exe explain name:Goblin_03 --json    # prefab 체인, overrides, resolved components, lifecycle
-..\build\msvc-headless\bin\game.exe refs name:Goblin --json           # 누가 이 prefab 을 쓰는가 (§19)
-..\build\msvc-headless\bin\game.exe run --headless --ticks 600 --hash-every 100 --snapshot-out Cache\snap.json --json
-..\build\msvc-headless\bin\game.exe query --with EnemyAI --ticks 300 --components --json
-..\build\msvc-headless\bin\game.exe dump path:Arena/Player --ticks 600 --json
+..\build\msvc-headless\bin\akeir.exe project info --json
+..\build\msvc-headless\bin\akeir.exe validate --json                 # ok:true; 오류면 exit 3 + fixes
+..\build\msvc-headless\bin\akeir.exe fmt --dry-run --json            # canonical 이 아닌 파일 목록
+..\build\msvc-headless\bin\akeir.exe schema component Health --json   # JSON Schema 2020-12 + wireFormat
+..\build\msvc-headless\bin\akeir.exe explain name:Goblin_03 --json    # prefab 체인, overrides, resolved components, lifecycle
+..\build\msvc-headless\bin\akeir.exe refs name:Goblin --json           # 누가 이 prefab 을 쓰는가 (§19)
+..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --hash-every 100 --snapshot-out Cache\snap.json --json
+..\build\msvc-headless\bin\akeir.exe query --with EnemyAI --ticks 300 --components --json
+..\build\msvc-headless\bin\akeir.exe dump path:Arena/Player --ticks 600 --json
 ```
 `run` 을 두 번 실행하면 `result.finalHash` 가 같아야 한다 (T0, §22.1). 다르면 결정론 버그다.
 
@@ -105,7 +105,7 @@ cd Game
 
 ```bash
 xcopy /E /I Game C:\tmp\pme_demo && cd C:\tmp\pme_demo
-set G=C:\Project\Project_ME\build\msvc-headless\bin\game.exe
+set G=C:\Project\Project_ME\build\msvc-headless\bin\akeir.exe
 %G% set name:Goblin_01 Health.max 45 --json                 # 인스턴스 → set override. changes[0].op = add …/set/~1components~1Health~1max
 %G% set name:Goblin Movement.speed 4.5 --json               # prefab 편집 → 모든 고블린 (ADR-0021)
 %G% entity create Crate --parent path:TestArena/Arena --components "{\"Collider2D\":{\"shape\":\"box\"}}" --json
@@ -127,9 +127,9 @@ set G=C:\Project\Project_ME\build\msvc-headless\bin\game.exe
 
 ```bash
 cd Game
-..\build\msvc-headless\bin\game.exe test --list --json                 # Tests/**/*.test.json 목록
-..\build\msvc-headless\bin\game.exe test --json                        # 전부 실행 → Tests/.results/<run>/results.json, exit 0/3
-..\build\msvc-headless\bin\game.exe test Combat --junit Cache\junit.xml --json   # 이름/경로 필터 + JUnit
+..\build\msvc-headless\bin\akeir.exe test --list --json                 # Tests/**/*.test.json 목록
+..\build\msvc-headless\bin\akeir.exe test --json                        # 전부 실행 → Tests/.results/<run>/results.json, exit 0/3
+..\build\msvc-headless\bin\akeir.exe test Combat --junit Cache\junit.xml --json   # 이름/경로 필터 + JUnit
 ```
 실패하면 `error.details.tests[].failures[]` 에 `{assertId, tick, bindings, note}` 와 `artifacts[]` 의 snapshot 경로가 있다. 시나리오 형식과 표현식 문법은 `Engine/Testing/README.md`.
 
@@ -137,13 +137,13 @@ cd Game
 
 ```bash
 cd Game
-..\build\msvc-debug\bin\game.exe run --ticks 600 --json                         # 창을 열고 600 tick (ESC/닫기로 중단). WASD/화살표 = MoveX/MoveY
-..\build\msvc-debug\bin\game.exe run --record Cache\rec.jsonl --json              # 입력을 기록 (닫을 때까지)
-..\build\msvc-debug\bin\game.exe run --headless --replay Cache\rec.jsonl --ticks N --json   # 같은 finalHash 가 나와야 한다
-..\build\msvc-debug\bin\game.exe capture --ticks 300 --width 512 --height 512 --out Cache\capture\t300.png --json
-..\build\msvc-debug\bin\game.exe capture --ticks 300 --compare Cache\capture\t300.png --diff Cache\capture\diff.png --json   # §27.1 비교, exit 3 on mismatch
-..\build\msvc-debug\bin\game.exe input map --json                                 # input.json → scancode
-..\build\msvc-debug\bin\game.exe test Visual --update-golden --json               # 골든 생성/갱신 (Tests/Golden/<test>/)
+..\build\msvc-debug\bin\akeir.exe run --ticks 600 --json                         # 창을 열고 600 tick (ESC/닫기로 중단). WASD/화살표 = MoveX/MoveY
+..\build\msvc-debug\bin\akeir.exe run --record Cache\rec.jsonl --json              # 입력을 기록 (닫을 때까지)
+..\build\msvc-debug\bin\akeir.exe run --headless --replay Cache\rec.jsonl --ticks N --json   # 같은 finalHash 가 나와야 한다
+..\build\msvc-debug\bin\akeir.exe capture --ticks 300 --width 512 --height 512 --out Cache\capture\t300.png --json
+..\build\msvc-debug\bin\akeir.exe capture --ticks 300 --compare Cache\capture\t300.png --diff Cache\capture\diff.png --json   # §27.1 비교, exit 3 on mismatch
+..\build\msvc-debug\bin\akeir.exe input map --json                                 # input.json → scancode
+..\build\msvc-debug\bin\akeir.exe test Visual --update-golden --json               # 골든 생성/갱신 (Tests/Golden/<test>/)
 ```
 `msvc-headless` 빌드에서 이 명령들은 `FEATURE_UNAVAILABLE`(exit 1) 이고, `requires: ["renderer"]` 테스트는 skipped 다.
 
@@ -151,26 +151,26 @@ cd Game
 
 ```bash
 cd Game
-start ..\build\msvc-headless\bin\game.exe serve --idle-timeout 600000     # 다른 창에서: 첫 줄이 {port, token, pid}; Cache/serve.json 생성
-..\build\msvc-headless\bin\game.exe serve status --json                  # 요청 수, 열린 tx, 최근 history
-..\build\msvc-headless\bin\game.exe set name:Goblin_01 Health.max 45 --json   # 데몬으로 포워딩 (meta.via = "serve")
-..\build\msvc-headless\bin\game.exe tx begin --json                       # → result.tx (TTL 10분)
-..\build\msvc-headless\bin\game.exe entity create Crate --parent path:TestArena/Arena --tx tx_XXXX --json
-..\build\msvc-headless\bin\game.exe tag add name:Crate breakable --tx tx_XXXX --json   # tx 안에서는 자기 변경이 보인다
-..\build\msvc-headless\bin\game.exe tx commit tx_XXXX --json             # 하나의 history 항목, 파일 기록
-..\build\msvc-headless\bin\game.exe run --headless --ticks 120 --json    # result.run = run handle
-..\build\msvc-headless\bin\game.exe run status --json                    # 이 serve 세션의 run 들
-..\build\msvc-headless\bin\game.exe set name:Goblin_01 Health.max 30 --local --json   # 데몬 무시 (두 writer → BASE_MISMATCH 가능)
-..\build\msvc-headless\bin\game.exe serve stop
+start ..\build\msvc-headless\bin\akeir.exe serve --idle-timeout 600000     # 다른 창에서: 첫 줄이 {port, token, pid}; Cache/serve.json 생성
+..\build\msvc-headless\bin\akeir.exe serve status --json                  # 요청 수, 열린 tx, 최근 history
+..\build\msvc-headless\bin\akeir.exe set name:Goblin_01 Health.max 45 --json   # 데몬으로 포워딩 (meta.via = "serve")
+..\build\msvc-headless\bin\akeir.exe tx begin --json                       # → result.tx (TTL 10분)
+..\build\msvc-headless\bin\akeir.exe entity create Crate --parent path:TestArena/Arena --tx tx_XXXX --json
+..\build\msvc-headless\bin\akeir.exe tag add name:Crate breakable --tx tx_XXXX --json   # tx 안에서는 자기 변경이 보인다
+..\build\msvc-headless\bin\akeir.exe tx commit tx_XXXX --json             # 하나의 history 항목, 파일 기록
+..\build\msvc-headless\bin\akeir.exe run --headless --ticks 120 --json    # result.run = run handle
+..\build\msvc-headless\bin\akeir.exe run status --json                    # 이 serve 세션의 run 들
+..\build\msvc-headless\bin\akeir.exe set name:Goblin_01 Health.max 30 --local --json   # 데몬 무시 (두 writer → BASE_MISMATCH 가능)
+..\build\msvc-headless\bin\akeir.exe serve stop
 ```
 
 MCP 클라이언트 등록 (stdio). 예: Claude Code `.mcp.json`
 ```json
-{ "mcpServers": { "game": { "command": "C:\\Project\\Project_ME\\build\\msvc-debug\\bin\\game.exe", "args": ["mcp", "--project", "C:\\Project\\Project_ME\\Game"] } } }
+{ "mcpServers": { "game": { "command": "C:\\Project\\Project_ME\\build\\msvc-debug\\bin\\akeir.exe", "args": ["mcp", "--project", "C:\\Project\\Project_ME\\Game"] } } }
 ```
 손으로 확인하려면 한 줄씩 stdin 으로:
 ```bash
-echo {"jsonrpc":"2.0","id":1,"method":"tools/list"} | ..\build\msvc-headless\bin\game.exe mcp
+echo {"jsonrpc":"2.0","id":1,"method":"tools/list"} | ..\build\msvc-headless\bin\akeir.exe mcp
 ```
 
 ## 의존성
@@ -201,7 +201,7 @@ git clone --depth 1 --branch release-3.4.14 https://github.com/libsdl-org/SDL.gi
 
 `cmake/DetFpFlags.cmake` 가 `det_fp_flags` INTERFACE target 을 만든다: MSVC `/fp:precise`, Clang/GCC `-ffp-contract=off -fno-fast-math`.
 모든 엔진 타깃이 link 하고, Box2D 에는 `PME_FP_FLAGS_OPTIONS` 를 직접 건다 (export set 때문).
-`game version --json` 의 `fpFlagsHash` 가 적용된 플래그의 해시다 — replay header(§22.3)와 비교한다.
+`akeir version --json` 의 `fpFlagsHash` 가 적용된 플래그의 해시다 — replay header(§22.3)와 비교한다.
 
 ## 알려진 빌드 이슈
 

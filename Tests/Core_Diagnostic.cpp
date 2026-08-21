@@ -12,7 +12,7 @@ TEST_CASE("Diagnostic: JSON shape matches §79 and round-trips") {
     fix.applicability = Applicability::MachineApplicable;
     fix.isPreferred = true;
     fix.commands.push_back(CommandInvocation{"component.add", Json{{"entity", "entity_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"component", "Transform"}}});
-    fix.cli = "game component add entity_01j5xq8z3mf0n9k2c7p4rtvw6y Transform --json";
+    fix.cli = "akeir component add entity_01j5xq8z3mf0n9k2c7p4rtvw6y Transform --json";
 
     Diagnostic d = Diagnostic::error("COMPONENT_DEPENDENCY_MISSING", "CharacterMovement requires Transform.")
                        .at(LogicalLocation{"entity_01j5xq8z3mf0n9k2c7p4rtvw6y", std::string("CharacterMovement"), std::nullopt})

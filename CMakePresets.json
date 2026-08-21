@@ -23,7 +23,7 @@
     },
     {
       "name": "msvc-release",
-      "displayName": "MSVC RelWithDebInfo (Ninja), static CRT — 배포용 (bin/game.exe 가 VC++ 재배포 없이 돈다)",
+      "displayName": "MSVC RelWithDebInfo (Ninja), static CRT — 배포용 (bin/akeir.exe 가 VC++ 재배포 없이 돈다)",
       "inherits": "msvc-base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo", "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded" }
     },

@@ -1,20 +1,20 @@
 // Tools/CLI/MutationCommands.cpp — 쓰기 명령. 전부 pme::CommandBus 를 거친다 (§8 단일 Command API, §11 CLI).
 // 설계 문서 §8 (entity/component/property 명령), §9 (commit), §10 (undo/redo/history), §49 (apply), §50 (--dry-run), §78 (envelope.changes = ChangeSet ops)
 //
-//   game entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b]
-//   game entity delete <selector> [--no-recursive]
-//   game entity rename <selector> <name>
-//   game entity reparent <selector> <parent|root> [--order K]
-//   game component add <selector> <Component> [--value JSON]
-//   game component remove <selector> <Component>
-//   game set <selector> <Component>.<prop[/sub]> <value>          value 는 JSON 으로 파싱, 실패하면 문자열
-//   game tag add|remove <selector> <tag>
-//   game prefab create <name> [--components JSON] [--base X] [--tags a,b]
-//   game prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]
-//   game world create <name>
-//   game apply <file.json | -> [--dry-run] [--idempotency-key K]          §49 batch
-//   game undo [N] [--actor A] / game redo [N] / game history [--limit N]
-//   game cmd <command.id> --args '{json}'                                  임의 command (capabilities.commands[] 참조)
+//   akeir entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b]
+//   akeir entity delete <selector> [--no-recursive]
+//   akeir entity rename <selector> <name>
+//   akeir entity reparent <selector> <parent|root> [--order K]
+//   akeir component add <selector> <Component> [--value JSON]
+//   akeir component remove <selector> <Component>
+//   akeir set <selector> <Component>.<prop[/sub]> <value>          value 는 JSON 으로 파싱, 실패하면 문자열
+//   akeir tag add|remove <selector> <tag>
+//   akeir prefab create <name> [--components JSON] [--base X] [--tags a,b]
+//   akeir prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]
+//   akeir world create <name>
+//   akeir apply <file.json | -> [--dry-run] [--idempotency-key K]          §49 batch
+//   akeir undo [N] [--actor A] / akeir redo [N] / akeir history [--limit N]
+//   akeir cmd <command.id> --args '{json}'                                  임의 command (capabilities.commands[] 참조)
 //
 //   공통 옵션: --dry-run (§50: fork 에서 실행, 파일 안 건드림, changes 는 돌려줌), --no-validate (commit 전 문서 검증 생략), --actor <id> (history 태깅, 기본 "cli"), --json
 //   출력: §12 envelope. ok 면 result + changes[] (ChangeSet ops) + meta.changeSet. 실패면 error (category/ruleId/details).
@@ -51,7 +51,7 @@ bool open(Context& ctx, Envelope& fail, const std::string& command, Opened& out)
     }
     if (!ctx.args.getOr("tx", "").empty()) {
         fail = Envelope::failure(command, CommandError::make(ErrorCategory::Precondition, "TX_REQUIRES_SERVE",
-            "Multi-call transactions need the resident process: start `game serve` in another terminal, then `game tx begin`.", Json{{"hint", "game serve"}}));
+            "Multi-call transactions need the resident process: start `akeir serve` in another terminal, then `akeir tx begin`.", Json{{"hint", "akeir serve"}}));
         return false;
     }
     out.ownedPrj = openProject(ctx, fail, command);
@@ -125,7 +125,7 @@ Envelope runOne(Context& ctx, const std::string& id, Json args) {
 
 Envelope cmdEntityCreate(Context& ctx) {
     const std::string name = ctx.args.positional(2);
-    if (name.empty()) return usage("entity.create", "game entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b]");
+    if (name.empty()) return usage("entity.create", "akeir entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b]");
     Envelope fail;
     Json a = Json{{"name", name}};
     if (auto v = ctx.args.get("world")) a["world"] = *v;
@@ -142,19 +142,19 @@ Envelope cmdEntityCreate(Context& ctx) {
 
 Envelope cmdEntityDelete(Context& ctx) {
     const std::string sel = ctx.args.positional(2);
-    if (sel.empty()) return usage("entity.delete", "game entity delete <selector> [--no-recursive]");
+    if (sel.empty()) return usage("entity.delete", "akeir entity delete <selector> [--no-recursive]");
     return runOne(ctx, "entity.delete", Json{{"entity", sel}, {"recursive", !ctx.args.has("no-recursive")}});
 }
 
 Envelope cmdEntityRename(Context& ctx) {
     const std::string sel = ctx.args.positional(2), name = ctx.args.positional(3);
-    if (sel.empty() || name.empty()) return usage("entity.rename", "game entity rename <selector> <name>");
+    if (sel.empty() || name.empty()) return usage("entity.rename", "akeir entity rename <selector> <name>");
     return runOne(ctx, "entity.rename", Json{{"entity", sel}, {"name", name}});
 }
 
 Envelope cmdEntityReparent(Context& ctx) {
     const std::string sel = ctx.args.positional(2), parent = ctx.args.positional(3);
-    if (sel.empty() || parent.empty()) return usage("entity.reparent", "game entity reparent <selector> <parent|root> [--order K]");
+    if (sel.empty() || parent.empty()) return usage("entity.reparent", "akeir entity reparent <selector> <parent|root> [--order K]");
     Json a = Json{{"entity", sel}, {"parent", parent == "root" || parent == "null" ? Json() : Json(parent)}};
     if (auto v = ctx.args.get("order")) a["order"] = *v;
     return runOne(ctx, "entity.reparent", a);
@@ -164,7 +164,7 @@ Envelope cmdEntityReparent(Context& ctx) {
 
 Envelope cmdComponentAdd(Context& ctx) {
     const std::string sel = ctx.args.positional(2), comp = ctx.args.positional(3);
-    if (sel.empty() || comp.empty()) return usage("component.add", "game component add <selector> <Component> [--value JSON]");
+    if (sel.empty() || comp.empty()) return usage("component.add", "akeir component add <selector> <Component> [--value JSON]");
     Envelope fail;
     Json a = Json{{"entity", sel}, {"component", comp}};
     auto v = jsonOption(ctx, "value", fail, "component.add"); if (!v) return fail;
@@ -174,15 +174,15 @@ Envelope cmdComponentAdd(Context& ctx) {
 
 Envelope cmdComponentRemove(Context& ctx) {
     const std::string sel = ctx.args.positional(2), comp = ctx.args.positional(3);
-    if (sel.empty() || comp.empty()) return usage("component.remove", "game component remove <selector> <Component>");
+    if (sel.empty() || comp.empty()) return usage("component.remove", "akeir component remove <selector> <Component>");
     return runOne(ctx, "component.remove", Json{{"entity", sel}, {"component", comp}});
 }
 
 Envelope cmdSet(Context& ctx) {
-    // game set <selector> <Component>.<path> <value>
+    // akeir set <selector> <Component>.<path> <value>
     const std::string sel = ctx.args.positional(1), target = ctx.args.positional(2);
     if (sel.empty() || target.empty() || ctx.args.positionals.size() < 4)
-        return usage("property.set", "game set <selector> <Component>.<prop[/sub]> <value>   e.g. game set name:Goblin_01 Health.max 45");
+        return usage("property.set", "akeir set <selector> <Component>.<prop[/sub]> <value>   e.g. akeir set name:Goblin_01 Health.max 45");
     auto dot = target.find('.');
     if (dot == std::string::npos || dot == 0 || dot + 1 >= target.size())
         return usage("property.set", "Target must be <Component>.<prop>, e.g. Transform.position/0");
@@ -196,7 +196,7 @@ Envelope cmdSet(Context& ctx) {
 Envelope cmdTag(Context& ctx, bool add) {
     const std::string sel = ctx.args.positional(2), tag = ctx.args.positional(3);
     const std::string id = add ? "tag.add" : "tag.remove";
-    if (sel.empty() || tag.empty()) return usage(id, "game tag " + std::string(add ? "add" : "remove") + " <selector> <tag>");
+    if (sel.empty() || tag.empty()) return usage(id, "akeir tag " + std::string(add ? "add" : "remove") + " <selector> <tag>");
     return runOne(ctx, id, Json{{"entity", sel}, {"tag", tag}});
 }
 
@@ -204,7 +204,7 @@ Envelope cmdTag(Context& ctx, bool add) {
 
 Envelope cmdPrefabCreate(Context& ctx) {
     const std::string name = ctx.args.positional(2);
-    if (name.empty()) return usage("prefab.create", "game prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]");
+    if (name.empty()) return usage("prefab.create", "akeir prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]");
     Envelope fail;
     Json a = Json{{"name", name}};
     if (auto v = ctx.args.get("base")) a["base"] = *v;
@@ -218,7 +218,7 @@ Envelope cmdPrefabCreate(Context& ctx) {
 
 Envelope cmdPrefabInstantiate(Context& ctx) {
     const std::string prefab = ctx.args.positional(2);
-    if (prefab.empty()) return usage("prefab.instantiate", "game prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON] [--tags a,b]");
+    if (prefab.empty()) return usage("prefab.instantiate", "akeir prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON] [--tags a,b]");
     Envelope fail;
     Json a = Json{{"prefab", prefab}};
     if (auto v = ctx.args.get("world")) a["world"] = *v;
@@ -238,7 +238,7 @@ Envelope cmdPrefabInstantiate(Context& ctx) {
 
 Envelope cmdWorldCreate(Context& ctx) {
     const std::string name = ctx.args.positional(2);
-    if (name.empty()) return usage("world.create", "game world create <name>");
+    if (name.empty()) return usage("world.create", "akeir world create <name>");
     return runOne(ctx, "world.create", Json{{"name", name}});
 }
 
@@ -246,7 +246,7 @@ Envelope cmdWorldCreate(Context& ctx) {
 
 Envelope cmdApply(Context& ctx) {
     const std::string src = ctx.args.positional(1);
-    if (src.empty()) return usage("apply", "game apply <batch.json | -> [--dry-run] [--idempotency-key K]   (stdin with '-')");
+    if (src.empty()) return usage("apply", "akeir apply <batch.json | -> [--dry-run] [--idempotency-key K]   (stdin with '-')");
     std::string text;
     if (src == "-") text.assign((std::istreambuf_iterator<char>(std::cin)), std::istreambuf_iterator<char>());
     else {
@@ -304,7 +304,7 @@ Envelope cmdHistory(Context& ctx) {
 
 Envelope requireServe(const std::string& id) {
     return Envelope::failure(id, CommandError::make(ErrorCategory::Precondition, "TX_REQUIRES_SERVE",
-        "Transactions spanning CLI calls need `game serve` running for this project (then this command is forwarded automatically).", Json{{"hint", "game serve"}}));
+        "Transactions spanning CLI calls need `akeir serve` running for this project (then this command is forwarded automatically).", Json{{"hint", "akeir serve"}}));
 }
 
 Envelope cmdTxBegin(Context& ctx) {
@@ -317,14 +317,14 @@ Envelope cmdTxBegin(Context& ctx) {
 Envelope cmdTxCommit(Context& ctx) {
     if (!ctx.residentBus) return requireServe("tx.commit");
     std::string tx = ctx.args.positional(2, ctx.args.getOr("tx", ""));
-    if (tx.empty()) return usage("tx.commit", "game tx commit <tx_id>");
+    if (tx.empty()) return usage("tx.commit", "akeir tx commit <tx_id>");
     return ctx.residentBus->commitTx(tx, execOptions(ctx));
 }
 
 Envelope cmdTxRollback(Context& ctx) {
     if (!ctx.residentBus) return requireServe("tx.rollback");
     std::string tx = ctx.args.positional(2, ctx.args.getOr("tx", ""));
-    if (tx.empty()) return usage("tx.rollback", "game tx rollback <tx_id>");
+    if (tx.empty()) return usage("tx.rollback", "akeir tx rollback <tx_id>");
     return ctx.residentBus->rollbackTx(tx);
 }
 
@@ -335,7 +335,7 @@ Envelope cmdTxList(Context& ctx) {
 
 Envelope cmdGeneric(Context& ctx) {
     const std::string id = ctx.args.positional(1);
-    if (id.empty()) return usage("cmd", "game cmd <command.id> --args '{json}'   (ids: game capabilities --json → result.busCommands)");
+    if (id.empty()) return usage("cmd", "akeir cmd <command.id> --args '{json}'   (ids: akeir capabilities --json → result.busCommands)");
     Envelope fail;
     auto args = jsonOption(ctx, "args", fail, id); if (!args) return fail;
     if (args->is_null()) *args = Json::object();
@@ -346,32 +346,32 @@ Envelope cmdGeneric(Context& ctx) {
 
 void registerMutationCommands(std::vector<CommandSpec>& t) {
     t.push_back({"entity.create", {"entity", "create"}, "Mutation", "Create an entity", "Plain entity (components JSON, Transform auto-added) or prefab instance (--prefab). Parent/world by selector.",
-                 "game entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b] [--dry-run]", false, false, false, cmdEntityCreate});
+                 "akeir entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b] [--dry-run]", false, false, false, cmdEntityCreate});
     t.push_back({"entity.delete", {"entity", "delete"}, "Mutation", "Delete an entity (+descendants)", "Removes the entity and, unless --no-recursive, all descendants. Undo restores them.",
-                 "game entity delete <selector> [--no-recursive] [--dry-run]", false, true, true, cmdEntityDelete});
-    t.push_back({"entity.rename", {"entity", "rename"}, "Mutation", "Rename an entity", "", "game entity rename <selector> <name>", false, false, true, cmdEntityRename});
-    t.push_back({"entity.reparent", {"entity", "reparent"}, "Mutation", "Reparent an entity", "Moves under another entity or to root; rejects cycles.", "game entity reparent <selector> <parent|root> [--order K]", false, false, true, cmdEntityReparent});
-    t.push_back({"component.add", {"component", "add"}, "Mutation", "Add a component", "Defaults merged with --value. On prefab instances this is an 'add' override.", "game component add <selector> <Component> [--value JSON]", false, false, false, cmdComponentAdd});
-    t.push_back({"component.remove", {"component", "remove"}, "Mutation", "Remove a component", "On prefab instances this is a 'remove' override. Refuses if another component requires it.", "game component remove <selector> <Component>", false, true, true, cmdComponentRemove});
+                 "akeir entity delete <selector> [--no-recursive] [--dry-run]", false, true, true, cmdEntityDelete});
+    t.push_back({"entity.rename", {"entity", "rename"}, "Mutation", "Rename an entity", "", "akeir entity rename <selector> <name>", false, false, true, cmdEntityRename});
+    t.push_back({"entity.reparent", {"entity", "reparent"}, "Mutation", "Reparent an entity", "Moves under another entity or to root; rejects cycles.", "akeir entity reparent <selector> <parent|root> [--order K]", false, false, true, cmdEntityReparent});
+    t.push_back({"component.add", {"component", "add"}, "Mutation", "Add a component", "Defaults merged with --value. On prefab instances this is an 'add' override.", "akeir component add <selector> <Component> [--value JSON]", false, false, false, cmdComponentAdd});
+    t.push_back({"component.remove", {"component", "remove"}, "Mutation", "Remove a component", "On prefab instances this is a 'remove' override. Refuses if another component requires it.", "akeir component remove <selector> <Component>", false, true, true, cmdComponentRemove});
     t.push_back({"property.set", {"set"}, "Mutation", "Set a property", "Validates type/range/enum via reflection. On prefab instances writes a 'set' override (or clears it when equal to the prefab value).",
-                 "game set <selector> <Component>.<prop[/sub]> <value>", false, false, true, cmdSet});
-    t.push_back({"tag.add", {"tag", "add"}, "Mutation", "Add a tag", "", "game tag add <selector> <tag>", false, false, true, [](Context& c) { return cmdTag(c, true); }});
-    t.push_back({"tag.remove", {"tag", "remove"}, "Mutation", "Remove a tag", "", "game tag remove <selector> <tag>", false, false, true, [](Context& c) { return cmdTag(c, false); }});
-    t.push_back({"prefab.create", {"prefab", "create"}, "Mutation", "Create a prefab", "Writes Prefabs/<Name>.prefab.json.", "game prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]", false, false, false, cmdPrefabCreate});
-    t.push_back({"prefab.instantiate", {"prefab", "instantiate"}, "Mutation", "Instantiate a prefab", "Creates an instance entity referencing the prefab.", "game prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]", false, false, false, cmdPrefabInstantiate});
-    t.push_back({"world.create", {"world", "create"}, "Mutation", "Create a world", "Writes Worlds/<Name>.world.json with no entities.", "game world create <name>", false, false, false, cmdWorldCreate});
+                 "akeir set <selector> <Component>.<prop[/sub]> <value>", false, false, true, cmdSet});
+    t.push_back({"tag.add", {"tag", "add"}, "Mutation", "Add a tag", "", "akeir tag add <selector> <tag>", false, false, true, [](Context& c) { return cmdTag(c, true); }});
+    t.push_back({"tag.remove", {"tag", "remove"}, "Mutation", "Remove a tag", "", "akeir tag remove <selector> <tag>", false, false, true, [](Context& c) { return cmdTag(c, false); }});
+    t.push_back({"prefab.create", {"prefab", "create"}, "Mutation", "Create a prefab", "Writes Prefabs/<Name>.prefab.json.", "akeir prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]", false, false, false, cmdPrefabCreate});
+    t.push_back({"prefab.instantiate", {"prefab", "instantiate"}, "Mutation", "Instantiate a prefab", "Creates an instance entity referencing the prefab.", "akeir prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]", false, false, false, cmdPrefabInstantiate});
+    t.push_back({"world.create", {"world", "create"}, "Mutation", "Create a world", "Writes Worlds/<Name>.world.json with no entities.", "akeir world create <name>", false, false, false, cmdWorldCreate});
     t.push_back({"apply", {"apply"}, "Mutation", "Apply a batch of commands (§49)", "Atomic batch: all commands commit as one ChangeSet or none. '$name' refers to an earlier change's result (as: name). --idempotency-key replays the stored response.",
-                 "game apply <batch.json|-> [--dry-run] [--idempotency-key K]", false, false, false, cmdApply});
+                 "akeir apply <batch.json|-> [--dry-run] [--idempotency-key K]", false, false, false, cmdApply});
     t.push_back({"history.undo", {"undo"}, "Mutation", "Undo last change(s)", "Applies inverse(ops) of the newest history entry (§10.1). --actor X only undoes X's entries; conflicts if files changed underneath.",
-                 "game undo [N] [--actor A]", false, false, false, cmdUndo});
-    t.push_back({"history.redo", {"redo"}, "Mutation", "Redo undone change(s)", "", "game redo [N]", false, false, false, cmdRedo});
-    t.push_back({"history.list", {"history"}, "Query", "List history", "Cache/history entries with cursor; `game history <cs_id>` shows one ChangeSet in full.", "game history [cs_id] [--limit N]", true, false, true, cmdHistory});
-    t.push_back({"tx.begin", {"tx", "begin"}, "Mutation", "Begin a multi-call transaction (§9.1)", "Returns an opaque tx handle with a TTL. Pass --tx <id> to mutation commands; nothing is written until `tx commit`. Needs `game serve`.",
-                 "game tx begin [--ttl ms]", false, false, false, cmdTxBegin});
-    t.push_back({"tx.commit", {"tx", "commit"}, "Mutation", "Commit a transaction", "Composes the tx's ChangeSets into one history entry and writes the files (§9.2).", "game tx commit <tx_id> [--no-validate]", false, false, false, cmdTxCommit});
-    t.push_back({"tx.rollback", {"tx", "rollback"}, "Mutation", "Discard a transaction", "", "game tx rollback <tx_id>", false, false, true, cmdTxRollback});
-    t.push_back({"tx.list", {"tx", "list"}, "Query", "List open transactions", "", "game tx list", true, false, true, cmdTxList});
-    t.push_back({"cmd", {"cmd"}, "Mutation", "Run any bus command by id", "Escape hatch for commands without CLI sugar (e.g. document.patch). Args as JSON.", "game cmd <command.id> --args '{json}'", false, false, false, cmdGeneric});
+                 "akeir undo [N] [--actor A]", false, false, false, cmdUndo});
+    t.push_back({"history.redo", {"redo"}, "Mutation", "Redo undone change(s)", "", "akeir redo [N]", false, false, false, cmdRedo});
+    t.push_back({"history.list", {"history"}, "Query", "List history", "Cache/history entries with cursor; `akeir history <cs_id>` shows one ChangeSet in full.", "akeir history [cs_id] [--limit N]", true, false, true, cmdHistory});
+    t.push_back({"tx.begin", {"tx", "begin"}, "Mutation", "Begin a multi-call transaction (§9.1)", "Returns an opaque tx handle with a TTL. Pass --tx <id> to mutation commands; nothing is written until `tx commit`. Needs `akeir serve`.",
+                 "akeir tx begin [--ttl ms]", false, false, false, cmdTxBegin});
+    t.push_back({"tx.commit", {"tx", "commit"}, "Mutation", "Commit a transaction", "Composes the tx's ChangeSets into one history entry and writes the files (§9.2).", "akeir tx commit <tx_id> [--no-validate]", false, false, false, cmdTxCommit});
+    t.push_back({"tx.rollback", {"tx", "rollback"}, "Mutation", "Discard a transaction", "", "akeir tx rollback <tx_id>", false, false, true, cmdTxRollback});
+    t.push_back({"tx.list", {"tx", "list"}, "Query", "List open transactions", "", "akeir tx list", true, false, true, cmdTxList});
+    t.push_back({"cmd", {"cmd"}, "Mutation", "Run any bus command by id", "Escape hatch for commands without CLI sugar (e.g. document.patch). Args as JSON.", "akeir cmd <command.id> --args '{json}'", false, false, false, cmdGeneric});
 }
 
 } // namespace pme::cli

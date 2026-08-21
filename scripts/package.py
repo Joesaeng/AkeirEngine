@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""MoltEngine release packager.
+"""AKEIR Engine release packager.
 
     python scripts/package.py [--preset msvc-release] [--version 0.1] [--ref HEAD]
 
-Produces dist/MoltEngine-<version>.zip containing
+Produces dist/AKEIR Engine-<version>.zip containing
   - every git-tracked file at <ref>  (git archive; no build/, .cpm-cache/, Cache/)
-  - bin/game.exe from build/<preset>/bin/   (prebuilt CLI; the zip is usable without a compiler; no .pdb)
-  - .mcp.json with RELATIVE paths (bin/game.exe mcp --project Game) so Claude Code can be pointed at the unpacked folder
-  - RELEASE.md with version, git ref, sha256 of game.exe
+  - bin/akeir.exe from build/<preset>/bin/   (prebuilt CLI; the zip is usable without a compiler; no .pdb)
+  - .mcp.json with RELATIVE paths (bin/akeir.exe mcp --project Game) so Claude Code can be pointed at the unpacked folder
+  - RELEASE.md with version, git ref, sha256 of akeir.exe
 
 Requires: a git commit to archive (run after `git commit`), and the preset built (`scripts\\build.cmd msvc-release all`).
 """
@@ -36,10 +36,10 @@ def main():
     ap.add_argument("--ref", default="HEAD")
     a = ap.parse_args()
 
-    exe = os.path.join(ROOT, "build", a.preset, "bin", "game.exe")
+    exe = os.path.join(ROOT, "build", a.preset, "bin", "akeir.exe")
     if not os.path.exists(exe):
         sys.exit(f"missing {exe}: build it first (scripts\\build.cmd {a.preset} all)")
-    name = f"MoltEngine-{a.version}"
+    name = f"AKEIR-{a.version}"
     dist = os.path.join(ROOT, "dist")
     stage = os.path.join(dist, name)
     shutil.rmtree(stage, ignore_errors=True)
@@ -54,14 +54,14 @@ def main():
 
     # 2. binary
     os.makedirs(os.path.join(stage, "bin"), exist_ok=True)
-    shutil.copy2(exe, os.path.join(stage, "bin", "game.exe"))
+    shutil.copy2(exe, os.path.join(stage, "bin", "akeir.exe"))
     # game.pdb(64MB 심볼)는 넣지 않는다 — 같은 태그에서 재빌드하면 재생성된다 (QUICKSTART §5)
     with open(exe, "rb") as f:
         exe_sha = hashlib.sha256(f.read()).hexdigest()
 
     # 3. relative .mcp.json (repo copy has absolute dev paths)
     with open(os.path.join(stage, ".mcp.json"), "w", encoding="utf-8", newline="\n") as f:
-        json.dump({"mcpServers": {"game": {"command": "bin\\game.exe", "args": ["mcp", "--project", "Game"]}}}, f, indent=2)   # 백슬래시: cmd.exe 와 cwd 기준 spawn 양쪽에서 풀린다
+        json.dump({"mcpServers": {"akeir": {"command": "bin\\akeir.exe", "args": ["mcp", "--project", "Game"]}}}, f, indent=2)   # 백슬래시: cmd.exe 와 cwd 기준 spawn 양쪽에서 풀린다
         f.write("\n")
 
     # 4. release notes
@@ -71,8 +71,8 @@ def main():
 - engine: {version_json.get('engine')} {version_json.get('engineVersion')} (release {version_json.get('release')})
 - git: {sha} {' '.join(tags)}
 - built: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} preset {a.preset}, compiler {version_json.get('compiler')}, fpFlagsHash {version_json.get('fpFlagsHash')}
-- bin/game.exe sha256 {exe_sha}
-- reference: `cd Game && ..\\bin\\game.exe run --headless --ticks 600 --json` → result.finalHash 0xbc23e49a65efb2e8
+- bin/akeir.exe sha256 {exe_sha}
+- reference: `cd Game && ..\\bin\\akeir.exe run --headless --ticks 600 --json` → result.finalHash 0xbc23e49a65efb2e8
 
 Start with QUICKSTART.md.
 """
@@ -89,7 +89,7 @@ Start with QUICKSTART.md.
                 full = os.path.join(dirpath, fn)
                 z.write(full, os.path.relpath(full, dist))
     size = os.path.getsize(out)
-    print(f"{out}  ({size/1e6:.1f} MB)  git {sha} {' '.join(tags)}  game.exe sha256 {exe_sha[:16]}…")
+    print(f"{out}  ({size/1e6:.1f} MB)  git {sha} {' '.join(tags)}  akeir.exe sha256 {exe_sha[:16]}…")
 
 
 if __name__ == "__main__":

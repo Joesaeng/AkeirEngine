@@ -1,6 +1,6 @@
 # Engine/Testing (`pme_testing`)
 
-데이터화된 테스트 시나리오(§23) 러너와 assertion 표현식(§23.1). `game test` 가 쓴다. Game/ 을 모른다 — world 를 만드는 `WorldFactory`(system 등록 포함)를 호출자가 준다.
+데이터화된 테스트 시나리오(§23) 러너와 assertion 표현식(§23.1). `akeir test` 가 쓴다. Game/ 을 모른다 — world 를 만드는 `WorldFactory`(system 등록 포함)를 호출자가 준다.
 
 ## 파일
 
@@ -60,5 +60,5 @@ primary := NUMBER | STRING | true | false | null | '[' args ']' | IDENT | IDENT 
 
 - `events`(Screenshot/NamedEvent), `capture` assertion, `videoDriver: offscreen` — Phase 2 렌더 뒤.
 - `threads: [1, 8]` T1 검사 — 엔진이 단일 스레드라 `threads` 는 항상 1 로 보고.
-- `GAME_TEST_CONFIG` 환경변수 모드, `game replay record` → inputs 변환(§22.3), `--fields` 투영.
+- `GAME_TEST_CONFIG` 환경변수 모드, `akeir replay record` → inputs 변환(§22.3), `--fields` 투영.
 - setup 에서 `apply` batch(Command 로 authoring 을 바꾼 뒤 테스트) — 필요하면 `CommandBus` 를 fork 한 Project 에 적용하는 한 줄.

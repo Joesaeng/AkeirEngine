@@ -364,7 +364,7 @@ std::optional<CommandError> CommandBus::commit(ChangeSet& cs, bool pushHistory) 
 
 Envelope CommandBus::execute(const std::string& id, const Json& args, const ExecOptions& opts) {
     const CommandDef* def = find(id);
-    if (!def) return Envelope::failure(id, CommandError::make(ErrorCategory::Usage, "UNKNOWN_COMMAND", "Unknown command '" + id + "'. See `game capabilities`."));
+    if (!def) return Envelope::failure(id, CommandError::make(ErrorCategory::Usage, "UNKNOWN_COMMAND", "Unknown command '" + id + "'. See `akeir capabilities`."));
     Json argsObj = args.is_object() ? args : Json::object();
 
     if (def->kind != CommandKind::Mutation) {

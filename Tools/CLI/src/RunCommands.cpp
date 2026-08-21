@@ -1,5 +1,5 @@
 // Tools/CLI/RunCommands.cpp — 프로젝트 World 를 돌리는 RuntimeControl 명령: run, dump, query, snapshot.
-// 설계 문서 §16 (query), §20.1 (headless run), §22.3 (hashes.jsonl), §25 (dump), §26.1 (snapshot), §88.1 (Phase 1: one-shot — 매 명령이 world 를 새로 build 한다; `game serve` 는 Phase 4)
+// 설계 문서 §16 (query), §20.1 (headless run), §22.3 (hashes.jsonl), §25 (dump), §26.1 (snapshot), §88.1 (Phase 1: one-shot — 매 명령이 world 를 새로 build 한다; `akeir serve` 는 Phase 4)
 #include "Commands.h"
 #include "GameSystems.h"
 #include "pme/core/Hash.h"
@@ -28,7 +28,7 @@ std::optional<Opened> openWorld(Context& ctx, const std::string& command, Envelo
     game::registerGameComponents();
     Opened o;
     if (ctx.projectDir.empty()) {
-        fail = Envelope::failure(command, CommandError::make(ErrorCategory::NotFound, "PROJECT_NOT_FOUND", "No project.json found. Use --project <dir> (or run a demo with `game run --headless --demo`).", Json::object()));
+        fail = Envelope::failure(command, CommandError::make(ErrorCategory::NotFound, "PROJECT_NOT_FOUND", "No project.json found. Use --project <dir> (or run a demo with `akeir run --headless --demo`).", Json::object()));
         return std::nullopt;
     }
     std::vector<Diagnostic> diags;
@@ -53,7 +53,7 @@ std::optional<Opened> openWorld(Context& ctx, const std::string& command, Envelo
         Json details = Json::object();
         Json arr = Json::array(); for (auto& d : bd) arr.push_back(d.toJson());
         details["diagnostics"] = arr;
-        fail = Envelope::failure(command, CommandError::make(ErrorCategory::Validation, "WORLD_BUILD_FAILED", "The world could not be built from the authoring data. Run `game validate`.", details));
+        fail = Envelope::failure(command, CommandError::make(ErrorCategory::Validation, "WORLD_BUILD_FAILED", "The world could not be built from the authoring data. Run `akeir validate`.", details));
         return std::nullopt;
     }
     game::registerGameSystems(*o.world);
@@ -127,7 +127,7 @@ Envelope cmdRun(Context& ctx) {
     r["videoDriver"] = "none";
     r["fpFlagsHash"] = PME_FP_FLAGS_HASH;
     {
-        // run handle (§46.2: run.start / run.status 쌍). serve 안에서는 registry 에 남아 `game run status <id>` 로 다시 조회된다
+        // run handle (§46.2: run.start / run.status 쌍). serve 안에서는 registry 에 남아 `akeir run status <id>` 로 다시 조회된다
         std::string runId = Id::generate("run").str();
         r["run"] = runId;
         r["state"] = "finished";
@@ -139,10 +139,10 @@ Envelope cmdRun(Context& ctx) {
 }
 
 Envelope cmdRunStatus(Context& ctx) {
-    // game run status [run_id]  — serve 의 registry 에서. one-shot 에서는 기록이 없다
+    // akeir run status [run_id]  — serve 의 registry 에서. one-shot 에서는 기록이 없다
     std::string id = ctx.args.positional(2, "");
     if (!ctx.runRegistry) return Envelope::failure("run.status", CommandError::make(ErrorCategory::Precondition, "RUN_STATUS_REQUIRES_SERVE",
-        "Run handles live in the resident process; start `game serve` and run there.", Json{{"hint", "game serve"}}));
+        "Run handles live in the resident process; start `akeir serve` and run there.", Json{{"hint", "akeir serve"}}));
     if (id.empty()) {
         Json arr = Json::array();
         for (const auto& [k, v] : ctx.runRegistry->items()) arr.push_back(Json{{"run", k}, {"state", v.value("state", "")}, {"ticksRun", v.value("ticksRun", 0)}, {"finalHash", v.value("finalHash", "")}});
@@ -153,13 +153,13 @@ Envelope cmdRunStatus(Context& ctx) {
 }
 
 Envelope cmdDump(Context& ctx) {
-    // game dump <selector> [--ticks N]  — world 를 build 하고 (선택) N tick 돌린 뒤 entity 를 dump (§25)
+    // akeir dump <selector> [--ticks N]  — world 를 build 하고 (선택) N tick 돌린 뒤 entity 를 dump (§25)
     Envelope fail;
     auto o = openWorld(ctx, "dump", fail, 0, false);
     if (!o) return fail;
     std::string sel = ctx.args.positional(1, "");
     if (sel == "world") {
-        if (!ctx.args.has("all")) return Envelope::failure("dump", CommandError::make(ErrorCategory::Usage, "OUTPUT_TOO_LARGE", "Dumping the whole world needs --all (or use `game snapshot --out file`).", Json{{"entities", o->world->entityIds().size()}}));
+        if (!ctx.args.has("all")) return Envelope::failure("dump", CommandError::make(ErrorCategory::Usage, "OUTPUT_TOO_LARGE", "Dumping the whole world needs --all (or use `akeir snapshot --out file`).", Json{{"entities", o->world->entityIds().size()}}));
         if (auto t = ctx.args.getInt("ticks"); t && *t > 0) { RunConfig cfg; cfg.ticks = *t; cfg.seed = o->world->seed(); cfg.hashEvery = 0; NullInputSource in; Application::runHeadless(cfg, *o->world, in); }
         return Envelope::success("dump", o->world->snapshot());
     }
@@ -176,7 +176,7 @@ Envelope cmdDump(Context& ctx) {
 }
 
 Envelope cmdQuery(Context& ctx) {
-    // game query --with A,B --without C [--ticks N] [--fields id,name,path] (§16 구조화 형태)
+    // akeir query --with A,B --without C [--ticks N] [--fields id,name,path] (§16 구조화 형태)
     Envelope fail;
     auto o = openWorld(ctx, "query", fail, 0, false);
     if (!o) return fail;
@@ -204,14 +204,14 @@ void registerRunCommands(std::vector<CommandSpec>& table) {
     table.push_back({"run.start", {"run"}, "RuntimeControl", "Run the simulation (headless or windowed)",
         "--headless: builds the project world (or --demo), runs N fixed ticks (§20.1), returns hashes (§22.2); --replay inputs.jsonl plays recorded input; --snapshot-out writes §26.1 snapshot; --hash-out writes hashes.jsonl. "
         "Without --headless (SDL build): opens a window, keyboard via Config/input.json, fixed tick + accumulator; --record inputs.jsonl saves the InputFrames for headless replay.",
-        "game run --headless [--ticks N] [--seed S] [--world ID] [--hash-every K] [--hash-out f] [--snapshot-out f] [--replay f] [--demo] [--json]  |  game run [--ticks N] [--record f] [--width W --height H]", false, false, false, cmdRun});
-    table.push_back({"run.status", {"run", "status"}, "Query", "Status/result of a run handle (§46.2)", "Lists or returns runs started in this `game serve` session (run.start returns result.run).", "game run status [run_id]", true, false, true, cmdRunStatus});
+        "akeir run --headless [--ticks N] [--seed S] [--world ID] [--hash-every K] [--hash-out f] [--snapshot-out f] [--replay f] [--demo] [--json]  |  akeir run [--ticks N] [--record f] [--width W --height H]", false, false, false, cmdRun});
+    table.push_back({"run.status", {"run", "status"}, "Query", "Status/result of a run handle (§46.2)", "Lists or returns runs started in this `akeir serve` session (run.start returns result.run).", "akeir run status [run_id]", true, false, true, cmdRunStatus});
     table.push_back({"dump", {"dump"}, "RuntimeControl", "Dump an entity's runtime state (§25)",
-        "Builds the world, optionally advances --ticks N, and dumps the entity (runtimeOnly values included). `game dump world --all` returns the full snapshot.",
-        "game dump <id|name:X|path:A/B|world --all> [--ticks N] [--json]", true, false, true, cmdDump});
+        "Builds the world, optionally advances --ticks N, and dumps the entity (runtimeOnly values included). `akeir dump world --all` returns the full snapshot.",
+        "akeir dump <id|name:X|path:A/B|world --all> [--ticks N] [--json]", true, false, true, cmdDump});
     table.push_back({"query", {"query"}, "Query", "Query entities (§16)",
         "Structured query: --with A,B --without C. Prefix # for tags (#enemy). Optionally advance --ticks N first. --components includes dumps.",
-        "game query --with EnemyAI,Transform --without Collider2D [--ticks N] [--components] [--limit N] [--json]", true, false, true, cmdQuery});
+        "akeir query --with EnemyAI,Transform --without Collider2D [--ticks N] [--components] [--limit N] [--json]", true, false, true, cmdQuery});
 }
 
 } // namespace pme::cli

@@ -1,5 +1,5 @@
 # Project_ME — AI-Native Game Framework (PoC)
-# 설계 문서: MoltEngine.md  (§41 Build 구조, §74 Phase, §75 Repository 구조)
+# 설계 문서: AKEIR.md  (§41 Build 구조, §74 Phase, §75 Repository 구조)
 # 빌드 방법: Docs/BUILD.md
 cmake_minimum_required(VERSION 3.28)
 
@@ -8,7 +8,7 @@ if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 endif()
 
-project(MoltEngine VERSION 0.1.0 LANGUAGES C CXX)   # MoltEngine (ME). 코드 네임스페이스/타깃 접두어는 pme (Project ME) 로 유지한다
+project(AkeirEngine VERSION 0.1.0 LANGUAGES C CXX)   # AKEIR Engine. 코드 네임스페이스/타깃 접두어는 pme (Project ME) 로 유지한다
 
 # ---- 언어 표준 (§41: floor C++20) ----
 set(CMAKE_CXX_STANDARD 20)
@@ -22,7 +22,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(PME_BUILD_TESTS "Build unit tests (doctest)" ON)
-option(PME_BUILD_CLI   "Build the `game` CLI"        ON)
+option(PME_BUILD_CLI   "Build the `akeir` CLI"        ON)
 # (PME_WITH_SDL 은 cmake/Dependencies.cmake 에서 선언)
 
 include(ProjectWarnings)     # 경고 설정 (엔진 타깃에만 적용, 서드파티 제외)
@@ -38,5 +38,5 @@ if(PME_BUILD_TESTS)
   add_subdirectory(Tests)
 endif()
 
-# 샘플 게임 코드 (Game/Source). Engine 은 Game 을 모른다 (§76); game.exe 와 테스트가 링크한다.
+# 샘플 게임 코드 (Game/Source). Engine 은 Game 을 모른다 (§76); akeir.exe 와 테스트가 링크한다.
 add_subdirectory(Game/Source)

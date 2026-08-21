@@ -1,4 +1,4 @@
-// Tools/CLI/main.cpp — `game` 진입점. 설계 문서 §11 (CLI 1급), §12 (envelope, TTY 감지), §13 (exit code), §88.4 (crash/watchdog).
+// Tools/CLI/main.cpp — `akeir` 진입점. 설계 문서 §11 (CLI 1급), §12 (envelope, TTY 감지), §13 (exit code), §88.4 (crash/watchdog).
 //
 // 흐름: parseArgs → installCrashHandler → (--timeout) startWatchdog → findCommand → run → envelope 출력 → exit code
 // stdout 에는 envelope 만 나간다. 로그는 stderr (JSONL, §28).
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
             Json cmds = Json::array();
             for (const auto& s : commandTable()) { std::string line; for (const auto& p : s.cli) line += (line.empty() ? "" : " ") + p; cmds.push_back(Json{{"cli", line}, {"id", s.id}, {"title", s.title}, {"usage", s.usage}}); }
             r["commands"] = cmds;
-            r["hint"] = "game <command> --help | game capabilities --json (full schemas) | Docs/00-START-HERE.md";
+            r["hint"] = "akeir <command> --help | akeir capabilities --json (full schemas) | Docs/00-START-HERE.md";
         }
         Envelope env = Envelope::success("help", r);
         printEnvelope(env, mode);
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
         for (const auto& s : commandTable()) { std::string line; for (const auto& p : s.cli) line += (line.empty() ? "" : " ") + p; known.push_back(line); }
         details["knownCommands"] = known;
         Envelope env = Envelope::failure(commandId, CommandError::make(ErrorCategory::Usage, "UNKNOWN_COMMAND",
-            "Unknown command. Run `game capabilities --json` to list commands.", details));
+            "Unknown command. Run `akeir capabilities --json` to list commands.", details));
         printEnvelope(env, mode);
         return env.exitCode();
     }

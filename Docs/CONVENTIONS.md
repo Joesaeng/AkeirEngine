@@ -20,7 +20,7 @@
 
 ## 결정론 (sim 코드 = Engine/Runtime, Engine/ECS, Engine/Physics, Game/)
 
-§22.2 체크리스트를 코드 규칙으로 옮긴 것. `game lint`(§62, 예정)가 검사한다.
+§22.2 체크리스트를 코드 규칙으로 옮긴 것. `akeir lint`(§62, 예정)가 검사한다.
 
 - wall-clock 금지: `std::chrono::*_clock`, `SDL_GetTicks`, `time()` 는 sim 코드에서 호출하지 않는다. `SimTime` 만 받는다.
 - RNG 는 `pme::RngStream` 만. `rand()`, `std::random_device`, `std::mt19937` 금지. (authoring ID 발급 `Id::generate` 만 예외 — sim 밖이다.)
@@ -39,7 +39,7 @@
 
 ## 쓰기 경로 (§8, §78)
 
-- authoring 문서(`Game/*.json`)를 바꾸는 코드는 `Engine/Commands` 의 command handler 뿐이다. `Project::documentMut()` 를 Commands 밖에서 쓰지 않는다 (`game fmt` 의 canonical 재직렬화만 예외).
+- authoring 문서(`Game/*.json`)를 바꾸는 코드는 `Engine/Commands` 의 command handler 뿐이다. `Project::documentMut()` 를 Commands 밖에서 쓰지 않는다 (`akeir fmt` 의 canonical 재직렬화만 예외).
 - 새 Mutation command 는 `Engine/Commands/src/BuiltinCommands.cpp` 에 `CommandDef{id "<noun>.<verb>", kind, description, argsSchema, aliases, handler}` 로 등록한다. handler 는 `ctx.changes`(ChangeBuilder)로만 바꾸고, 실패는 `ctx.fail(category, RULE_ID, 고치는 법)` 으로 보고하며 `false` 를 돌려준다. 부분 적용 걱정은 없다 — 실패하면 fork 가 버려진다.
 - handler 는 `ctx.project.resolveSelector/locate/resolveEntityComponents` 로 읽고, 값 검증은 `validateComponentJson`(reflection). 문서 수준 규칙은 commit 전 `validateFork` 가 본다.
 - 인스턴스/derived prefab 은 직접 값을 쓰지 않고 `set/add/remove` 맵을 고친다 (§78.1 표는 `Engine/Commands/README.md`).

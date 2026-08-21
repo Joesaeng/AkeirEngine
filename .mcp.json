@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "game": {
-      "command": "C:\Project\Project_ME\build\msvc-debug\bin\game.exe",
+    "akeir": {
+      "command": "C:\Project\Project_ME\build\msvc-debug\bin\akeir.exe",
       "args": ["mcp", "--project", "C:\Project\Project_ME\Game"]
     }
   }

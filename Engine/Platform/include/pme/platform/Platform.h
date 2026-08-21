@@ -2,7 +2,7 @@
 //
 //   videoDriver:
 //     ""          플랫폼 기본 (Windows: windows) — 실제 창
-//     "dummy"     창/GPU 없음. SDL_Init 은 되고 키보드 상태는 항상 비어 있다. `game run --headless` 는 SDL 을 아예 초기화하지 않으므로 이 값은 capture 의 software 경로용
+//     "dummy"     창/GPU 없음. SDL_Init 은 되고 키보드 상태는 항상 비어 있다. `akeir run --headless` 는 SDL 을 아예 초기화하지 않으므로 이 값은 capture 의 software 경로용
 //     "offscreen" EGL/GL 기반 offscreen — 이 PoC 는 쓰지 않는다 (software renderer 가 GPU 없이 결정적 capture 를 준다, ADR-0026)
 //   실제 사용된 driver 는 currentVideoDriver() 로 보고한다 (§20: 결과 JSON 에 기록).
 //   sim 은 Platform 을 모른다 — Platform 은 InputFrame 을 만들고(InputMap) 렌더러에 창을 빌려줄 뿐이다.

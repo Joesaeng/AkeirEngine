@@ -84,7 +84,7 @@ Json Envelope::toJson() const {
     j["warnings"] = w;
     Json m = meta;
     if (!m.contains("schemaVersion")) m["schemaVersion"] = 1;
-    if (!m.contains("engine")) m["engine"] = "MoltEngine";
+    if (!m.contains("engine")) m["engine"] = "AKEIR";
     if (!m.contains("engineVersion")) m["engineVersion"] = PME_VERSION_STRING;
     if (!m.contains("dryRun")) m["dryRun"] = false;
     if (!m.contains("truncated")) m["truncated"] = false;

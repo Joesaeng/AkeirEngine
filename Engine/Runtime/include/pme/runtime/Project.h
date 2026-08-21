@@ -40,7 +40,7 @@ class Project {
 public:
     /// rootDir/project.json 을 읽고 Worlds/ Prefabs/ 를 로드한다. 파싱·구조 오류는 diagnostics 로 (error 가 있어도 나머지는 로드한다).
     static std::optional<Project> load(const std::string& rootDir, std::vector<Diagnostic>& diagnostics);
-    /// 빈 프로젝트 (테스트, `game project init`)
+    /// 빈 프로젝트 (테스트, `akeir project init`)
     static Project create(const std::string& rootDir, const std::string& name, int tickRate = 60);
 
     const std::string& rootDir() const { return rootDir_; }

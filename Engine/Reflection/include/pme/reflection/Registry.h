@@ -43,7 +43,7 @@ bool setByPointer(const ComponentMeta& meta, void* component, std::string_view p
 /// "/max" → ("max", nullopt) / "/position/0" → ("position", 0). 형식 오류면 nullopt.
 std::optional<std::pair<std::string, std::optional<std::size_t>>> splitPropertyPointer(std::string_view pointer);
 
-/// 모든 등록 component 의 schema 를 하나의 객체로 (§14 `game schema --all`)
+/// 모든 등록 component 의 schema 를 하나의 객체로 (§14 `akeir schema --all`)
 Json allSchemas();
 
 } // namespace pme

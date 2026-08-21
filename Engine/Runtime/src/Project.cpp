@@ -409,7 +409,7 @@ std::vector<Diagnostic> Project::validate() const {
     std::vector<Diagnostic> out;
     // 중복 id
     for (const auto& [id, where] : duplicates_) {
-        Diagnostic d = Diagnostic::error("DUPLICATE_PERSISTENT_ID", "Persistent id " + id + " appears in more than one place: " + Json(where).dump() + ". Run `game id fix --keep <path>` (§7.3).")
+        Diagnostic d = Diagnostic::error("DUPLICATE_PERSISTENT_ID", "Persistent id " + id + " appears in more than one place: " + Json(where).dump() + ". Run `akeir id fix --keep <path>` (§7.3).")
                            .at(LogicalLocation{id, std::nullopt, std::nullopt});
         out.push_back(std::move(d));
     }
@@ -459,7 +459,7 @@ std::vector<Diagnostic> Project::validate() const {
                     std::string cli;
                     for (const auto& name : chain) {
                         f.commands.push_back(CommandInvocation{"component.add", Json{{"entity", objectId}, {"component", name}}});
-                        cli += (cli.empty() ? "" : " && ") + std::string("game component add ") + objectId + " " + name + " --json";
+                        cli += (cli.empty() ? "" : " && ") + std::string("akeir component add ") + objectId + " " + name + " --json";
                     }
                     f.cli = cli;
                     out.push_back(docError("COMPONENT_DEPENDENCY_MISSING", it.key() + " requires " + req + ".", path, pointer, objectId)
@@ -469,7 +469,7 @@ std::vector<Diagnostic> Project::validate() const {
                 if (it.key() == "Collider2D" && !comps.contains("RigidBody2D")) {
                     Fix f; f.description = "Add a static RigidBody2D so the collider participates in physics"; f.applicability = Applicability::MachineApplicable; f.isPreferred = true;
                     f.commands.push_back(CommandInvocation{"component.add", Json{{"entity", objectId}, {"component", "RigidBody2D"}, {"value", Json{{"type", "static"}}}}});
-                    f.cli = "game component add " + objectId + " RigidBody2D --value \"{\\\"type\\\":\\\"static\\\"}\" --json";
+                    f.cli = "akeir component add " + objectId + " RigidBody2D --value \"{\\\"type\\\":\\\"static\\\"}\" --json";
                     Diagnostic d = Diagnostic::warning("COLLIDER_WITHOUT_BODY", "Collider2D without RigidBody2D creates no physics body; nothing collides with it. Add RigidBody2D (type static for walls).")
                                        .in(PhysicalLocation{path, pointer + "/" + escapePointerToken(it.key()), std::nullopt}).at(LogicalLocation{objectId, it.key(), std::nullopt}).withFix(f);
                     out.push_back(std::move(d));
@@ -549,8 +549,8 @@ std::vector<Diagnostic> Project::validate() const {
         if (!in) continue;
         std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
         if (!isCanonicalText(text, canonicalizeDocument(doc)))
-            out.push_back(Diagnostic::warning("JSON_NOT_CANONICAL", path + " is not in canonical form. Run `game fmt`.").in(PhysicalLocation{path, "", std::nullopt})
-                              .withFix(Fix{"Rewrite file in canonical form", Applicability::MachineApplicable, true, {CommandInvocation{"project.fmt", Json{{"path", path}}}}, {}, std::string("game fmt " + path)}));
+            out.push_back(Diagnostic::warning("JSON_NOT_CANONICAL", path + " is not in canonical form. Run `akeir fmt`.").in(PhysicalLocation{path, "", std::nullopt})
+                              .withFix(Fix{"Rewrite file in canonical form", Applicability::MachineApplicable, true, {CommandInvocation{"project.fmt", Json{{"path", path}}}}, {}, std::string("akeir fmt " + path)}));
     }
     return out;
 }

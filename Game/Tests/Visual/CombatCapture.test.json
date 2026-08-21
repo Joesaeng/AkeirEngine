@@ -1,7 +1,7 @@
 {
   "$schema": "game://schema/test/1",
   "name": "CombatCapture",
-  "description": "Golden-image regression of the arena after 300 ticks (§27.1). Software rasterizer, 256x256. Regenerate with `game test Visual --update-golden` when the look changes on purpose.",
+  "description": "Golden-image regression of the arena after 300 ticks (§27.1). Software rasterizer, 256x256. Regenerate with `akeir test Visual --update-golden` when the look changes on purpose.",
   "requires": ["renderer"],
   "seed": 381251,
   "setup": [ { "entity": "path:TestArena/Arena/Player", "as": "player" } ],

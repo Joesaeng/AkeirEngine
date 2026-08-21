@@ -7,7 +7,7 @@
 .EXAMPLE
   .\scripts\build.ps1                      # msvc-debug configure + build
   .\scripts\build.ps1 -Preset msvc-headless -Test
-  .\scripts\build.ps1 -Target game         # 특정 타깃만
+  .\scripts\build.ps1 -Target akeir        # 특정 타깃만
   .\scripts\build.ps1 -Clean
 #>
 param(

@@ -1,6 +1,6 @@
 // Tools/CLI/Args.h — 간단한 인자 파서. 설계 문서 §11, §12.
 //
-//   game <noun> [<verb>] [positional…] [--flag] [--key value] [--key=value] [--json|--output json|text|ndjson]
+//   akeir <noun> [<verb>] [positional…] [--flag] [--key value] [--key=value] [--json|--output json|text|ndjson]
 //   전역 플래그: --output, --json(= --output json), --project <dir>, --timeout <dur>, --yes, --dry-run, --tx <id>, --fields a,b, --limit N, --cursor C
 #pragma once
 

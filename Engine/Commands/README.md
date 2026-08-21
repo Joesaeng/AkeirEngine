@@ -23,7 +23,7 @@ commit(cs): base 검사 → Cache/journal/<cs>.json → project 에 applyOps →
 | `include/pme/commands/CommandBus.h`, `src/CommandBus.cpp` | §8, §9, §10, §49, §50 | `CommandKind`, `ChangeBuilder`, `CommandContext`(fail/resolveEntity/resolvePrefab/resolveWorldDoc), `CommandDef`, `CommandBus`(execute/apply/tx/undo/redo/recoverJournal), `nextOrderKey` |
 | `src/BuiltinCommands.cpp` | §8, §34, §78.1 | 내장 Mutation command 13개 + 각 args JSON Schema |
 
-## Command 목록 (`game capabilities --json` → `result.busCommands[]`)
+## Command 목록 (`akeir capabilities --json` → `result.busCommands[]`)
 
 | id | args | 비고 |
 |---|---|---|
@@ -58,7 +58,7 @@ selector 는 §7.4: id / id prefix / `name:X` / `path:World/Parent/Child`. 모�
 - **base 검사(optimistic concurrency)**: bus 생성 시 문서별 `sha256(JCS(canonical(doc)))` 를 기억하고 commit 때 디스크 파일을 다시 읽어 비교 → 다르면 `BASE_MISMATCH`(conflict). `ChangeSet.base` 에 기록.
 - **before 비교**: `applyOps` 는 `before` 와 현재 값을 JCS 로 비교한다(키 순서 무시). 파일로 갔다 온 문서는 §5.3 순서로 재정렬되어 `ordered_json ==` 가 실패하기 때문.
 - **history**: 선형 스택 + cursor. undo = `inverse(ops)` 를 commit 경로로 적용하고 cursor--, redo = 원본 ops 재적용 + cursor++ (둘 다 history 에 push 하지 않음). 새 commit 은 redo 꼬리를 버린다(그때만 history.jsonl 을 다시 쓴다). `--actor X` 는 최근 항목이 다른 actor 면 `UNDO_ACTOR_MISMATCH`.
-- **tx**: `beginTx(ttlMs)` 가 fork 를 잡고 TTL 있는 opaque handle 을 준다; `execute(…, {tx})` 가 그 위에 누적, `commitTx()` 가 `ChangeSet::compose` 로 하나의 history 항목. 만료/미지 handle 은 `TX_UNKNOWN_OR_EXPIRED` (§9.1). `txInfo/txList/expireTransactions`. one-shot CLI 는 `apply` 내부에서만, `game serve` 는 CLI 호출에 걸친 tx 로 쓴다.
+- **tx**: `beginTx(ttlMs)` 가 fork 를 잡고 TTL 있는 opaque handle 을 준다; `execute(…, {tx})` 가 그 위에 누적, `commitTx()` 가 `ChangeSet::compose` 로 하나의 history 항목. 만료/미지 handle 은 `TX_UNKNOWN_OR_EXPIRED` (§9.1). `txInfo/txList/expireTransactions`. one-shot CLI 는 `apply` 내부에서만, `akeir serve` 는 CLI 호출에 걸친 tx 로 쓴다.
 - **apply (§49)**: `{atomic?=true, dryRun?, idempotencyKey?, changes:[{op, ...args, as?}]}`. `"$name"` → 그 change 의 `result.id`(없으면 result 전체), `"$name.field"` → 필드, `"$$x"` → 리터럴. atomic 이면 tx 하나로, 실패 시 `details.index/op/results`. idempotencyKey 는 `Cache/history/idempotency.json` 에 응답을 저장해 재실행 없이 돌려준다(`meta.idempotentReplay`).
 - **journal 복구 (§9.2)**: `recoverJournal()` — 남은 journal 의 touched 문서가 전부 base 해시면 ops 를 다시 적용·저장(`completed`), 전부 달라졌으면 이미 써진 것으로 보고 history 에만 추가(`already-applied`), 섞여 있으면 `partial` 로 남긴다. CLI 는 모든 쓰기 명령 전에 호출한다.
 - **persist=false**(`BusOptions`) 면 파일/journal/history 를 쓰지 않는다 (테스트, capabilities 의 스키마 나열).
@@ -77,4 +77,4 @@ selector 는 §7.4: id / id prefix / `name:X` / `path:World/Parent/Child`. 모�
 - `project.json` 은 문서 맵 밖이라 command 로 바꿀 수 없다 (`defaultWorld` 변경 등 → Phase 4).
 - `--if-match <cs>`(dry-run 결과를 그대로 commit, §50), checkpoint(§52), semantic diff 출력(§51), rename table/migration(§53).
 - `apply` 의 changes[] 를 `busCommands[].args` 스키마로 사전 검증하는 단계(지금은 handler 가 직접 검사).
-- Query 계열 command(`entity.get`, `query`)는 아직 CLI 가 Project/PlayWorld 를 직접 부른다 — bus 의 `CommandKind::Query` 로 옮기는 것은 `game serve` 와 함께.
+- Query 계열 command(`entity.get`, `query`)는 아직 CLI 가 Project/PlayWorld 를 직접 부른다 — bus 의 `CommandKind::Query` 로 옮기는 것은 `akeir serve` 와 함께.

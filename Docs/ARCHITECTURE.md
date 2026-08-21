@@ -1,12 +1,12 @@
 # ARCHITECTURE — 코드 ↔ 설계 문서 대응
 
-설계 정본은 `../MoltEngine.md`. 이 문서는 **어느 코드가 어느 § 를 구현하는지**와 모듈 간 의존 방향만 적는다.
+설계 정본은 `../AKEIR.md`. 이 문서는 **어느 코드가 어느 § 를 구현하는지**와 모듈 간 의존 방향만 적는다.
 각 `Engine/<모듈>/README.md` 가 모듈 내부 구조와 구현 범위를 더 자세히 적는다.
 
 ## 레이어와 의존 방향 (§4, §76)
 
 ```
-Tools/CLI (game.exe) ─┐   game <cmd> (one-shot)  /  game serve (상주, RPC)  /  game mcp (stdio MCP)   — 셋 다 같은 CommandSpec 표 + ServeHost
+Tools/CLI (akeir.exe) ─┐   game <cmd> (one-shot)  /  akeir serve (상주, RPC)  /  akeir mcp (stdio MCP)   — 셋 다 같은 CommandSpec 표 + ServeHost
 Tools/Editor (Phase 6)├──▶ Engine/Commands ──▶ Engine/Runtime ──▶ Engine/Core
 (MCP 는 CLI 안, 별도 sidecar 없음)┘          │                   │
                                  │                   ├──▶ Engine/ECS (Flecs)     runtime 투영
@@ -35,7 +35,7 @@ Game/Source ──▶ Engine/Runtime (Core 가 Game 을 알면 안 된다, §76)
 | `pme_platform` | `Engine/Platform` | §20 SDL3 init/창/driver 보고 · §88.3 InputMap · §20.1 창 모드 accumulator 루프 + `--record` | 구현됨 (Phase 2, `PME_WITH_SDL`) — [README](../Engine/Platform/README.md) |
 | `pme_render` | `Engine/Render` | §27 Renderer2D(SDL_Renderer; software capture) · §27.1 compareCaptures | 구현됨 (Phase 2, `PME_WITH_SDL`) — [README](../Engine/Render/README.md) |
 | `pme_validation` | `Engine/Validation` | §29 rule registry, SARIF 출력 | 예정 — 지금은 `Project::validate()` + `validateComponentJson` 이 규칙이고 `--fix` 는 CLI 가 CommandBus 로 적용한다 |
-| `game` | `Tools/CLI` | §11 CLI · §12 envelope/TTY · §13 exit code · §15 capabilities(tools 15 + busCommands) · 읽기: run/dump/query/validate/fmt/schema/explain/entity list · 쓰기(MutationCommands.cpp, 전부 CommandBus 경유): entity/component/set/tag/prefab/world/apply/undo/redo/history/cmd · `validate --fix` · `test`(TestCommands.cpp) · `capture`/`input map`/창 모드 `run`(SdlCommands.cpp, SDL 빌드) · `serve`/`serve status|stop`/`tx *`/`run status`(Serve.cpp) · `mcp`(Mcp.cpp) | 구현됨 (Phase 0–5, 7 명령; one-shot 또는 serve 포워딩) |
+| `akeir` | `Tools/CLI` | §11 CLI · §12 envelope/TTY · §13 exit code · §15 capabilities(tools 15 + busCommands) · 읽기: run/dump/query/validate/fmt/schema/explain/entity list · 쓰기(MutationCommands.cpp, 전부 CommandBus 경유): entity/component/set/tag/prefab/world/apply/undo/redo/history/cmd · `validate --fix` · `test`(TestCommands.cpp) · `capture`/`input map`/창 모드 `run`(SdlCommands.cpp, SDL 빌드) · `serve`/`serve status|stop`/`tx *`/`run status`(Serve.cpp) · `mcp`(Mcp.cpp) | 구현됨 (Phase 0–5, 7 명령; one-shot 또는 serve 포워딩) |
 | `pme_game` | `Game/Source` | 샘플 게임 component(Health/Movement/PlayerController/EnemyAI) + systems (§60, §71) | 구현됨 (Phase 1) |
 | `pme_tests` | `Tests` | 각 모듈 단위 테스트 | 74 케이스 (Core/Runtime/Reflection/Serialization/ECS/Commands/Testing + Render[SDL]) |
 
@@ -68,8 +68,8 @@ Game/*.json ──Project::load──▶ Project (documents + id index)
                                   ▼
                       hash / snapshot / dumpEntity / query   ──▶  CLI envelope (stdout)
 
-쓰기 경로 (Phase 3)  — 파일을 바꾸는 엔진 경로는 이것과 `game fmt` 뿐
-CLI (game set / entity create / apply / undo …) ──▶ CommandBus::execute|apply|undo
+쓰기 경로 (Phase 3)  — 파일을 바꾸는 엔진 경로는 이것과 `akeir fmt` 뿐
+CLI (akeir set / entity create / apply / undo …) ──▶ CommandBus::execute|apply|undo
    ──▶ fork(Project 복사) ──▶ handler (BuiltinCommands) ──▶ ChangeBuilder(ops + before) ──▶ validateFork(새 오류만 거부)
    ──▶ commit: base 해시 검사 → Cache/journal → 메모리 applyOps → canonical temp+rename → Cache/history → journal 삭제
    ──▶ envelope { result, changes[] (ChangeSet ops), meta.changeSet }
@@ -85,14 +85,14 @@ Game/Tests/**/*.test.json ──TestScenario::fromJson──▶ TestRunner::run
    ──▶ results.json (+ JUnit) ──▶ CLI envelope (exit 3 on failure)
 
 렌더/capture 경로 (Phase 2, SDL 빌드)
-game run (창)     : Platform(window) + Renderer2D(window, vsync) + InputMap(Config/input.json) ──▶ runInteractive: accumulator → world.tick(InputFrame) → render → present
-game capture      : Platform(dummy, 창 없음) → N tick → Renderer2D::createSoftware(w,h).render → SDL_SavePNG   (CPU, byte-deterministic)
-game test capture : 위 software 경로를 CaptureHook 으로 주입 → Tests/Golden/<test>/<name>_<WxH>.png 과 compareCaptures
+akeir run (창)     : Platform(window) + Renderer2D(window, vsync) + InputMap(Config/input.json) ──▶ runInteractive: accumulator → world.tick(InputFrame) → render → present
+akeir capture      : Platform(dummy, 창 없음) → N tick → Renderer2D::createSoftware(w,h).render → SDL_SavePNG   (CPU, byte-deterministic)
+akeir test capture : 위 software 경로를 CaptureHook 으로 주입 → Tests/Golden/<test>/<name>_<WxH>.png 과 compareCaptures
 
 상주 경로 (Phase 4/7)
-game serve : ServeHost{Project, CommandBus(단일 writer), run registry} ◀── 127.0.0.1 NDJSON JSON-RPC (token) ◀── game <cmd> (얇은 클라이언트: Cache/serve.json 보고 포워딩)
+akeir serve : ServeHost{Project, CommandBus(단일 writer), run registry} ◀── 127.0.0.1 NDJSON JSON-RPC (token) ◀── game <cmd> (얇은 클라이언트: Cache/serve.json 보고 포워딩)
                                                                   ◀── --stdio (Editor)
-game mcp   : 같은 ServeHost ◀── stdin/stdout MCP (server/discover | initialize, tools/list, tools/call → structuredContent = envelope)
+akeir mcp   : 같은 ServeHost ◀── stdin/stdout MCP (server/discover | initialize, tools/list, tools/call → structuredContent = envelope)
 tx: serve 의 bus 가 fork 를 들고 있다 → `--tx` 가 붙은 명령은 fork 에, `tx commit` 이 compose + commit (§9.1/§9.2)
 ```
 

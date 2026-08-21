@@ -79,7 +79,7 @@ std::vector<Diagnostic> validateComponentJson(const ComponentMeta& meta, const J
     for (auto it = json.begin(); it != json.end(); ++it) {
         const PropertyMeta* p = meta.find(it.key());
         if (!p) {
-            Diagnostic d = Diagnostic::error("PROPERTY_UNKNOWN", "Component '" + meta.name + "' has no property '" + it.key() + "'. See `game schema component " + meta.name + "`.")
+            Diagnostic d = Diagnostic::error("PROPERTY_UNKNOWN", "Component '" + meta.name + "' has no property '" + it.key() + "'. See `akeir schema component " + meta.name + "`.")
                                .in(at(where, it.key())).at(LogicalLocation{entityId, meta.name, "/" + it.key()});
             Fix f; f.description = "Remove unknown property"; f.applicability = Applicability::MaybeIncorrect;
             f.artifactChanges.push_back(Json{{"op", "remove"}, {"path", where.jsonPointer + "/" + it.key()}});
