@@ -491,7 +491,12 @@ TestResult TestRunner::run(const TestScenario& sc) {
             if (p.done) continue;
             std::string note = aborted ? "evaluated at abort tick " + std::to_string(st.tick) : "";
             if (p.a->when == TestAssert::When::AtEnd || p.a->when == TestAssert::When::Always) { evaluate(p, snap, b, st.tick, note); p.done = true; }
-            else if (p.a->when == TestAssert::When::Eventually) { evaluate(p, snap, b, st.tick, aborted ? "run aborted before the eventually window closed" : "not satisfied within the run"); p.done = true; }
+            else if (p.a->when == TestAssert::When::Eventually) {
+                bool already = false;
+                for (const auto& f : r.failures) if (f.assertId == p.a->id) already = true;   // 중단 tick 에서 이미 평가 오류로 기록됐으면 중복 보고하지 않는다
+                if (!already) evaluate(p, snap, b, st.tick, aborted ? "run aborted before the eventually window closed" : "not satisfied within the run");
+                p.done = true;
+            }
             else if (p.a->when == TestAssert::When::AtTick) {
                 // 도달하지 못한 at:N 은 식의 값과 무관하게 실패 (평가할 snapshot 이 없다)
                 TestFailure f;

@@ -134,7 +134,7 @@ Envelope cmdRun(Context& ctx) {
         if (ctx.runRegistry) { Json entry = r; entry["command"] = "run.start"; (*ctx.runRegistry)[runId] = entry; }
     }
     Envelope env = Envelope::success("run.start", r);
-    if (rr.hashes.size() > 64 && hashOut.empty()) env.withMeta("truncated", true);
+    if (rr.hashes.size() > 64 && hashOut.empty()) { env.withMeta("truncated", true); env.withMeta("truncatedFields", Json::array({"hashes"})); env.withMeta("hint", "per-tick hashes omitted (> 64); pass --hash-out <file> to write them all"); }
     return env;
 }
 
@@ -194,7 +194,7 @@ Envelope cmdQuery(Context& ctx) {
         rows.push_back(row);
     }
     Envelope env = Envelope::success("query", Json{{"rows", rows}, {"total", ids.size()}, {"with", with}, {"without", without}, {"tick", o->world->currentTick()}});
-    if (static_cast<long long>(ids.size()) > limit) env.withMeta("truncated", true);
+    if (static_cast<long long>(ids.size()) > limit) { env.withMeta("truncated", true); env.withMeta("hint", "raise --limit to see all rows (no cursor yet)"); }
     return env;
 }
 

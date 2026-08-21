@@ -47,7 +47,7 @@ ctest --preset msvc-headless
 
 | 경로 | 내용 |
 |---|---|
-| `build/<preset>/bin/game.exe` | CLI (§11) |
+| `build/<preset>/bin/game.exe` | CLI (§11). `msvc-release` 는 static CRT(`/MT`) 라 VC++ 재배포 없이 다른 PC 에서 돈다 — 릴리즈 zip 의 `bin/game.exe` |
 | `build/<preset>/Tests/pme_tests.exe` | doctest 단위 테스트 |
 | `build/<preset>/compile_commands.json` | clangd 등용 |
 
@@ -60,7 +60,7 @@ build\msvc-headless\Tests\pme_tests.exe --list-test-cases
 scripts\build.cmd msvc-headless test                 # ctest 경유 (doctest_discover_tests 로 케이스별 등록)
 ```
 
-테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다.
+테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다. **TEST_CASE 이름에 `;` 금지** — `doctest_discover_tests` 가 CMake 목록 구분자로 쪼개 그 테스트를 조용히 건너뛴다(ME0.1 검증에서 발견). 정본은 `pme_tests.exe` 직접 실행.
 
 ## CLI 스모크 테스트 (Phase 0 성공 기준, §74)
 
@@ -185,8 +185,8 @@ echo {"jsonrpc":"2.0","id":1,"method":"tools/list"} | ..\build\msvc-headless\bin
 | doctest | v2.5.3 | MIT | 테스트 |
 | SDL3 | release-3.4.14 | zlib | 창/입력/headless driver (`PME_WITH_SDL=ON` 일 때만) |
 
-소스는 `.cpm-cache/<dir>/` 에 shallow clone 되어 있으면 그것을 쓰고, 없으면 configure 때 GitHub 에서 받는다.
-새 머신에서 캐시를 만들려면:
+소스는 `.cpm-cache/<dir>/` 에 shallow clone 되어 있으면 그것을 쓰고, 없으면 configure 때 GitHub 에서 **shallow clone** 으로 받는다 (릴리즈 zip 에는 `.cpm-cache/` 가 없다 — 첫 configure 에 네트워크가 필요하고 1분쯤 걸린다).
+새 머신에서 캐시를 미리 만들려면:
 
 ```bash
 scripts\fetch-deps.ps1     # 또는 아래 수동

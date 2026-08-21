@@ -77,7 +77,7 @@ TEST_CASE("Expr: quantifier macros over world.entities") {
     CHECK_THROWS_AS(ev("world.tick.all(e, true)"), expr::EvalError);
 }
 
-TEST_CASE("Expr: parse errors carry an offset; probeBindings reports the values that were compared") {
+TEST_CASE("Expr: parse errors carry an offset — probeBindings reports the values that were compared") {
     expr::ParseError pe;
     CHECK_FALSE(Expr::parse("player.Health.current >", &pe));
     CHECK(pe.message.find("unexpected end") != std::string::npos);

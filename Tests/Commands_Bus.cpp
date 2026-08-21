@@ -106,7 +106,7 @@ TEST_CASE("CommandBus: property.set on a plain entity commits, writes a canonica
     CHECK(bus.history().entries().size() == 1);
 }
 
-TEST_CASE("CommandBus: undo restores the file byte-for-byte; redo re-applies (§10.1)") {
+TEST_CASE("CommandBus: undo restores the file byte-for-byte — redo re-applies (§10.1)") {
     TempProject t;
     const std::string before = readFile(t.dir / "Worlds/TestArena.world.json");
     CommandBus bus(*t.prj, BusOptions{"test"});
@@ -139,7 +139,7 @@ TEST_CASE("CommandBus: undo restores the file byte-for-byte; redo re-applies (§
     CHECK(bus.history().entries()[0].intent["op"] == "tag.add");
 }
 
-TEST_CASE("CommandBus: history persists across bus instances; undo conflict when the file changed underneath (§10.2)") {
+TEST_CASE("CommandBus: history persists across bus instances — undo conflict when the file changed underneath (§10.2)") {
     TempProject t;
     const std::string arena = t.id("path:TestArena/Arena");
     {
@@ -310,7 +310,7 @@ TEST_CASE("CommandBus: entity.create/delete/reparent, prefab.create/instantiate,
     CHECK_FALSE(t.prj->locate(barrel));
 }
 
-TEST_CASE("CommandBus: dry-run leaves nothing behind; validation rejects dangling refs (§50, §29)") {
+TEST_CASE("CommandBus: dry-run leaves nothing behind — validation rejects dangling refs (§50, §29)") {
     TempProject t;
     CommandBus bus(*t.prj, BusOptions{"test"});
     const std::string before = readFile(t.dir / "Worlds/TestArena.world.json");
@@ -342,7 +342,7 @@ TEST_CASE("CommandBus: dry-run leaves nothing behind; validation rejects danglin
     CHECK(readFile(t.dir / "Worlds/TestArena.world.json") == before);
 }
 
-TEST_CASE("CommandBus: in-process tx composes one history entry; rollback discards (§9)") {
+TEST_CASE("CommandBus: in-process tx composes one history entry — rollback discards (§9)") {
     TempProject t;
     CommandBus bus(*t.prj, BusOptions{"test"});
     const std::string arena = t.id("path:TestArena/Arena");
@@ -467,7 +467,7 @@ TEST_CASE("CommandBus: journal recovery completes a commit whose files were neve
     CHECK((*onDisk)["entities"][arena]["name"] == "Recovered");
 }
 
-TEST_CASE("CommandBus: editing a prefab changes every instance; derived prefabs get overrides (§34, §78.1)") {
+TEST_CASE("CommandBus: editing a prefab changes every instance — derived prefabs get overrides (§34, §78.1)") {
     TempProject t;
     CommandBus bus(*t.prj, BusOptions{"test"});
     const std::string goblinPrefab = t.id("name:Goblin");

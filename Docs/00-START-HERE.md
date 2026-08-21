@@ -15,6 +15,8 @@
 
 ## 2. 읽는 순서
 
+릴리즈 zip(`MoltEngine-<ver>.zip`)을 푼 경우에는 **`QUICKSTART.md`** 부터 — 빌드 없이 `bin/game.exe` 로 바로 시작한다. 아래 순서는 소스 저장소에서 개발을 이어갈 때.
+
 | 순서 | 문서 | 왜 |
 |---|---|---|
 | 1 | 이 문서 | 지도 |
@@ -46,7 +48,8 @@ Project_ME/
 ├── README.md                            루트 진입점 (이 문서로 안내)
 ├── Docs/                                ← 지금 여기
 ├── research/                            리서치 원문 11개 + critic + 검증 결과 + v1 원본
-├── .mcp.json                            Claude Code 용 MCP 서버 등록 (`game mcp --project Game`, msvc-debug 빌드 필요)
+├── .mcp.json                            Claude Code 용 MCP 서버 등록 — 개발 저장소에서는 절대 경로(msvc-debug 빌드), 릴리즈 zip 에서는 상대 경로 `bin\game.exe`. `game mcp --print-config` 가 절대 경로 버전을 출력한다
+├── QUICKSTART.md                        릴리즈 zip 사용자용 진입점 (빌드 없이 bin/game.exe 로 시작)
 ├── CMakeLists.txt, CMakePresets.json    빌드 (§41). preset: msvc-debug / msvc-release / msvc-headless / clang-cl-debug
 ├── cmake/                               CPM.cmake(vendored), Dependencies.cmake(버전 고정), DetFpFlags.cmake(§22.2), ProjectWarnings.cmake
 ├── scripts/                             build.cmd / build.ps1 (VS 환경 잡아서 cmake 호출), fetch-deps.ps1
@@ -63,7 +66,7 @@ Project_ME/
 │   ├── Render/      Renderer2D placeholder 스프라이트, software capture, golden 비교 (§27) [구현됨, PME_WITH_SDL]
 │   └── Validation/  rule registry, SARIF (§29)                                      [예정 — 지금은 Project::validate]
 ├── Tools/
-│   ├── CLI/         `game` 실행 파일 (§11–§13, §15): 명령 42개 + `serve`(상주 RPC) + `mcp`(stdio MCP)   [구현됨]
+│   ├── CLI/         `game` 실행 파일 (§11–§13, §15): 명령 ~45개(`game --help` / `capabilities --json` 이 정본) + `serve`(상주 RPC) + `mcp`(stdio MCP)   [구현됨]
 │   ├── Editor/      ImGui (Phase 6)                                                 [없음]
 │   └── MCP/         (없음 — `game mcp` 가 CLI 안에 있다, ADR-0030)
 ├── Game/            샘플 프로젝트 "TestArena" — project.json, Worlds/, Prefabs/, Config/, Tests/(*.test.json, Golden/) + Source/(Health/Movement/PlayerController/EnemyAI + systems)  [구현됨]
@@ -79,7 +82,7 @@ Project_ME/
 3. 작업 대상 모듈의 설계 § 와 `Engine/<모듈>/README.md` 를 읽는다.
 4. 구현 → 테스트 추가(`Tests/`) → 빌드 → 테스트.
 5. **끝내기 전에** `STATUS.md` 를 갱신한다 (완료 항목 체크, 새로 알게 된 문제, 다음 할 일). 결정을 내렸으면 `DECISIONS.md` 에 ADR 추가. 설계를 바꿨으면 설계 문서에 `▶ v3`.
-6. git: 저장소는 `git init` 만 되어 있고 **커밋은 사용자가 지시할 때만** 한다 (STATUS.md 에 적혀 있다).
+6. git: 첫 커밋 + 태그 `ME0.1`/`v0.1.0` 이 있다. **이후 커밋은 사용자가 지시할 때만** 한다 (STATUS.md). 릴리즈 zip 은 `git archive` 라 `.git` 이 없다.
 
 ## 6. 자주 쓰는 명령
 

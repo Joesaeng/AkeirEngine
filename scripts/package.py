@@ -63,7 +63,7 @@ def main():
 
     # 3. relative .mcp.json (repo copy has absolute dev paths)
     with open(os.path.join(stage, ".mcp.json"), "w", encoding="utf-8", newline="\n") as f:
-        json.dump({"mcpServers": {"game": {"command": "bin/game.exe", "args": ["mcp", "--project", "Game"]}}}, f, indent=2)
+        json.dump({"mcpServers": {"game": {"command": "bin\\game.exe", "args": ["mcp", "--project", "Game"]}}}, f, indent=2)   # 백슬래시: cmd.exe 와 cwd 기준 spawn 양쪽에서 풀린다
         f.write("\n")
 
     # 4. release notes

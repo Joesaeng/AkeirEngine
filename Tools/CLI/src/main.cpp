@@ -63,6 +63,23 @@ int main(int argc, char** argv) {
     const CommandSpec* spec = findCommand(args.positionals, consumed);
     std::string commandId = spec ? spec->id : "unknown";
 
+    // --help / -h / help: 창을 열거나 프로젝트를 건드리기 전에 usage 만 출력 (exit 0)
+    const bool wantsHelp = args.has("help") || args.has("h") || (!args.positionals.empty() && args.positionals[0] == "help");
+    if (wantsHelp || args.positionals.empty()) {
+        Json r = Json::object();
+        if (spec && wantsHelp && !(args.positionals.size() == 1 && args.positionals[0] == "help")) {
+            r["command"] = spec->id; r["title"] = spec->title; r["description"] = spec->description; r["usage"] = spec->usage; r["kind"] = spec->kind;
+        } else {
+            Json cmds = Json::array();
+            for (const auto& s : commandTable()) { std::string line; for (const auto& p : s.cli) line += (line.empty() ? "" : " ") + p; cmds.push_back(Json{{"cli", line}, {"id", s.id}, {"title", s.title}, {"usage", s.usage}}); }
+            r["commands"] = cmds;
+            r["hint"] = "game <command> --help | game capabilities --json (full schemas) | Docs/00-START-HERE.md";
+        }
+        Envelope env = Envelope::success("help", r);
+        printEnvelope(env, mode);
+        return kExitOk;
+    }
+
     CrashConfig cc;
     cc.command = commandId;
     cc.lastLogs = ring;

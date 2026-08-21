@@ -1,10 +1,16 @@
 // Tools/CLI/Serve.cpp — `game serve` 데몬(단일 writer) + 얇은 RPC 클라이언트 + ServeHost(디스패치; `game mcp` 와 공유). 설계 문서 §88.1, §9.1, §46.2, §13. 프로토콜은 Serve.h 머리말.
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include <fcntl.h>
+#include <io.h>
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
@@ -264,6 +270,9 @@ int runServe(Context& ctx) {
     auto lastActivity = std::chrono::steady_clock::now();
 
     if (stdio) {
+#ifdef _WIN32
+        _setmode(_fileno(stdout), _O_BINARY);
+#endif
         std::string line;
         while (!host.stopRequested() && std::getline(std::cin, line)) {
             if (line.empty()) continue;

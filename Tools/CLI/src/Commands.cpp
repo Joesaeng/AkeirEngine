@@ -93,6 +93,21 @@ const CommandSpec* findCommand(const std::vector<std::string>& positionals, std:
     return best;
 }
 
+/// §12 envelope 의 JSON Schema (자기완결 — MCP outputSchema 로 그대로 쓴다; $ref 없음)
+Json envelopeSchema() {
+    Json diag = Json{{"type", "object"}, {"properties", Json{{"ruleId", Json{{"type", "string"}}}, {"level", Json{{"type", "string"}}}, {"message", Json{{"type", "object"}, {"properties", Json{{"text", Json{{"type", "string"}}}}}}},
+                                                           {"physical", Json{{"type", "object"}}}, {"logical", Json{{"type", "object"}}}, {"fixes", Json{{"type", "array"}}}, {"fingerprint", Json{{"type", "string"}}}}}};
+    Json err = diag;
+    err["properties"]["category"] = Json{{"type", "string"}, {"enum", Json::array({"usage", "validation", "not_found", "conflict", "precondition", "crash", "timeout", "internal", "cancelled"})}};
+    err["properties"]["retryable"] = Json{{"type", "boolean"}};
+    err["properties"]["details"] = Json{{"type", "object"}};
+    return Json{{"$schema", "https://json-schema.org/draft/2020-12/schema"}, {"type", "object"},
+                {"properties", Json{{"ok", Json{{"type", "boolean"}}}, {"command", Json{{"type", "string"}}}, {"result", Json{{"type", "object"}, {"description", "present when ok"}}},
+                                    {"error", err}, {"changes", Json{{"type", "array"}, {"description", "ChangeSet ops (RFC 6902 superset: op/doc/path/value/before)"}}},
+                                    {"warnings", Json{{"type", "array"}, {"items", diag}}}, {"meta", Json{{"type", "object"}}}}},
+                {"required", Json::array({"ok", "command", "changes", "warnings", "meta"})}};
+}
+
 Json capabilitiesJson() {
     Json r = Json::object();
     r["info"] = Json{{"title", "MoltEngine Command API"}, {"engine", "MoltEngine"}, {"version", PME_VERSION_STRING}, {"sdl", sdlAvailable()}};
@@ -104,7 +119,7 @@ Json capabilitiesJson() {
         t["name"] = name; t["title"] = title; t["description"] = desc;
         if (!input.contains("type")) input["type"] = "object";
         t["inputSchema"] = input;
-        t["outputSchema"] = Json{{"$ref", "game://schema/envelope/1"}};
+        t["outputSchema"] = envelopeSchema();
         t["annotations"] = Json{{"readOnlyHint", readOnly}, {"destructiveHint", destructive}, {"idempotentHint", idempotent}, {"openWorldHint", false}};
         t["cli"] = cli;
         t["enabled"] = enabled;
@@ -112,22 +127,24 @@ Json capabilitiesJson() {
     };
     auto props = [](std::initializer_list<std::pair<const char*, Json>> ps) { Json o = Json::object(); for (auto& [k, v] : ps) o[k] = v; return Json{{"properties", o}, {"additionalProperties", false}}; };
     Json S = Json{{"type", "string"}}, B = Json{{"type", "boolean"}}, I = Json{{"type", "integer"}};
+    const char* kSel = "selector: an id (entity_…/prefab_…/world_…), a bare name (Goblin_01), name:<name>, or path:<World>/<Parent>/<Child>. Resolves entities AND prefabs; ambiguous → AMBIGUOUS_SELECTOR with candidates";
+    Json SEL = Json{{"type", "string"}, {"description", kSel}};
     Json tools = Json::array();
     tools.push_back(tool("capabilities", "Capability discovery", "Full tool/command descriptors, exit codes and error codes (§15).", props({}), true, false, true, "game capabilities --json", true));
     tools.push_back(tool("project_info", "Project summary", "Name, tickRate, seed, worlds, prefabs, registered components.", props({}), true, false, true, "game project info --json", true));
     tools.push_back(tool("schema_describe", "Component schemas", "JSON Schema 2020-12 (+x-*) and wire format of components (§14).", props({{"component", S}, {"all", B}}), true, false, true, "game schema component <Name> --json", true));
-    tools.push_back(tool("query", "Query play world", "Build the world, run N ticks, return entities matching with/without (components or #tags) (§16).", props({{"with", Json{{"type", "array"}, {"items", S}}}, {"without", Json{{"type", "array"}, {"items", S}}}, {"ticks", I}, {"components", B}, {"limit", I}, {"world", S}}), true, false, true, "game query --with EnemyAI --ticks 300 --json", true));
-    tools.push_back(tool("inspect", "Inspect an entity", "Resolved components of one entity after N ticks (play world) — `game dump` (§25).", props({{"entity", S}, {"ticks", I}, {"world", S}}), true, false, true, "game dump <selector> --ticks 600 --json", true));
-    tools.push_back(tool("explain", "Explain an authoring object", "Where it lives, prefab chain, overrides, children, resolved components, lifecycle (§18).", props({{"selector", S}}), true, false, true, "game explain <selector> --json", true));
-    tools.push_back(tool("refs", "Reference graph", "Who references this id and what it references: prefab instances, parent links, Ref properties, overrides, defaultWorld (§19).", props({{"selector", S}}), true, false, true, "game refs <selector> --json", true));
+    tools.push_back(tool("query", "Query play world", "Build the world, run N ticks, return entities matching with/without (components or #tags) (§16).", props({{"with", Json{{"type", "array"}, {"items", S}, {"description", "component names the entity must have; prefix # for tags (#enemy)"}}}, {"without", Json{{"type", "array"}, {"items", S}, {"description", "component names / #tags to exclude"}}}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"components", Json{{"type", "boolean"}, {"description", "include each entity's full component values"}}}, {"limit", Json{{"type", "integer"}, {"description", "max rows (default 100); raise it to see more — there is no cursor yet"}}}, {"world", S}}), true, false, true, "game query --with EnemyAI --ticks 300 --json", true));
+    tools.push_back(tool("inspect", "Inspect an entity", "Resolved components of one entity after N ticks (play world) — `game dump` (§25).", props({{"entity", SEL}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"world", S}}), true, false, true, "game dump <selector> --ticks 600 --json", true));
+    tools.push_back(tool("explain", "Explain an authoring object", "Where it lives, prefab chain, overrides, children, resolved components, lifecycle (§18).", props({{"selector", SEL}}), true, false, true, "game explain <selector> --json", true));
+    tools.push_back(tool("refs", "Reference graph", "Who references this id and what it references: prefab instances, parent links, Ref properties, overrides, defaultWorld (§19).", props({{"selector", SEL}}), true, false, true, "game refs <selector> --json", true));
     tools.push_back(tool("apply", "Apply a batch of commands", "Atomic batch of Mutation commands (§49). changes[].op ∈ busCommands[].id; '$name' refers to an earlier change's result (as: name). dryRun returns the ChangeSet without writing. Response.changes = RFC 6902 superset ops (§78).",
-                         props({{"changes", Json{{"type", "array"}, {"items", Json{{"type", "object"}, {"required", Json::array({"op"})}}}}}, {"atomic", B}, {"dryRun", B}, {"idempotencyKey", S}}), false, false, false, "game apply batch.json --json", true));
+                         props({{"changes", Json{{"type", "array"}, {"description", "each item: {op: <busCommands[].id>, ...args of that command, as?: name}. Call the `capabilities` tool for busCommands[] (ids + arg schemas)."}, {"items", Json{{"type", "object"}, {"required", Json::array({"op"})}}}}}, {"atomic", Json{{"type", "boolean"}, {"description", "default true: all-or-nothing, one undo step"}}}, {"dryRun", Json{{"type", "boolean"}, {"description", "compute the ChangeSet without writing"}}}, {"idempotencyKey", S}, {"tx", Json{{"type", "string"}, {"description", "open tx handle from the tx tool"}}}}), false, false, false, "game apply batch.json --json", true));
     tools.push_back(tool("validate", "Validate project data", "All §29 rules; fix:true applies MachineApplicable fixes via CommandBus (undoable).", props({{"fix", B}, {"dryRun", B}}), true, false, true, "game validate [--fix] --json", true));
     tools.push_back(tool("run", "Run headless", "Fixed-tick deterministic run; finalHash, per-N hashes, snapshot (§20, §22).", props({{"ticks", I}, {"seed", I}, {"world", S}, {"hashEvery", I}, {"snapshotOut", S}}), false, false, true, "game run --headless --ticks 600 --json", true));
     tools.push_back(tool("run_status", "Run handle status", "Result of a run started in this `game serve` session (run.start returns result.run) (§46.2).", props({{"run", S}}), true, false, true, "game run status <run_id> --json", true));
     tools.push_back(tool("test", "Run data-driven tests", "Tests/**/*.test.json scenarios: setup, scripted inputs, snapshot assertions (always/eventually/at), run-twice determinism; results.json + JUnit (§23, §24).", props({{"filter", S}, {"junit", S}, {"resultsDir", S}}), true, false, true, "game test [filter] --json", true));
     tools.push_back(tool("capture", "Capture a frame", "Software-rasterized PNG of the world after N ticks (no GPU; deterministic). compare: golden comparison with tolerance (§27, §27.1).", props({{"ticks", I}, {"width", I}, {"height", I}, {"out", S}, {"compare", S}}), true, false, true, "game capture --ticks 60 --out Cache/capture/f.png --json", sdlAvailable()));
-    tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list across calls (§9.1): opaque tx handle + TTL; mutation commands take tx. Needs `game serve` (forwarded automatically when it runs).", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "game tx begin|commit|rollback|list", true));
+    tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list: opaque tx handle + TTL (10 min); pass tx to apply to group several calls into one undo step. Works directly inside an MCP session; from the CLI it needs `game serve`.", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "game tx begin|commit|rollback|list", true));
     tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "game undo|redo|history", true));
     r["tools"] = tools;
 

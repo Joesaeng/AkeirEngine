@@ -48,13 +48,14 @@ bool writeText(const fs::path& p, const std::string& text, std::string* err) {
 
 std::string projectReadme(const std::string& name) {
     return "# " + name + " — MoltEngine project\n\n"
-           "Authoring data lives in this directory as canonical JSON (Worlds/, Prefabs/, Config/). Change it through the `game` CLI (or the MCP server), never by hand:\n\n"
+           "Authoring data lives in this directory as canonical JSON (Worlds/, Prefabs/, Config/). Change Worlds/Prefabs/Config through the `game` CLI (or the MCP server), not by hand; test scenarios in Tests/ are written by hand (format: Engine/Testing/README.md in the engine folder).\n"
+           "`game` below means the engine's bin\\game.exe — add that folder to PATH or use the full path.\n\n"
            "```bash\n"
            "game validate --json                                   # checks ids, schemas, refs; exit 3 + fixes on errors\n"
            "game schema --all --json                               # every component and its properties\n"
            "game prefab create Hero --components \"{\\\"Collider2D\\\":{\\\"shape\\\":\\\"circle\\\",\\\"radius\\\":0.4},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"dynamic\\\"},\\\"Movement\\\":{\\\"speed\\\":5},\\\"PlayerController\\\":{}}\" --json\n"
            "game prefab instantiate name:Hero --name Player --position 0,0,0 --json\n"
-           "game entity create Wall --components \"{\\\"Collider2D\\\":{\\\"size\\\":[10,1]},\\\"Transform\\\":{\\\"position\\\":[0,-5,0]}}\" --json\n"
+           "game entity create Wall --components \"{\\\"Collider2D\\\":{\\\"size\\\":[10,1]},\\\"RigidBody2D\\\":{\\\"type\\\":\\\"static\\\"},\\\"Transform\\\":{\\\"position\\\":[0,-5,0]}}\" --json   # a collider needs a (static) RigidBody2D to block anything\n"
            "game run --headless --ticks 600 --json                 # deterministic run, result.finalHash\n"
            "game run                                                # window (SDL build): WASD / arrows, ESC to quit\n"
            "game capture --ticks 120 --out Cache/capture/f.png --json\n"
@@ -62,7 +63,8 @@ std::string projectReadme(const std::string& name) {
            "game undo --json                                        # every change above is one undo step\n"
            "game mcp                                                # MCP server over stdio for AI clients\n"
            "```\n\n"
-           "Start from `game capabilities --json` (tools, busCommands, error codes) and `game project info --json`.\n"
+           "Start from `game capabilities --json` (tools, busCommands, error codes) and `game project info --json`. Selectors: id | bare name | name:<n> | path:<World/Parent/Child>.\n"
+           "Combat needs Health on BOTH sides: EnemyAI only damages targets that carry a Health component.\n"
            "Cache/ holds derived data (undo history, crash dumps, captures) and can be deleted.\n";
 }
 

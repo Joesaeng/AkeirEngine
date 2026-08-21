@@ -69,7 +69,7 @@ Envelope cmdTest(Context& ctx) {
         Json sum = rep.summary();
         env = Envelope::failure("test", CommandError::make(ErrorCategory::Validation, "TEST_FAILED",
             std::to_string(sum["failed"].get<int>()) + " failed, " + std::to_string(sum["errored"].get<int>()) + " errored of " + std::to_string(sum["total"].get<std::size_t>()) +
-            ". See result.tests[].failures (tick, bindings) and the snapshot artifacts in " + resultsDir + ".", result));
+            ". See error.details.tests[].failures (tick, bindings) and the snapshot artifacts in " + resultsDir + ".", result));
     }
     for (const auto& d : ctx.loadDiagnostics) env.withWarning(d);
     return env;

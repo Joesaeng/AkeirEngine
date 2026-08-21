@@ -67,5 +67,7 @@ const CommandSpec* findCommand(const std::vector<std::string>& positionals, std:
 
 /// §15: tools[] / commands[] / exitCodes / errorCodes
 Json capabilitiesJson();
+/// §12 envelope JSON Schema (자기완결)
+Json envelopeSchema();
 
 } // namespace pme::cli

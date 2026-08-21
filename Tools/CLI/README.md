@@ -39,6 +39,6 @@ Docs/BUILD.md 의 "CLI 스모크 테스트", "샘플 프로젝트로 Phase 1 확
 ## 미구현
 
 - 사람용 텍스트 출력 포맷(`--format table`), `--fields`/`--jq` 투영, 페이지네이션(`--cursor`) 은 옵션만 파싱되고 동작하지 않는다 (Phase 4).
-- `refs` (capabilities.tools 의 `enabled:false`). `capture` 는 SDL 빌드에서만 enabled.
+- `capture` tool 은 SDL 빌드에서만 enabled (헤드리스 빌드는 `FEATURE_UNAVAILABLE`).
 - serve: 멀티스레드/동시 연결, 파일 watcher, play world 상주(`run.step`), HTTP/named pipe. MCP: resources, prompts, progress/Tasks, 인자 스키마 검증.
 - Game/ 의 component/system 등록을 CLI 가 직접 링크한다 (`game::registerGameComponents/Systems`) — Game 모듈 교체는 Phase 4 과제.

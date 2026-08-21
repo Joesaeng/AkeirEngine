@@ -616,7 +616,7 @@ void registerBuiltinCommands(CommandBus& bus) {
                          {"mutate_component"}, propertySet});
     bus.registerCommand({"tag.add", K::Mutation, "Add a tag to an entity.", schema({{"entity", str("entity selector")}, {"tag", str("tag")}}, {"entity", "tag"}), {}, [](CommandContext& c) { return tagAddRemove(c, true); }});
     bus.registerCommand({"tag.remove", K::Mutation, "Remove a tag from an entity.", schema({{"entity", str("entity selector")}, {"tag", str("tag")}}, {"entity", "tag"}), {}, [](CommandContext& c) { return tagAddRemove(c, false); }});
-    bus.registerCommand({"prefab.create", K::Mutation, "Create Prefabs/<Name>.prefab.json (plain components or derived via base + set/add/remove).",
+    bus.registerCommand({"prefab.create", K::Mutation, "Create Prefabs/<Name>.prefab.json (plain components or derived via base + set/add/remove). Transform is added if absent; missing props take defaults.",
                          schema({{"name", str("prefab name (also file name)")}, {"components", obj("{Name: {...}}")}, {"base", str("base prefab selector")}, {"set", obj("")}, {"add", obj("")}, {"remove", strArr("")}, {"tags", strArr("")}}, {"name"}), {}, prefabCreate});
     bus.registerCommand({"prefab.instantiate", K::Mutation, "Create a prefab instance entity in a world.",
                          schema({{"prefab", str("prefab selector")}, {"world", str("world selector; default = defaultWorld")}, {"name", str("instance name; default = prefab name")}, {"parent", str("parent entity selector")},

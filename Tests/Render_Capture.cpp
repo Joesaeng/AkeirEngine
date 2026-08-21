@@ -30,7 +30,7 @@ Platform& sdl() {
 std::string readBytes(const fs::path& p) { std::ifstream in(p, std::ios::binary); return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>()); }
 } // namespace
 
-TEST_CASE("Renderer2D: software renderer works without a window; two captures of the same world are byte-identical (§27)") {
+TEST_CASE("Renderer2D: software renderer works without a window — two captures of the same world are byte-identical (§27)") {
     sdl();
     CHECK(sdl().currentVideoDriver() == "dummy");
     registerBuiltinComponents();
@@ -84,7 +84,7 @@ TEST_CASE("Renderer2D: software renderer works without a window; two captures of
     fs::remove_all(dir, ec);
 }
 
-TEST_CASE("InputMap: Config/input.json resolves to scancodes; sample() with no keys is empty (§88.3)") {
+TEST_CASE("InputMap: Config/input.json resolves to scancodes — sample() with no keys is empty (§88.3)") {
     sdl();
     std::vector<Diagnostic> diags;
     InputMap m = InputMap::loadFile((fs::path(sampleDir()) / "Config" / "input.json").string(), &diags);

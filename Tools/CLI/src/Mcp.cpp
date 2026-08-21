@@ -17,6 +17,17 @@
 
 #include <iostream>
 #include <sstream>
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <fcntl.h>
+#include <io.h>
+#endif
 
 namespace pme::cli {
 
@@ -60,7 +71,10 @@ Json callTool(ServeHost& host, const std::string& name, const Json& a) {
     else if (name == "project_info") { argv = {"project", "info"}; }
     else if (name == "schema_describe") { argv = {"schema"}; if (flag(a, "all")) argv.push_back("--all"); else if (!str(a, "component").empty()) { argv.push_back("component"); argv.push_back(str(a, "component")); } else argv.push_back("--all"); }
     else if (name == "query") { argv = {"query"}; opt("with", joinList(a.value("with", Json()))); opt("without", joinList(a.value("without", Json()))); opt("ticks", num(a, "ticks")); opt("limit", num(a, "limit")); opt("world", str(a, "world")); boolFlag("components", "components"); }
-    else if (name == "inspect") { argv = {"dump", str(a, "entity", "world")}; if (str(a, "entity").empty()) argv.push_back("--all"); opt("ticks", num(a, "ticks")); opt("world", str(a, "world")); }
+    else if (name == "inspect") {
+        if (str(a, "entity").empty()) return Envelope::failure("inspect", CommandError::make(ErrorCategory::Usage, "ARG_REQUIRED", "inspect needs 'entity' (selector: id | name | name:<n> | path:<World/Parent/Child>). For the whole world use query.")).toJson();
+        argv = {"dump", str(a, "entity")}; opt("ticks", num(a, "ticks")); opt("world", str(a, "world"));
+    }
     else if (name == "explain") { argv = {"explain", str(a, "selector")}; }
     else if (name == "refs") { argv = {"refs", str(a, "selector", str(a, "id"))}; }
     else if (name == "validate") { argv = {"validate"}; boolFlag("fix", "fix"); boolFlag("dry-run", "dryRun"); }
@@ -84,21 +98,33 @@ Json callTool(ServeHost& host, const std::string& name, const Json& a) {
     else if (name == "apply") {
         Json extra = Json::object();
         if (!str(a, "tx").empty()) extra["tx"] = str(a, "tx");
-        if (!str(a, "actor").empty()) extra["actor"] = str(a, "actor");
+        extra["actor"] = str(a, "actor", "mcp");
         return host.callBus("apply", a, extra);
     }
     else return Envelope::failure(name, CommandError::make(ErrorCategory::Usage, "UNKNOWN_TOOL", "No such tool '" + name + "'. See tools/list.")).toJson();
 
     Json extra = Json::object();
-    if (!str(a, "actor").empty()) extra["actor"] = str(a, "actor");
+    extra["actor"] = str(a, "actor", "mcp");
     if (!str(a, "tx").empty()) extra["tx"] = str(a, "tx");
     argv.push_back("--json");
-    return host.callArgv(argv, extra);
+    Json env = host.callArgv(argv, extra);
+    if (env.is_object()) env["command"] = name;   // tool 이름과 envelope.command 를 1:1 로 (dump → inspect 등)
+    return env;
 }
 
 } // namespace
 
 int runMcp(Context& ctx) {
+    if (ctx.args.has("print-config")) {
+        // 절대 경로 .mcp.json 을 stdout 으로 — 상대 경로를 못 푸는 클라이언트용
+        char exe[4096] = {0};
+#ifdef _WIN32
+        GetModuleFileNameA(nullptr, exe, sizeof(exe));
+#endif
+        Json cfg = Json{{"mcpServers", Json{{"game", Json{{"command", std::string(exe)}, {"args", Json::array({"mcp", "--project", ctx.projectDir})}}}}}};
+        std::fputs(cfg.dump(2).c_str(), stdout); std::fputc('\n', stdout);
+        return kExitOk;
+    }
     ServeHost host;
     Envelope fail;
     if (!host.init(ctx.projectDir, ctx.args.getOr("actor", "mcp"), fail)) {
@@ -106,6 +132,9 @@ int runMcp(Context& ctx) {
         std::fputs(fail.toJson().dump().c_str(), stderr); std::fputc('\n', stderr);
         return fail.exitCode();
     }
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);   // LF 만 (텍스트 모드는 \r\n 을 붙인다)
+#endif
     PME_LOG(Info, "mcp", "ready", "game mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
     std::string line;
     while (std::getline(std::cin, line)) {
@@ -156,7 +185,7 @@ int runMcp(Context& ctx) {
 void registerMcpCommands(std::vector<CommandSpec>& t) {
     t.push_back({"mcp", {"mcp"}, "Meta", "MCP server over stdio (§46)",
                  "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `game serve`). Register in an MCP client as: command=game, args=[\"mcp\",\"--project\",\"<dir>\"].",
-                 "game mcp [--project DIR] [--actor A]", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
+                 "game mcp [--project DIR] [--actor A] | game mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
 }
 
 } // namespace pme::cli

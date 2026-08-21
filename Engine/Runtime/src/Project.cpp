@@ -217,6 +217,9 @@ std::vector<std::string> Project::resolveSelector(std::string_view selector) con
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (index_.count(s)) { out.push_back(s); return out; }
     for (const auto& [id, loc] : index_) if (id.rfind(s, 0) == 0 && s.find('_') != std::string::npos && s.size() > s.find('_') + 1) out.push_back(id);
+    if (!out.empty()) return out;
+    // ▶ v3: 접두어 없는 문자열이 id 와 맞지 않으면 이름으로 본다 ("Goblin_01" == "name:Goblin_01"). 여러 개면 호출자가 AMBIGUOUS_SELECTOR 를 낸다
+    if (selector.find(':') == std::string_view::npos) return resolveSelector(std::string("name:") + std::string(selector));
     return out;
 }
 
@@ -461,6 +464,15 @@ std::vector<Diagnostic> Project::validate() const {
                     f.cli = cli;
                     out.push_back(docError("COMPONENT_DEPENDENCY_MISSING", it.key() + " requires " + req + ".", path, pointer, objectId)
                                       .at(LogicalLocation{objectId, it.key(), std::nullopt}).withFix(f));
+                }
+                // Collider2D 만 있고 RigidBody2D 가 없으면 physics body 가 만들어지지 않는다 (벽을 뚫고 지나간다) — 경고 + fix
+                if (it.key() == "Collider2D" && !comps.contains("RigidBody2D")) {
+                    Fix f; f.description = "Add a static RigidBody2D so the collider participates in physics"; f.applicability = Applicability::MachineApplicable; f.isPreferred = true;
+                    f.commands.push_back(CommandInvocation{"component.add", Json{{"entity", objectId}, {"component", "RigidBody2D"}, {"value", Json{{"type", "static"}}}}});
+                    f.cli = "game component add " + objectId + " RigidBody2D --value \"{\\\"type\\\":\\\"static\\\"}\" --json";
+                    Diagnostic d = Diagnostic::warning("COLLIDER_WITHOUT_BODY", "Collider2D without RigidBody2D creates no physics body; nothing collides with it. Add RigidBody2D (type static for walls).")
+                                       .in(PhysicalLocation{path, pointer + "/" + escapePointerToken(it.key()), std::nullopt}).at(LogicalLocation{objectId, it.key(), std::nullopt}).withFix(f);
+                    out.push_back(std::move(d));
                 }
                 // Ref 속성의 dangling 검사 (§19)
                 for (const auto& p : meta->props) {

@@ -77,7 +77,7 @@ TEST_CASE("Canonical: JCS sorts keys by UTF-16 code units and strips whitespace 
     CHECK(jcsDump(doc2) == jcs);
 }
 
-TEST_CASE("Canonical: parse rejects comments and trailing commas; file write is temp+rename and round-trips") {
+TEST_CASE("Canonical: parse rejects comments and trailing commas — file write is temp+rename and round-trips") {
     std::string err;
     CHECK_FALSE(parseJson("{ \"a\": 1, // no comments\n \"b\": 2 }", &err).has_value());
     CHECK(err.find("byte") != std::string::npos);

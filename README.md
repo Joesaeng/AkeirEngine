@@ -18,7 +18,7 @@ AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 �
 | 코딩 규약 | [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md) |
 | 리서치 원문 / 검증 결과 | [`research/README.md`](research/README.md) |
 
-빠른 시작 (Windows, VS2022):
+릴리즈 zip 을 받았다면 `QUICKSTART.md` (빌드 없이 `bin/game.exe`). 소스에서 빠른 시작 (Windows, VS2022):
 
 ```bash
 scripts\build.cmd msvc-headless all

@@ -59,7 +59,7 @@
 
 ## 테스트
 
-- 모듈마다 `Tests/<Module>_<Topic>.cpp`. 첫 줄에 §.
+- 모듈마다 `Tests/<Module>_<Topic>.cpp`. 첫 줄에 §. TEST_CASE 이름에 `;` 를 쓰지 않는다 (ctest 등록이 쪼개진다; `—` 를 쓴다).
 - 결정론에 영향을 주는 값(RNG 첫 출력, 해시 상수 등)은 regression 테스트로 고정한다 — 바뀌면 snapshot/replay 호환이 깨진다는 것을 테스트 이름에 적는다.
 
 ## 문서

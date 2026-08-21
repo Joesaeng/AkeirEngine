@@ -44,7 +44,7 @@ struct Fixture {
 };
 } // namespace
 
-TEST_CASE("TestRunner: scenario with setup/inputs/assert passes; results.json + JUnit written (§23, §24)") {
+TEST_CASE("TestRunner: scenario with setup/inputs/assert passes — results.json + JUnit written (§23, §24)") {
     Fixture f;
     Json j = Json::parse(R"json({
       "name": "PlayerMovesGoblinsChase",
@@ -88,7 +88,7 @@ TEST_CASE("TestRunner: scenario with setup/inputs/assert passes; results.json + 
     CHECK(xml.find("name=\"PlayerMovesGoblinsChase\"") != std::string::npos);
 }
 
-TEST_CASE("TestRunner: failures carry tick, bindings and a snapshot artifact; always aborts the run (§23.1, §24)") {
+TEST_CASE("TestRunner: failures carry tick, bindings and a snapshot artifact — always aborts the run (§23.1, §24)") {
     Fixture f;
     Json j = Json::parse(R"json({
       "name": "FailingExpectations",

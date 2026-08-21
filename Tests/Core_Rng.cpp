@@ -4,7 +4,7 @@
 
 using namespace pme;
 
-TEST_CASE("Rng: same (worldSeed, name) gives same sequence; different name differs") {
+TEST_CASE("Rng: same (worldSeed, name) gives same sequence — different name differs") {
     RngStream a(381251, "EnemyAI"), b(381251, "EnemyAI"), c(381251, "Spawner");
     for (int i = 0; i < 100; ++i) CHECK(a.next() == b.next());
     bool differs = false;

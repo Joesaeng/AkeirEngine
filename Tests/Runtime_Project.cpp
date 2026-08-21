@@ -85,7 +85,7 @@ TEST_CASE("Project: prefab resolve with base + set, entity instance overrides (�
     CHECK(diags.empty());
 }
 
-TEST_CASE("Project: validate passes on the sample except canonical-form warnings; errors are §79 diagnostics (§29)") {
+TEST_CASE("Project: validate passes on the sample except canonical-form warnings — errors are §79 diagnostics (§29)") {
     registerBuiltinComponents();
     std::vector<Diagnostic> diags;
     auto prj = Project::load(sampleProjectDir(), diags);
