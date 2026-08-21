@@ -1,6 +1,6 @@
 # AKEIR Engine 설계 문서 — AI-Native Game Framework
 
-> **이름**: AKEIR ← 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는")을 읽기 쉽게 쓴 것. 표기 AKEIR, 발음 에이키어. 2026-08-22 개명(이전 가칭 MoltEngine — "사람의 손을 탈피한다"는 뜻은 그대로). 코드 접두어 `pme`(Project ME)는 유지.
+> **이름**: AKEIR ← 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는")을 읽기 쉽게 쓴 것. 표기 AKEIR, 발음 에이키어. 2026-08-22 개명(이전 가칭 MoltEngine — "사람의 손을 탈피한다"는 뜻은 그대로). 코드 접두어도 `akeir`/`AKEIR_` 로 통일(구 `pme`).
 ## Unreal / Unity의 인간 중심 에디터를 우회하지 않고, AI가 직접 조작하는 게임 제작 환경
 
 > 상태: Architecture / PoC Design Draft **v2 (리서치 보강판, 검증 반영)** + ▶ v3 구현 주석 (§89 끝, Phase 3 까지)  
@@ -4928,7 +4928,7 @@ Build는 §11/§21에 있지만 설계가 없다. 세 리서처가 "MSVC vs clan
 | §8 | 내장 command 에 `document.patch {doc, ops}`(raw RFC 6902 escape hatch, copy 금지), `tag.add/remove`, `world.create` 추가. `entity.create` 는 Transform 을 자동 추가하고 누락 prop 을 default 로 채운다. |
 | §49 | `$name` 은 해당 change 의 `result.id`(없으면 result 전체), `$name.field` 는 필드, `$$x` 는 리터럴. 비-atomic 은 각 change 를 개별 commit. |
 | §10 | history 는 프로젝트당 선형 스택(`Cache/history/history.jsonl` + `cursor.json`). undo/redo 는 history 에 push 하지 않고 cursor 만 움직인다; 새 commit 이 redo 꼬리를 버린다. `--actor X` undo 는 최근 항목이 다른 actor 면 거부. |
-| §23, §23.1 | 구현: `pme::expr::Expr`(CEL 부분집합 자체 evaluator). **undefined 멤버는 오류**(has() 밖). "tick N 의 snapshot" = N tick 을 돌린 뒤. `always` 첫 위반에서 run 중단 + 나머지 assert 는 중단 시점에 note 와 함께 평가. setup 에 `entity`(기존 entity binding) 추가, `spawn` 은 `set` 포인터 맵·`name`·`tags` 지원. `inputs.untilTick` 생략 시 다음 `release` 까지. enum 값은 reflection 문자열(소문자) (ADR-0023, 0024). |
+| §23, §23.1 | 구현: `akeir::expr::Expr`(CEL 부분집합 자체 evaluator). **undefined 멤버는 오류**(has() 밖). "tick N 의 snapshot" = N tick 을 돌린 뒤. `always` 첫 위반에서 run 중단 + 나머지 assert 는 중단 시점에 note 와 함께 평가. setup 에 `entity`(기존 entity binding) 추가, `spawn` 은 `set` 포인터 맵·`name`·`tags` 지원. `inputs.untilTick` 생략 시 다음 `release` 까지. enum 값은 reflection 문자열(소문자) (ADR-0023, 0024). |
 | §22.2, §24 | run-twice 결정성: 어긋나면 A 를 divergent tick 까지 재실행해 snapshot diff(entity/path/a/b) + `firstDivergentSystem`. `threads` 는 1 (단일 스레드) (ADR-0025). `run.gpuBackend/projectRev` 는 미기록. |
 | §20, §27, §27.1 | 구현: `--no-render`/`--offscreen` 대신 **`akeir run --headless`(SDL 미초기화)** 와 **software renderer capture**(SDL `dummy` driver + `SDL_CreateSoftwareRenderer`; 창·GPU 없이 byte-deterministic PNG). `offscreen` GL driver 와 WARP/SwiftShader 논의는 2D PoC 에서 불필요 (ADR-0026). 렌더 API 는 SDL_Renderer (ADR-0027). `videoDriver` 보고는 유지. 비교는 perPixel + maxMismatchRatio 만 (AA 제외/local window 미구현). |
 | §20.1, §22.3 | 창 모드 `akeir run --record inputs.jsonl` 이 tick 당 InputFrame(JSONL) 을 쓰고 `--headless --replay` 가 같은 finalHash 를 냄을 확인 (90 tick). |

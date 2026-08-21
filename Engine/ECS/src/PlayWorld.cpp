@@ -1,12 +1,12 @@
-// pme/ecs/PlayWorld.cpp — 설계 문서 §3.1, §16, §20.1, §22.2, §25, §26.1, §57, §88.2
-#include "pme/ecs/PlayWorld.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Id.h"
-#include "pme/core/Log.h"
-#include "pme/reflection/Registry.h"
-#include "pme/runtime/Components.h"
-#include "pme/serialization/Canonical.h"
-#include "pme/serialization/ComponentJson.h"
+// akeir/ecs/PlayWorld.cpp — 설계 문서 §3.1, §16, §20.1, §22.2, §25, §26.1, §57, §88.2
+#include "akeir/ecs/PlayWorld.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Id.h"
+#include "akeir/core/Log.h"
+#include "akeir/reflection/Registry.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/serialization/Canonical.h"
+#include "akeir/serialization/ComponentJson.h"
 
 #define FLECS_NO_CPP   // C API 만 쓴다 (C++ addon 헤더의 경고 회피)
 #include <flecs.h>
@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace pme {
+namespace akeir {
 
 // ---------------------------------------------------------------- flecs hooks (reflection → Flecs type hooks)
 
@@ -168,7 +168,7 @@ std::unique_ptr<PlayWorld> PlayWorld::build(const Project& project, std::string_
     if (!ok) return nullptr;
     // 5) physics bodies (id 순)
     for (const auto& id : ids) pw->ensureBody(id);
-    PME_LOG(Info, "ecs", "world_built", "Play world built.", Json{{"game.world", std::string(worldId)}, {"game.entities", ids.size()}, {"game.bodies", pw->physics_->bodyCount()}});
+    AKEIR_LOG(Info, "ecs", "world_built", "Play world built.", Json{{"game.world", std::string(worldId)}, {"game.entities", ids.size()}, {"game.bodies", pw->physics_->bodyCount()}});
     return pw;
 }
 
@@ -418,4 +418,4 @@ RngStream& PlayWorld::rng(const std::string& streamName) {
     return it->second;
 }
 
-} // namespace pme
+} // namespace akeir

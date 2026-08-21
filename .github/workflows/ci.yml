@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-source-cache
+  REFERENCE_FINAL_HASH: '0xbc23e49a65efb2e8'
+
+jobs:
+  headless:
+    name: Windows headless (no SDL) — build, unit tests, validate, scenarios, determinism
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+        with: { arch: x64 }
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+      - name: Configure
+        run: cmake --preset msvc-headless
+      - name: Build
+        run: cmake --build --preset msvc-headless
+      - name: Unit tests (doctest)
+        run: build\msvc-headless\Tests\akeir_tests.exe
+      - name: ctest registration matches doctest (no ';' in test names)
+        shell: pwsh
+        run: |
+          $doctest = [int](& build\msvc-headless\Tests\akeir_tests.exe --list-test-cases | Select-String -Pattern 'passing the current filters: (\d+)').Matches[0].Groups[1].Value
+          $ctest = [int](& ctest --preset msvc-headless -N | Select-String -Pattern 'Total Tests: (\d+)').Matches[0].Groups[1].Value
+          Write-Host "doctest cases: $doctest  ctest entries: $ctest"
+          if ([int]$ctest -ne [int]$doctest) { throw "ctest registered $ctest entries but doctest has $doctest cases (a TEST_CASE name contains ';'?)" }
+          ctest --preset msvc-headless --output-on-failure
+      - name: akeir validate (sample project)
+        working-directory: Game
+        run: ..\build\msvc-headless\bin\akeir.exe validate --json
+      - name: akeir test (data-driven scenarios; Visual/* skipped without SDL)
+        working-directory: Game
+        run: ..\build\msvc-headless\bin\akeir.exe test --json
+      - name: Determinism — run twice, hashes must match
+        working-directory: Game
+        shell: pwsh
+        run: |
+          $a = (..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
+          $b = (..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json | ConvertFrom-Json).result.finalHash
+          Write-Host "run A: $a   run B: $b   reference: $env:REFERENCE_FINAL_HASH"
+          if ($a -ne $b) { throw "T0 violated: two runs differ" }
+          if ($a -ne $env:REFERENCE_FINAL_HASH) {
+            Write-Host "::warning::finalHash $a differs from the reference $env:REFERENCE_FINAL_HASH (different compiler/CRT? see AKEIR.md §22.2) — sample data or determinism may have changed"
+          }
+      - name: Empty project round-trip (project init → prefab → run)
+        shell: pwsh
+        run: |
+          $A = "$PWD\build\msvc-headless\bin\akeir.exe"
+          & $A project init CiGame --dir "$env:RUNNER_TEMP\CiGame" --json | Out-Null
+          Push-Location "$env:RUNNER_TEMP\CiGame"
+          & $A prefab create Hero --components '{"Collider2D":{"shape":"circle"},"RigidBody2D":{"type":"dynamic","gravityScale":0},"Movement":{"speed":5},"PlayerController":{},"Health":{"max":100}}' --json | Out-Null
+          & $A prefab instantiate Hero --name Player --json | Out-Null
+          $r = & $A run --headless --ticks 120 --json | ConvertFrom-Json
+          if (-not $r.ok) { throw "run failed" }
+          & $A undo 2 --json | Out-Null
+          Pop-Location
+
+  sdl:
+    name: Windows SDL (msvc-release) — build, unit tests, scenarios incl. golden capture, package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: ilammy/msvc-dev-cmd@v1
+        with: { arch: x64 }
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: cpm-${{ runner.os }}-${{ hashFiles('cmake/Dependencies.cmake') }}
+      - name: Configure
+        run: cmake --preset msvc-release
+      - name: Build
+        run: cmake --build --preset msvc-release
+      - name: Unit tests (incl. Render/InputMap)
+        run: build\msvc-release\Tests\akeir_tests.exe
+      - name: akeir test (3 scenarios incl. Visual golden capture)
+        working-directory: Game
+        run: ..\build\msvc-release\bin\akeir.exe test --json
+      - name: Capture smoke (software renderer)
+        working-directory: Game
+        run: ..\build\msvc-release\bin\akeir.exe capture --ticks 300 --out Cache\capture\ci.png --json
+      - name: MCP smoke (tools/list over stdio)
+        working-directory: Game
+        shell: pwsh
+        run: |
+          $resp = '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | ..\build\msvc-release\bin\akeir.exe mcp
+          $n = ($resp | ConvertFrom-Json).result.tools.Count
+          Write-Host "tools: $n"
+          if ($n -ne 15) { throw "expected 15 MCP tools, got $n" }
+      - name: Package release zip
+        run: python scripts/package.py --preset msvc-release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AKEIR-release-zip
+          path: dist/*.zip
+          if-no-files-found: error

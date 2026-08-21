@@ -5,10 +5,10 @@
 #pragma once
 
 #include "Args.h"
-#include "pme/core/Envelope.h"
-#include "pme/commands/CommandBus.h"
-#include "pme/runtime/Project.h"
-#include "pme/testing/TestRunner.h"
+#include "akeir/core/Envelope.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/runtime/Project.h"
+#include "akeir/testing/TestRunner.h"
 
 #include <optional>
 
@@ -16,12 +16,12 @@
 #include <string>
 #include <vector>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 struct Context {
     Args args;
     std::string projectDir;   // --project 또는 cwd 에서 project.json 을 찾은 디렉터리 ("" = 없음)
-    std::vector<pme::Diagnostic> loadDiagnostics;   // 프로젝트 로드 중 나온 진단 (envelope warnings 로 복사)
+    std::vector<akeir::Diagnostic> loadDiagnostics;   // 프로젝트 로드 중 나온 진단 (envelope warnings 로 복사)
     // `akeir serve` 안에서 실행될 때만 채워진다 (§88.1 단일 writer): 명령은 디스크 대신 이 상주 상태를 쓴다
     Project* resident = nullptr;
     CommandBus* residentBus = nullptr;
@@ -70,4 +70,4 @@ Json capabilitiesJson();
 /// §12 envelope JSON Schema (자기완결)
 Json envelopeSchema();
 
-} // namespace pme::cli
+} // namespace akeir::cli

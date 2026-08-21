@@ -1,13 +1,13 @@
 // InputMap.cpp — input.json → scancode 바인딩 → InputFrame (§88.3)
-#include "pme/platform/InputMap.h"
+#include "akeir/platform/InputMap.h"
 
-#include "pme/serialization/Canonical.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <SDL3/SDL.h>
 
 #include <algorithm>
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -107,4 +107,4 @@ Json InputMap::toJson() const {
     return arr;
 }
 
-} // namespace pme
+} // namespace akeir

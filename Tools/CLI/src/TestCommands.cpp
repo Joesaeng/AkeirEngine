@@ -5,15 +5,15 @@
 //   exit code: 전부 통과 0, 실패/오류 있으면 3 (§13 findings), 테스트가 없으면 5 (not found)
 #include "Commands.h"
 #include "GameSystems.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/FpEnv.h"
-#include "pme/runtime/Components.h"
-#include "pme/testing/TestRunner.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/FpEnv.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/testing/TestRunner.h"
 
 #include <filesystem>
 #include <fstream>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
@@ -34,7 +34,7 @@ Envelope cmdTest(Context& ctx) {
     opts.saveArtifacts = !ctx.args.has("no-artifacts");
     opts.updateGolden = ctx.args.has("update-golden");
     installCaptureHooks(opts);   // SDL 빌드에서만 capture assertion 이 동작 (SdlCommands.cpp)
-    opts.runInfo = Json{{"engineVersion", PME_VERSION_STRING}, {"fpFlagsHash", PME_FP_FLAGS_HASH}, {"platform", "win-x64"}, {"projectDir", prj->rootDir()}};
+    opts.runInfo = Json{{"engineVersion", AKEIR_VERSION_STRING}, {"fpFlagsHash", AKEIR_FP_FLAGS_HASH}, {"platform", "win-x64"}, {"projectDir", prj->rootDir()}};
     TestRunner runner(*prj, factory, opts);   // resultsDir 는 discover 뒤에 정한다 (run id 가 필요)
 
     auto scenarios = runner.discover("Tests", filter);
@@ -83,4 +83,4 @@ void registerTestCommands(std::vector<CommandSpec>& t) {
                  "akeir test [filter] [--junit out.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]", true, false, true, cmdTest});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

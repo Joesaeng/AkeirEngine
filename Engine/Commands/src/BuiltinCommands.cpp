@@ -17,17 +17,17 @@
 //
 //   인스턴스 entity(prefab 참조)의 component/property 변경은 문서의 set/add/remove 맵에 기록된다 (§78.1). 그래야 prefab 을 고치면 인스턴스가 따라간다.
 //   값 검증은 reflection(validateComponentJson)으로 즉시 하고, 문서 수준(REF_DANGLING, DEPENDENCY 등)은 CommandBus::validateFork 가 commit 전에 한다.
-#include "pme/commands/CommandBus.h"
+#include "akeir/commands/CommandBus.h"
 
-#include "pme/core/Id.h"
-#include "pme/reflection/Registry.h"
-#include "pme/serialization/Canonical.h"
-#include "pme/serialization/ComponentJson.h"
+#include "akeir/core/Id.h"
+#include "akeir/reflection/Registry.h"
+#include "akeir/serialization/Canonical.h"
+#include "akeir/serialization/ComponentJson.h"
 
 #include <algorithm>
 #include <cctype>
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -626,4 +626,4 @@ void registerBuiltinCommands(CommandBus& bus) {
     bus.registerCommand({"world.create", K::Mutation, "Create Worlds/<Name>.world.json with no entities.", schema({{"name", str("world name (also file name)")}}, {"name"}), {}, worldCreate});
 }
 
-} // namespace pme
+} // namespace akeir

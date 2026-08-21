@@ -1,14 +1,14 @@
-# Engine/Runtime (`pme_runtime`)
+# Engine/Runtime (`akeir_runtime`)
 
 authoring 문서 모델, 내장 component, 고정 tick 루프.
 
 | 헤더 | § | 제공 |
 |---|---|---|
-| `pme/runtime/Project.h` | §5.3, §6, §7, §19, §29, §34, §88.9 | `Project::load/create`, 문서 맵(`Worlds/*.world.json`, `Prefabs/*.prefab.json`), id index (`locate`), `resolveSelector`(`name:` / `path:` / id prefix), `entityPath`, `resolvePrefab` / `resolveEntityComponents`(remove → add → set, absent = inherit, cycle/depth 검사), `canonicalizeDocument`, `saveAll` / `saveDocument`, `validate()` |
-| `pme/runtime/Components.h` | §2.1, §6, §57 | 내장 component: `Transform`, `SpriteRenderer`, `Collider2D`, `RigidBody2D`, `Camera2D` + `registerBuiltinComponents()` 앵커 |
-| `pme/runtime/Application.h` | §20.1, §22.2 | `ISimulation`, `IInputSource`(Null/Scripted), `RunConfig`, `RunResult`, `Application::runHeadless` (accumulator 없는 고정 tick, FP env normalize, hashEvery) |
-| `pme/runtime/Input.h` | §88.3, §22.3 | `InputFrame {tick, actions, commands}` + JSON |
-| `pme/runtime/DemoSimulation.h` | — | 루프 검증용 placeholder sim (`akeir run --demo`) |
+| `akeir/runtime/Project.h` | §5.3, §6, §7, §19, §29, §34, §88.9 | `Project::load/create`, 문서 맵(`Worlds/*.world.json`, `Prefabs/*.prefab.json`), id index (`locate`), `resolveSelector`(`name:` / `path:` / id prefix), `entityPath`, `resolvePrefab` / `resolveEntityComponents`(remove → add → set, absent = inherit, cycle/depth 검사), `canonicalizeDocument`, `saveAll` / `saveDocument`, `validate()` |
+| `akeir/runtime/Components.h` | §2.1, §6, §57 | 내장 component: `Transform`, `SpriteRenderer`, `Collider2D`, `RigidBody2D`, `Camera2D` + `registerBuiltinComponents()` 앵커 |
+| `akeir/runtime/Application.h` | §20.1, §22.2 | `ISimulation`, `IInputSource`(Null/Scripted), `RunConfig`, `RunResult`, `Application::runHeadless` (accumulator 없는 고정 tick, FP env normalize, hashEvery) |
+| `akeir/runtime/Input.h` | §88.3, §22.3 | `InputFrame {tick, actions, commands}` + JSON |
+| `akeir/runtime/DemoSimulation.h` | — | 루프 검증용 placeholder sim (`akeir run --demo`) |
 
 ## 문서 형식 (§6)
 

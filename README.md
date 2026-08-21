@@ -1,36 +1,47 @@
-# AKEIR Engine 0.1 — AI-Native Game Framework
+# AKEIR Engine
 
-> **AKEIR** ← 그리스어 ἄχειρ(acheir, "손이 없는") / ἀχειροποίητος("사람 손으로 만들어지지 않은"). 발음 에이키어. 저장소 디렉터리명은 `Project_ME`, 코드 네임스페이스/타깃 접두어는 `pme`, CLI 실행 파일은 `akeir.exe`. 릴리즈: https://github.com/Joesaeng/AkeirEngine/releases (태그 `v0.1.0`, zip 에 빌드된 `bin/akeir.exe` 포함 — `QUICKSTART.md`).
+[![CI](https://github.com/Joesaeng/AkeirEngine/actions/workflows/ci.yml/badge.svg)](https://github.com/Joesaeng/AkeirEngine/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Joesaeng/AkeirEngine)](https://github.com/Joesaeng/AkeirEngine/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 프로젝트 데이터 + Command API + headless 실행**만으로 게임을 만들 수 있게 하는 개인용 C++ 게임 프레임워크 PoC.
+**AKEIR is an AI-native C++ game engine where project data is text-first, every edit is a reversible command, and games can be built and verified headlessly — without relying on human-authored editor workflows.**
 
-> **처음 온 세션은 [`Docs/00-START-HERE.md`](Docs/00-START-HERE.md) 부터 읽는다.**
-> 이 저장소는 이전 대화 맥락 없이도 Docs와 코드만으로 이어서 작업할 수 있도록 쓰여 있다.
+- **Text-first authoring** — worlds, prefabs and config are canonical JSON; the files are the source of truth, ECS/physics are projections.
+- **Single reversible Command API** — every mutation goes through one `CommandBus` and returns a self-inverting ChangeSet: undo/redo, multi-call transactions, dry-run, structured diagnostics with machine-applicable fixes.
+- **Deterministic headless testing** — fixed tick, explicit seed, same input → same `finalHash`; tests are data files with snapshot assertions, run-twice determinism checks and golden captures.
+- **CLI / MCP as adapters** — `akeir <cmd>`, `akeir serve` (resident process) and `akeir mcp` (MCP server, 15 tools) share one command table over the same engine.
 
-| 무엇 | 어디 |
-|---|---|
-| 설계 문서 (정본, §0–§89) | [`AKEIR.md`](AKEIR.md) |
-| 읽는 순서 / 저장소 지도 | [`Docs/00-START-HERE.md`](Docs/00-START-HERE.md) |
-| 내려진 결정 (ADR) | [`Docs/DECISIONS.md`](Docs/DECISIONS.md) |
-| 현재 진행 상태 / 다음 할 일 | [`Docs/STATUS.md`](Docs/STATUS.md) |
-| 빌드·테스트·실행 명령 | [`Docs/BUILD.md`](Docs/BUILD.md) |
-| 코드 ↔ 설계 § 대응 | [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) |
-| 코딩 규약 | [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md) |
+> **AKEIR** ← Greek ἄχειρ (*acheir*, "without hands"), from ἀχειροποίητος ("not made by human hands"). Pronounced *ay-KEER*.
 
-릴리즈 zip 을 받았다면 `QUICKSTART.md` (빌드 없이 `bin/akeir.exe`). 소스에서 빠른 시작 (Windows, VS2022):
+## Start
 
-```bash
-scripts\build.cmd msvc-headless all
-build\msvc-headless\Tests\pme_tests.exe
-build\msvc-headless\bin\akeir.exe version --json
-```
+**Release zip** (no compiler needed): download from [Releases](https://github.com/Joesaeng/AkeirEngine/releases), unpack, read `QUICKSTART.md` — `bin\akeir.exe` is prebuilt for Windows x64.
 
-상태 요약 (2026-08-21): Phase 0·1·2·3·4·5 와 MCP 서버(Phase 7 일부)까지 구현됨 — authoring JSON → reflection → Flecs/Box2D play world, Command/ChangeSet/undo, 데이터화 테스트, SDL3 창·software capture, `akeir serve`(상주 RPC), `akeir mcp`(stdio MCP). 자세한 것은 `Docs/STATUS.md`.
+**From source** (Windows, VS2022 17.14, bundled CMake/Ninja; dependencies are fetched by CPM on first configure):
 
 ```bash
+scripts\build.cmd msvc-headless all            # no SDL: fastest; `msvc-release all` builds the SDL window/capture too
+build\msvc-headless\Tests\akeir_tests.exe
 cd Game
-..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json     # 결정론 실행 (finalHash 0xbc23e49a65efb2e8)
-..\build\msvc-headless\bin\akeir.exe set name:Goblin Movement.speed 4.5     # 모든 고블린 속도 (prefab 편집, undo 가능)
-..\build\msvc-headless\bin\akeir.exe test --json                            # Tests/**/*.test.json
-..\build\msvc-headless\bin\akeir.exe mcp                                    # MCP 서버 (stdio)
+..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json    # result.finalHash = 0xbc23e49a65efb2e8
+..\build\msvc-headless\bin\akeir.exe set name:Goblin Movement.speed 4.5   # edit a prefab (all instances), undoable
+..\build\msvc-headless\bin\akeir.exe test --json                          # Tests/**/*.test.json
+..\build\msvc-headless\bin\akeir.exe mcp                                  # MCP server over stdio
 ```
+
+MCP for Claude Code: `copy .mcp.json.example .mcp.json` (or `akeir mcp --print-config > .mcp.json` for absolute paths).
+
+## Documentation
+
+| What | Where |
+|---|---|
+| New session? Read first | [`Docs/00-START-HERE.md`](Docs/00-START-HERE.md) |
+| Current state / next work | [`Docs/STATUS.md`](Docs/STATUS.md) |
+| Decisions (ADR-0001…) | [`Docs/DECISIONS.md`](Docs/DECISIONS.md) |
+| Build · test · run | [`Docs/BUILD.md`](Docs/BUILD.md) |
+| Code ↔ design sections | [`Docs/ARCHITECTURE.md`](Docs/ARCHITECTURE.md) |
+| Conventions | [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md) |
+| Design document (§0–§89) | [`AKEIR.md`](AKEIR.md) |
+| Contributing · licenses | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`LICENSE`](LICENSE) (MIT) · [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) |
+
+The repository directory is still called `Project_ME` on the author's machine (historical); code uses `akeir::`, headers `akeir/…`, CMake targets `akeir_*`, macros `AKEIR_*`. Docs are written in Korean; the CLI, error messages and schemas are English.

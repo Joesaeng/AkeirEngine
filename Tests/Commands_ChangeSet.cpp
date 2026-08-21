@@ -1,10 +1,10 @@
 // Commands_ChangeSet.cpp — 설계 문서 §78 (ChangeSet RFC 6902 superset, self-inverting), §10.1 (inverse), §9.2 (compose)
-#include "pme/commands/ChangeSet.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/commands/ChangeSet.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <doctest/doctest.h>
 
-using namespace pme;
+using namespace akeir;
 
 namespace {
 std::map<std::string, Json> sampleDocs() {

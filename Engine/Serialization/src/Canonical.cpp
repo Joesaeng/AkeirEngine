@@ -1,5 +1,5 @@
-// pme/serialization/Canonical.cpp — 설계 문서 §5.3, §9.2 (temp+rename), RFC 8785
-#include "pme/serialization/Canonical.h"
+// akeir/serialization/Canonical.cpp — 설계 문서 §5.3, §9.2 (temp+rename), RFC 8785
+#include "akeir/serialization/Canonical.h"
 
 #include <algorithm>
 #include <charconv>
@@ -9,7 +9,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -205,4 +205,4 @@ bool isCanonicalText(std::string_view fileText, const Json& parsed) {
     return c && *c == fileText;
 }
 
-} // namespace pme
+} // namespace akeir

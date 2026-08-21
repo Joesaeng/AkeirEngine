@@ -1,10 +1,10 @@
-// pme/core/Hash.cpp — FNV-1a, SHA-256 (FIPS 180-4 참조 구현). 설계 문서 §22.2, §37, §52.
-#include "pme/core/Hash.h"
+// akeir/core/Hash.cpp — FNV-1a, SHA-256 (FIPS 180-4 참조 구현). 설계 문서 §22.2, §37, §52.
+#include "akeir/core/Hash.h"
 
 #include <cstdio>
 #include <cstring>
 
-namespace pme {
+namespace akeir {
 
 std::uint64_t fnv1a64(const void* data, std::size_t size, std::uint64_t h) {
     const auto* p = static_cast<const unsigned char*>(data);
@@ -108,4 +108,4 @@ std::string Sha256::hexOfBytes(const void* data, std::size_t size, bool withPref
     return (withPrefix ? "sha256:" : "") + toHex(d.data(), d.size());
 }
 
-} // namespace pme
+} // namespace akeir

@@ -9,6 +9,7 @@
 AKEIR-0.1/
 ├── QUICKSTART.md              ← 지금 이 파일
 ├── RELEASE.md                 버전, git 해시, bin/akeir.exe 의 sha256
+├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (정적 링크된 Flecs/Box2D/nlohmann/doctest/SDL3 고지)
 ├── bin\akeir.exe               미리 빌드된 CLI. 빌드 없이 바로 쓴다. 아래 예시의 `akeir` = 이 파일. PATH 에 bin\ 을 넣거나 전체 경로로 부른다
 ├── .mcp.json                  Claude Code 용 MCP 서버 등록 (bin\akeir.exe mcp --project Game). 상대 경로 — 이 폴더를 Claude Code 의 프로젝트 루트로 열면 된다
 ├── Docs/                      00-START-HERE → STATUS → DECISIONS → BUILD → ARCHITECTURE → CONVENTIONS
@@ -63,7 +64,7 @@ cmd.exe 에서 JSON 인자는 큰따옴표를 `\"` 로 escape 한다 (PowerShell
 - 카메라: `Camera2D`(orthoSize, background). 스프라이트는 `SpriteRenderer.tint` 색 도형으로 그려진다(텍스처 로드는 아직 없음).
 - 테스트: `Tests/**/*.test.json` 을 **손으로** 쓴다 (setup / inputs / assert / determinism / capture golden) — 형식은 `Engine/Testing/README.md`.
 
-C++ 이 필요한 것: 새 component/system(예: 투사체, 점수, 스폰 웨이브). `Game/Source/` 에 추가하고 `Docs/BUILD.md` 대로 다시 빌드 (VS2022 + 번들 CMake/Ninja; `scripts\build.cmd msvc-release all`, 테스트는 `build\msvc-release\Tests\pme_tests.exe`).
+C++ 이 필요한 것: 새 component/system(예: 투사체, 점수, 스폰 웨이브). `Game/Source/` 에 추가하고 `Docs/BUILD.md` 대로 다시 빌드 (VS2022 + 번들 CMake/Ninja; `scripts\build.cmd msvc-release all`, 테스트는 `build\msvc-release\Tests\akeir_tests.exe`).
 
 ## 3. AI 클라이언트(MCP)로 쓰기
 

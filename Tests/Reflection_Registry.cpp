@@ -1,25 +1,25 @@
 // Reflection_Registry.cpp — 설계 문서 §42.2 (PropertyMeta / registry), §14 (JSON Schema 2020-12), §14.1 (wire_format), §43.1 (속성 어휘), §88.8 (visibility)
 #include <doctest/doctest.h>
-#include "pme/reflection/Reflect.h"
+#include "akeir/reflection/Reflect.h"
 
-using namespace pme;
+using namespace akeir;
 
 // ---- 테스트용 component (aggregate) ----
 enum class TestShape { Box, Sphere, Capsule };
-PME_REFLECT_ENUM(TestShape, "box", "sphere", "capsule")
+AKEIR_REFLECT_ENUM(TestShape, "box", "sphere", "capsule")
 
 struct TestHealth {
     float max = 100.f;
     float current = 100.f;
     bool invulnerable = false;
 };
-PME_REFLECT_BEGIN(TestHealth, "Hit points and death state")
-    PME_REQUIRES("Transform");
-    PME_LIFECYCLE("OnSpawn", "after EnemyAI", "OnDespawn");
-    PME_PROP(max, "Maximum hit points").min(1).unit("hp").ui(1, 1000, 1).required();
-    PME_PROP(current, "Current hit points").runtimeOnly().readOnly().save();
-    PME_PROP(invulnerable, "Ignore damage").advanced();
-PME_REFLECT_END(TestHealth)
+AKEIR_REFLECT_BEGIN(TestHealth, "Hit points and death state")
+    AKEIR_REQUIRES("Transform");
+    AKEIR_LIFECYCLE("OnSpawn", "after EnemyAI", "OnDespawn");
+    AKEIR_PROP(max, "Maximum hit points").min(1).unit("hp").ui(1, 1000, 1).required();
+    AKEIR_PROP(current, "Current hit points").runtimeOnly().readOnly().save();
+    AKEIR_PROP(invulnerable, "Ignore damage").advanced();
+AKEIR_REFLECT_END(TestHealth)
 
 struct TestCollider {
     TestShape shape = TestShape::Capsule;
@@ -29,14 +29,14 @@ struct TestCollider {
     std::string layer = "Default";
     int priority = 0;
 };
-PME_REFLECT_BEGIN(TestCollider, "Collision shape")
-    PME_PROP(shape, "Primitive shape");
-    PME_PROP(radius, "Radius in meters").min(0.01).warn(0.05, 10.0).unit("m");
-    PME_PROP(offset, "Local offset");
-    PME_PROP(material, "Physics material asset").refType("asset:material");
-    PME_PROP(layer, "Collision layer name");
-    PME_PROP(priority, "Resolution priority").range(-10, 10);
-PME_REFLECT_END(TestCollider)
+AKEIR_REFLECT_BEGIN(TestCollider, "Collision shape")
+    AKEIR_PROP(shape, "Primitive shape");
+    AKEIR_PROP(radius, "Radius in meters").min(0.01).warn(0.05, 10.0).unit("m");
+    AKEIR_PROP(offset, "Local offset");
+    AKEIR_PROP(material, "Physics material asset").refType("asset:material");
+    AKEIR_PROP(layer, "Collision layer name");
+    AKEIR_PROP(priority, "Resolution priority").range(-10, 10);
+AKEIR_REFLECT_END(TestCollider)
 
 TEST_CASE("Reflection: static registration puts components in the global registry (§42.2)") {
     const ComponentMeta* h = Registry::global().find("TestHealth");

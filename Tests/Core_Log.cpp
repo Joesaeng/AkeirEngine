@@ -1,10 +1,10 @@
 // Core_Log.cpp — 설계 문서 §28 (OTel Logs Data Model, JSONL)
 #include <doctest/doctest.h>
-#include "pme/core/Log.h"
+#include "akeir/core/Log.h"
 
 #include <string>
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Log: record shape follows OTel field set (§28)") {
     Logger log;

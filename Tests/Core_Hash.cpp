@@ -1,8 +1,8 @@
 // Core_Hash.cpp — 설계 문서 §22.2 (FNV-1a), §37/§52 (SHA-256)
 #include <doctest/doctest.h>
-#include "pme/core/Hash.h"
+#include "akeir/core/Hash.h"
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Hash: SHA-256 known answers (FIPS 180-4)") {
     CHECK(Sha256::hexOf("", false) == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");

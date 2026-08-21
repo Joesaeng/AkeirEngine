@@ -1,6 +1,6 @@
-// pme/physics/Box2DWorld.cpp — Box2D v3.1.1 백엔드. 설계 문서 §57, §22.2
-#include "pme/physics/PhysicsWorld.h"
-#include "pme/core/Hash.h"
+// akeir/physics/Box2DWorld.cpp — Box2D v3.1.1 백엔드. 설계 문서 §57, §22.2
+#include "akeir/physics/PhysicsWorld.h"
+#include "akeir/core/Hash.h"
 
 #include <box2d/box2d.h>
 
@@ -9,7 +9,7 @@
 #include <map>
 #include <tuple>
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -152,4 +152,4 @@ private:
 
 std::unique_ptr<PhysicsWorld> createBox2DWorld(const PhysicsConfig& cfg) { return std::make_unique<Box2DWorld>(cfg); }
 
-} // namespace pme
+} // namespace akeir

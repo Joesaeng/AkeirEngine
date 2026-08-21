@@ -1,13 +1,13 @@
-// pme/core/Log.cpp — 설계 문서 §28
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
+// akeir/core/Log.cpp — 설계 문서 §28
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
 
 #include <cstdio>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 
-namespace pme {
+namespace akeir {
 
 const char* logLevelName(LogLevel lvl) {
     switch (lvl) {
@@ -103,4 +103,4 @@ void Logger::log(LogLevel lvl, std::string_view scope, std::string_view event, s
 
 void Logger::flush() { std::lock_guard<std::mutex> lock(mtx_); for (auto& s : sinks_) s->flush(); }
 
-} // namespace pme
+} // namespace akeir

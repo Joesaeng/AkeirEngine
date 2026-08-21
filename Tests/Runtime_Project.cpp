@@ -1,13 +1,13 @@
 // Runtime_Project.cpp — 설계 문서 §6 (문서 모델), §7 (id index, selector), §29 (validate), §34 (prefab resolve), §5.3 (canonical save), §3.1 S-A (round-trip)
 #include <doctest/doctest.h>
-#include "pme/runtime/Components.h"
-#include "pme/runtime/Project.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/runtime/Project.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <filesystem>
 #include <fstream>
 
-using namespace pme;
+using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {
@@ -102,7 +102,7 @@ TEST_CASE("Project: validate passes on the sample except canonical-form warnings
 
 TEST_CASE("Project: validation catches dependency, dangling ref, override target, cycle, duplicate id, unknown component") {
     registerBuiltinComponents();
-    Project prj = Project::create((fs::temp_directory_path() / "pme_prj_validate").string(), "V");
+    Project prj = Project::create((fs::temp_directory_path() / "akeir_prj_validate").string(), "V");
     const std::string w = "world_01j5xq8z3mf0n9k2c7p4rtvw6y";
     const std::string pA = "prefab_01j5xq8z3mf0n9k2c7p4rtvw60";
     const std::string pB = "prefab_01j5xq8z3mf0n9k2c7p4rtvw61";
@@ -143,7 +143,7 @@ TEST_CASE("Project: canonical save round-trips byte-identically and preserves §
     auto src = Project::load(sampleProjectDir(), diags);
     REQUIRE(src);
     // 임시 디렉터리로 복사 저장
-    fs::path tmp = fs::temp_directory_path() / "pme_prj_roundtrip";
+    fs::path tmp = fs::temp_directory_path() / "akeir_prj_roundtrip";
     fs::remove_all(tmp);
     fs::create_directories(tmp);
     Project copy = Project::create(tmp.string(), src->name(), src->tickRate());

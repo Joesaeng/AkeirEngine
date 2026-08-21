@@ -13,15 +13,15 @@
 #pragma once
 
 #include "Commands.h"
-#include "pme/commands/CommandBus.h"
-#include "pme/core/Json.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/core/Json.h"
 
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 struct ServeInfo {
     int pid = 0;
@@ -73,4 +73,4 @@ void registerServeCommands(std::vector<CommandSpec>& table);
 int runMcp(Context& ctx);
 void registerMcpCommands(std::vector<CommandSpec>& table);
 
-} // namespace pme::cli
+} // namespace akeir::cli

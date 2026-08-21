@@ -13,14 +13,14 @@ add_executable(akeir
   src/Mcp.cpp
 )
 target_include_directories(akeir PRIVATE src)
-target_link_libraries(akeir PRIVATE pme::core pme::runtime pme::reflection pme::serialization pme::ecs pme::physics pme::commands pme::testing
-  $<LINK_LIBRARY:WHOLE_ARCHIVE,pme_game>   # Game/ component 등록(static initializer) 보존
-  pme_warnings)
+target_link_libraries(akeir PRIVATE akeir::core akeir::runtime akeir::reflection akeir::serialization akeir::ecs akeir::physics akeir::commands akeir::testing
+  $<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_game>   # Game/ component 등록(static initializer) 보존
+  akeir_warnings)
 if(WIN32)
   target_link_libraries(akeir PRIVATE ws2_32)
 endif()
-if(PME_WITH_SDL)
-  target_link_libraries(akeir PRIVATE pme::platform pme::render)
-  target_compile_definitions(akeir PRIVATE PME_HAS_SDL=1)
+if(AKEIR_WITH_SDL)
+  target_link_libraries(akeir PRIVATE akeir::platform akeir::render)
+  target_compile_definitions(akeir PRIVATE AKEIR_HAS_SDL=1)
 endif()
 set_target_properties(akeir PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")

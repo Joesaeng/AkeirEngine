@@ -1,4 +1,4 @@
-# Engine/ECS (`pme_ecs`)
+# Engine/ECS (`akeir_ecs`)
 
 `PlayWorld` — authoring 문서를 **Flecs world + Box2D** 로 투영하고 tick 한다 (§3.1, §88.2). authoring JSON 이 source of truth, 이것은 투영이다.
 

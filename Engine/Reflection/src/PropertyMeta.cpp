@@ -1,7 +1,7 @@
-// pme/reflection/PropertyMeta.cpp — schema / wire_format / default 생성. 설계 문서 §14, §14.1, §42.2, §43.1, §88.8
-#include "pme/reflection/PropertyMeta.h"
+// akeir/reflection/PropertyMeta.cpp — schema / wire_format / default 생성. 설계 문서 §14, §14.1, §42.2, §43.1, §88.8
+#include "akeir/reflection/PropertyMeta.h"
 
-namespace pme {
+namespace akeir {
 
 const char* propTypeName(PropType t) {
     switch (t) {
@@ -132,4 +132,4 @@ Json ComponentMeta::defaultJson(Visibility v) const {
     return j;
 }
 
-} // namespace pme
+} // namespace akeir

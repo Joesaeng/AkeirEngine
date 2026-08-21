@@ -1,12 +1,12 @@
 // Serialization_ComponentJson.cpp — 설계 문서 §14 (schema 검증), §26.1/§88.8 (visibility), §29 (검증 코드), §79 (fix applicability)
 #include <doctest/doctest.h>
-#include "pme/reflection/Reflect.h"
-#include "pme/serialization/ComponentJson.h"
+#include "akeir/reflection/Reflect.h"
+#include "akeir/serialization/ComponentJson.h"
 
-using namespace pme;
+using namespace akeir;
 
 enum class SerMode { Walk, Run };
-PME_REFLECT_ENUM(SerMode, "walk", "run")
+AKEIR_REFLECT_ENUM(SerMode, "walk", "run")
 
 struct SerMovement {
     float speed = 4.0f;
@@ -16,14 +16,14 @@ struct SerMovement {
     float stamina = 1.0f;
     int lane = 0;
 };
-PME_REFLECT_BEGIN(SerMovement, "Movement")
-    PME_PROP(speed, "Units per second").range(0, 50).warn(0.5, 20).unit("m/s").required();
-    PME_PROP(mode, "Gait");
-    PME_PROP(dir, "Facing direction");
-    PME_PROP(target, "Chase target").refType("entity");
-    PME_PROP(stamina, "0..1").runtimeOnly().save();
-    PME_PROP(lane, "Lane index").range(0, 3).multipleOf(1);
-PME_REFLECT_END(SerMovement)
+AKEIR_REFLECT_BEGIN(SerMovement, "Movement")
+    AKEIR_PROP(speed, "Units per second").range(0, 50).warn(0.5, 20).unit("m/s").required();
+    AKEIR_PROP(mode, "Gait");
+    AKEIR_PROP(dir, "Facing direction");
+    AKEIR_PROP(target, "Chase target").refType("entity");
+    AKEIR_PROP(stamina, "0..1").runtimeOnly().save();
+    AKEIR_PROP(lane, "Lane index").range(0, 3).multipleOf(1);
+AKEIR_REFLECT_END(SerMovement)
 
 static const ComponentMeta& meta() { return *Registry::global().find("SerMovement"); }
 

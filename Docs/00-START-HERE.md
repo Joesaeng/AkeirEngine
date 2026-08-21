@@ -6,7 +6,7 @@
 
 ## 1. 이 프로젝트는 무엇인가 (30초)
 
-- **이름**: AKEIR Engine (에이키어; 그리스어 ἄχειρ "손이 없는" ← ἀχειροποίητος "사람 손으로 만들어지지 않은"). 실행 파일 `akeir.exe`. 저장소 디렉터리는 `Project_ME`, C++ 네임스페이스·CMake 타깃 접두어는 `pme`(Project ME). 첫 릴리즈 = git tag **`v0.1.0`** (ADR-0032).
+- **이름**: AKEIR Engine (에이키어; 그리스어 ἄχειρ "손이 없는" ← ἀχειροποίητος "사람 손으로 만들어지지 않은"). 실행 파일 `akeir.exe`. 저장소 디렉터리만 `Project_ME`(역사적 이름), C++ 네임스페이스·헤더 경로·CMake 타깃 접두어·매크로는 전부 `akeir`/`AKEIR_`. 첫 릴리즈 = git tag **`v0.1.0`** (ADR-0032).
 
 - **목표**: AI 에이전트가 Unreal/Unity 같은 인간용 에디터를 MCP 로 원격 조종하는 대신, **텍스트 프로젝트 데이터(JSON)를 Command API 로 직접 수정하고 headless 로 실행·테스트**할 수 있는 개인용 C++ 게임 프레임워크.
 - **차별점** (설계 문서 §0.1): ① 데이터 수준 Transaction/ChangeSet(self-inverting, dry-run, undo) ② 파일 위치 + 자동 적용 가능성이 붙은 구조화 진단 ③ 결정론 계약 + 데이터화된 테스트 + replay ④ persistent ID + canonical JSON ⑤ Editor/CLI/MCP/Test 가 같은 Command API 만 사용.
@@ -53,22 +53,22 @@ Project_ME/
 ├── scripts/                             build.cmd / build.ps1 (VS 환경 잡아서 cmake 호출), fetch-deps.ps1
 ├── Engine/                              엔진 정적 라이브러리들 (§75). 각 디렉터리에 README.md
 │   ├── Core/        ID·Hash·RNG·Time·Log·Diagnostic·Envelope·Crash·ExitCodes      [구현됨]
-│   ├── Reflection/  PropertyMeta registry, PME_REFLECT_* (§42.2)                    [구현됨]
+│   ├── Reflection/  PropertyMeta registry, AKEIR_REFLECT_* (§42.2)                    [구현됨]
 │   ├── Serialization/ canonical JSON, JSON Schema, component↔JSON (§5.3, §14)       [구현됨]
 │   ├── Runtime/     Project(authoring 문서 모델, validate), Application, 내장 component (§6, §20.1) [구현됨]
 │   ├── ECS/         PlayWorld = Flecs 투영 + physics sync (§3.1)                    [구현됨]
 │   ├── Physics/     PhysicsWorld + Box2D (§57)                                       [구현됨]
 │   ├── Commands/    CommandBus / ChangeSet / Tx / History / apply (§8–§10, §49, §78) [구현됨, 유일한 쓰기 경로]
 │   ├── Testing/     Test Scenario 러너 + assertion 표현식 (§23, §24)                 [구현됨]
-│   ├── Platform/    SDL3 창/입력/창 모드 루프 (§20, §88.3)                          [구현됨, PME_WITH_SDL]
-│   ├── Render/      Renderer2D placeholder 스프라이트, software capture, golden 비교 (§27) [구현됨, PME_WITH_SDL]
+│   ├── Platform/    SDL3 창/입력/창 모드 루프 (§20, §88.3)                          [구현됨, AKEIR_WITH_SDL]
+│   ├── Render/      Renderer2D placeholder 스프라이트, software capture, golden 비교 (§27) [구현됨, AKEIR_WITH_SDL]
 │   └── Validation/  rule registry, SARIF (§29)                                      [예정 — 지금은 Project::validate]
 ├── Tools/
 │   ├── CLI/         `akeir` 실행 파일 (§11–§13, §15): 명령 ~45개(`akeir --help` / `capabilities --json` 이 정본) + `serve`(상주 RPC) + `mcp`(stdio MCP)   [구현됨]
 │   ├── Editor/      ImGui (Phase 6)                                                 [없음]
 │   └── MCP/         (없음 — `akeir mcp` 가 CLI 안에 있다, ADR-0030)
 ├── Game/            샘플 프로젝트 "TestArena" — project.json, Worlds/, Prefabs/, Config/, Tests/(*.test.json, Golden/) + Source/(Health/Movement/PlayerController/EnemyAI + systems)  [구현됨]
-├── Tests/           doctest 단위 테스트 (pme_tests.exe). 파일명 = <모듈>_<주제>.cpp
+├── Tests/           doctest 단위 테스트 (akeir_tests.exe). 파일명 = <모듈>_<주제>.cpp
 ├── .cpm-cache/      의존성 소스 clone (gitignore; scripts/fetch-deps.ps1 로 재생성)
 └── build/           CMake 출력 (gitignore)
 ```
@@ -76,7 +76,7 @@ Project_ME/
 ## 5. 새 세션의 작업 절차
 
 1. `STATUS.md` 를 읽는다 — 현재 Phase, 체크리스트, 알려진 문제, "다음 할 일".
-2. `BUILD.md` 대로 빌드하고 `pme_tests.exe` 가 전부 통과하는지 확인한다. 깨져 있으면 그것이 첫 작업이다.
+2. `BUILD.md` 대로 빌드하고 `akeir_tests.exe` 가 전부 통과하는지 확인한다. 깨져 있으면 그것이 첫 작업이다.
 3. 작업 대상 모듈의 설계 § 와 `Engine/<모듈>/README.md` 를 읽는다.
 4. 구현 → 테스트 추가(`Tests/`) → 빌드 → 테스트.
 5. **끝내기 전에** `STATUS.md` 를 갱신한다 (완료 항목 체크, 새로 알게 된 문제, 다음 할 일). 결정을 내렸으면 `DECISIONS.md` 에 ADR 추가. 설계를 바꿨으면 설계 문서에 `▶ v3`.
@@ -87,7 +87,7 @@ Project_ME/
 ```bash
 scripts\build.cmd msvc-headless all          # configure + build (SDL 없이, 빠름)
 scripts\build.cmd msvc-debug all             # 전체 (SDL3 포함, 첫 빌드 수 분)
-build\msvc-headless\Tests\pme_tests.exe      # 단위 테스트
+build\msvc-headless\Tests\akeir_tests.exe      # 단위 테스트
 build\msvc-headless\bin\akeir.exe version --json
 build\msvc-headless\bin\akeir.exe capabilities --json
 build\msvc-headless\bin\akeir.exe debug crash-test        # exit 6 + Cache/crash/*.dmp

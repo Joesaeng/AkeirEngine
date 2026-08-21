@@ -1,10 +1,10 @@
-# Engine/Render (`pme_render`) — 2D placeholder 렌더러 · PNG capture · golden 비교
+# Engine/Render (`akeir_render`) — 2D placeholder 렌더러 · PNG capture · golden 비교
 
-설계 문서 §27 (capture 는 1급 기능), §27.1 (vision 검사용 capture vs golden 회귀), §20 (headless 에서의 capture). **`PME_WITH_SDL=ON` 빌드(preset `msvc-debug`)에서만.**
+설계 문서 §27 (capture 는 1급 기능), §27.1 (vision 검사용 capture vs golden 회귀), §20 (headless 에서의 capture). **`AKEIR_WITH_SDL=ON` 빌드(preset `msvc-debug`)에서만.**
 
 | 파일 | 내용 |
 |---|---|
-| `include/pme/render/Renderer2D.h`, `src/Renderer2D.cpp` | `Renderer2D::createForWindow(SDL_Window*)`(가속 SDL_Renderer, vsync) / `createSoftware(w, h)`(SDL_Surface + `SDL_CreateSoftwareRenderer` — **창/GPU 불필요**). `render(world)` → `RenderStats{sprites, backend, camera}`. `savePng(path)`(`SDL_SavePNG`), `readPixels()`. `compareCaptures(expected, actual, CaptureTolerance{perPixel, maxMismatchRatio}, diffPngOut)` |
+| `include/akeir/render/Renderer2D.h`, `src/Renderer2D.cpp` | `Renderer2D::createForWindow(SDL_Window*)`(가속 SDL_Renderer, vsync) / `createSoftware(w, h)`(SDL_Surface + `SDL_CreateSoftwareRenderer` — **창/GPU 불필요**). `render(world)` → `RenderStats{sprites, backend, camera}`. `savePng(path)`(`SDL_SavePNG`), `readPixels()`. `compareCaptures(expected, actual, CaptureTolerance{perPixel, maxMismatchRatio}, diffPngOut)` |
 
 ## 무엇을 그리는가 (Phase 2 PoC)
 

@@ -7,13 +7,13 @@
 //   규칙: wall-clock·전역 RNG·unordered 순회 금지. 거리 비교에 sqrt 허용 (§22.2).
 #pragma once
 
-namespace pme { class PlayWorld; }
+namespace akeir { class PlayWorld; }
 
 namespace game {
 
 /// 컴포넌트 등록 앵커 (정적 라이브러리 링크 보장) — main() 에서 한 번 호출
 void registerGameComponents();
 /// 위 3개 system 을 순서대로 등록
-void registerGameSystems(pme::PlayWorld& world);
+void registerGameSystems(akeir::PlayWorld& world);
 
 } // namespace game

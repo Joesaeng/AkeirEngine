@@ -8,7 +8,7 @@ if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
   set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 endif()
 
-project(AkeirEngine VERSION 0.1.0 LANGUAGES C CXX)   # AKEIR Engine. 코드 네임스페이스/타깃 접두어는 pme (Project ME) 로 유지한다
+project(AkeirEngine VERSION 0.1.0 LANGUAGES C CXX)   # AKEIR Engine. 코드 네임스페이스/타깃 접두어는 akeir (Project ME) 로 유지한다
 
 # ---- 언어 표준 (§41: floor C++20) ----
 set(CMAKE_CXX_STANDARD 20)
@@ -21,19 +21,19 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-option(PME_BUILD_TESTS "Build unit tests (doctest)" ON)
-option(PME_BUILD_CLI   "Build the `akeir` CLI"        ON)
-# (PME_WITH_SDL 은 cmake/Dependencies.cmake 에서 선언)
+option(AKEIR_BUILD_TESTS "Build unit tests (doctest)" ON)
+option(AKEIR_BUILD_CLI   "Build the `akeir` CLI"        ON)
+# (AKEIR_WITH_SDL 은 cmake/Dependencies.cmake 에서 선언)
 
 include(ProjectWarnings)     # 경고 설정 (엔진 타깃에만 적용, 서드파티 제외)
 include(DetFpFlags)          # §22.2 / §41: det_fp_flags INTERFACE target
 include(Dependencies)        # CPM 으로 버전 고정 의존성 (§3 표) — 위 option 들을 참조한다
 
 add_subdirectory(Engine)
-if(PME_BUILD_CLI)
+if(AKEIR_BUILD_CLI)
   add_subdirectory(Tools/CLI)
 endif()
-if(PME_BUILD_TESTS)
+if(AKEIR_BUILD_TESTS)
   enable_testing()
   add_subdirectory(Tests)
 endif()

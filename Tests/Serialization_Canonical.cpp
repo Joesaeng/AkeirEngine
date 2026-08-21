@@ -1,13 +1,13 @@
 // Serialization_Canonical.cpp — 설계 문서 §5.3 (canonical JSON, 숫자 규칙, JCS), §9.2 (temp+rename), §29 (JSON_NOT_CANONICAL)
 #include <doctest/doctest.h>
-#include "pme/serialization/Canonical.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Canonical: objects multi-line, scalar arrays inline, 2-space indent, trailing newline (§5.3)") {
     Json doc = Json::object();
@@ -87,7 +87,7 @@ TEST_CASE("Canonical: parse rejects comments and trailing commas — file write 
     CHECK((*ok)["a"] == 1);
 
     namespace fs = std::filesystem;
-    fs::path dir = fs::temp_directory_path() / "pme_canonical_test";
+    fs::path dir = fs::temp_directory_path() / "akeir_canonical_test";
     fs::create_directories(dir);
     fs::path file = dir / "sub" / "doc.json";
     Json doc = Json{{"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"entities", Json::object()}};

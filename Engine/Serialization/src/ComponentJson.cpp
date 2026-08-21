@@ -1,9 +1,9 @@
-// pme/serialization/ComponentJson.cpp — 설계 문서 §14, §26.1, §29, §79, §88.8
-#include "pme/serialization/ComponentJson.h"
-#include "pme/core/Ref.h"
-#include "pme/serialization/Canonical.h"
+// akeir/serialization/ComponentJson.cpp — 설계 문서 §14, §26.1, §29, §79, §88.8
+#include "akeir/serialization/ComponentJson.h"
+#include "akeir/core/Ref.h"
+#include "akeir/serialization/Canonical.h"
 
-namespace pme {
+namespace akeir {
 
 Json componentToJson(const ComponentMeta& meta, const void* component, Visibility v) {
     Json j = Json::object();
@@ -171,4 +171,4 @@ ApplyResult componentFromJson(const ComponentMeta& meta, void* component, const 
     return r;
 }
 
-} // namespace pme
+} // namespace akeir

@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   .cpm-cache/ 에 고정 버전 의존성 소스를 shallow clone 한다 (Docs/BUILD.md, DECISIONS.md ADR-0006).
-  태그는 cmake/Dependencies.cmake 의 PME_DEP_*_TAG 와 같아야 한다. 바꿀 때 두 곳을 함께 고친다.
+  태그는 cmake/Dependencies.cmake 의 AKEIR_DEP_*_TAG 와 같아야 한다. 바꿀 때 두 곳을 함께 고친다.
 #>
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot

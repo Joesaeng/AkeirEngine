@@ -1,10 +1,10 @@
-// pme/runtime/Application.cpp — 설계 문서 §20.1, §22.2
-#include "pme/runtime/Application.h"
-#include "pme/core/FpEnv.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
+// akeir/runtime/Application.cpp — 설계 문서 §20.1, §22.2
+#include "akeir/runtime/Application.h"
+#include "akeir/core/FpEnv.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
 
-namespace pme {
+namespace akeir {
 
 // ---------------------------------------------------------------- InputFrame
 
@@ -68,7 +68,7 @@ RunResult Application::runHeadless(const RunConfig& cfg, ISimulation& sim, IInpu
     // §22.2: 스레드 시작 시 FP 환경을 정책에 맞춘다 (round-to-nearest, FTZ/DAZ 끔)
     FpEnvStatus fp = normalizeFpEnv();
     if (!fp.ok())
-        PME_LOG(Warn, "runtime", "fpenv_not_normalized", "FP environment could not be normalized; determinism (T0/T1) is at risk.", fp.toJson());
+        AKEIR_LOG(Warn, "runtime", "fpenv_not_normalized", "FP environment could not be normalized; determinism (T0/T1) is at risk.", fp.toJson());
 
     Stopwatch sw;
     RunResult result;
@@ -101,4 +101,4 @@ RunResult Application::runHeadless(const RunConfig& cfg, ISimulation& sim, IInpu
     return result;
 }
 
-} // namespace pme
+} // namespace akeir

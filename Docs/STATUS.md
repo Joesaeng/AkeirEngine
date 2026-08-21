@@ -16,7 +16,7 @@
 | 6 | Editor | 미시작 |
 | 7 | MCP sidecar + §72 실험 | **부분** — `akeir mcp`(stdio MCP 서버, initialize/server/discover/tools/list/tools/call, tools 15/15 enabled). §72 비교 실험은 미실행 |
 
-빌드: `scripts\build.cmd msvc-headless all` 과 `msvc-debug all`(SDL3 포함) 통과. 테스트: `pme_tests.exe` 75 케이스(msvc-debug; headless 는 73) 통과 + `akeir test` 3 시나리오(SDL) / 2 + 1 skipped(headless) 통과 (2026-08-21). 샘플 `Game/` 은 `validate` 0 error / 0 warning(canonical), `run --headless --ticks 600` 의 기준 finalHash = `0xbc23e49a65efb2e8` (msvc-debug / msvc-headless 동일; 이 값이 바뀌면 결정론 또는 샘플 데이터가 바뀐 것).
+빌드: `scripts\build.cmd msvc-headless all` 과 `msvc-debug all`(SDL3 포함) 통과. 테스트: `akeir_tests.exe` 75 케이스(msvc-debug; headless 는 73) 통과 + `akeir test` 3 시나리오(SDL) / 2 + 1 skipped(headless) 통과 (2026-08-21). 샘플 `Game/` 은 `validate` 0 error / 0 warning(canonical), `run --headless --ticks 600` 의 기준 finalHash = `0xbc23e49a65efb2e8` (msvc-debug / msvc-headless 동일; 이 값이 바뀌면 결정론 또는 샘플 데이터가 바뀐 것).
 git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`, 태그 `v0.1.0` 정본, GitHub Release v0.1.0 에 `AKEIR-0.1.zip` 첨부 — 소스 + Docs + `bin/akeir.exe` + QUICKSTART; 리서치 자료와 `.pdb` 는 제외). 릴리즈 zip 은 `python scripts/package.py`. **커밋/푸시는 사용자가 지시할 때만.**
 
 ## §86 체크리스트 진행
@@ -35,14 +35,14 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - [x] SDL3 Window / Input / `dummy` driver 선택 (§20) → Phase 2 에서 구현 (`Engine/Platform`; `offscreen` 은 software renderer 로 대체, ADR-0026)
 - [x] `det_fp_flags` INTERFACE target (§41) — `/fp:precise`, hash 노출
 - [x] FPU env assert (round-to-nearest, DAZ/FTZ) (§22.2) — `normalizeFpEnv`, run 시작 시 적용
-- [x] Logging: OTel JSONL (§28) — `pme::Logger`, stderr/file/ring sink
+- [x] Logging: OTel JSONL (§28) — `akeir::Logger`, stderr/file/ring sink
 - [x] 크래시 핸들러: minidump + 마지막 N 로그 + exit 6, watchdog exit 7 (§88.4) — 실측 검증됨. C++ 예외는 INTERNAL_ERROR envelope(exit 1)
 
 **Phase 1 — World + Reflection + 데이터 모델** (완료)
-- [x] Persistent ID: TypeID/UUIDv7 grammar, 형식 검사, v8 결정적 (§7) — `pme::Id`. DUPLICATE_PERSISTENT_ID 검출 (`akeir id fix` 는 미구현)
-- [x] Reflection registry: `PME_REFLECT_*` / `PropertyMeta` / runtime 등록 (§42.2) — Engine/Reflection
+- [x] Persistent ID: TypeID/UUIDv7 grammar, 형식 검사, v8 결정적 (§7) — `akeir::Id`. DUPLICATE_PERSISTENT_ID 검출 (`akeir id fix` 는 미구현)
+- [x] Reflection registry: `AKEIR_REFLECT_*` / `PropertyMeta` / runtime 등록 (§42.2) — Engine/Reflection
 - [x] Transform + 내장 component 5종 (SpriteRenderer, Collider2D, RigidBody2D, Camera2D) — Engine/Runtime/Components
-- [x] World 문서 모델: entities = id-keyed object, 계층 = parent + order, prefab set/add/remove (§5.3, §6, §34) — `pme::Project`
+- [x] World 문서 모델: entities = id-keyed object, 계층 = parent + order, prefab set/add/remove (§5.3, §6, §34) — `akeir::Project`
 - [x] JSON load / save — reflection 기반 serializer + visibility mask 3종 (§26.1, §88.8) — Serialization/ComponentJson
 - [x] Canonical serialization + `akeir fmt` + round-trip byte-identical 테스트 (§5.3)
 - [x] JSON Schema 2020-12 생성 + wire_format (§14, §14.1) — `akeir schema component X`
@@ -81,7 +81,7 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 
 **Phase 5 — Headless + Test + Capture** (핵심 완료)
 - [x] `Tests/**/*.test.json` 스키마 파싱 (setup spawn/entity+as, inputs hold/axis/press/release, run, determinism, assert always/eventually/at) — `TestScenario::fromJson`
-- [x] §23.1 assertion 표현식 evaluator (CEL 부분집합: 비교·산술·논리·in·has/size/abs/dist/min/max·all/exists/exists_one), undefined = 오류 — `pme::expr::Expr`
+- [x] §23.1 assertion 표현식 evaluator (CEL 부분집합: 비교·산술·논리·in·has/size/abs/dist/min/max·all/exists/exists_one), undefined = 오류 — `akeir::expr::Expr`
 - [x] snapshot 위 평가, `always` 첫 위반에서 abort, `eventually` 창, `at` tick/end, 실패 시 bindings + snapshot artifact
 - [x] run-twice 결정성(§22.2 T0) + 첫 divergent tick 의 snapshot diff(entity/path/a/b) + firstDivergentSystem, `expectedFinalHash`
 - [x] `results.json`(§24) + `--junit`(testsuite = 디렉터리, [[ATTACHMENT|…]]) + exit 3
@@ -115,7 +115,7 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - History 는 프로젝트당 하나의 선형 스택 (`Cache/history`). `akeir serve` 가 있으면 그것이 단일 writer; `--local` 로 우회해 두 프로세스가 쓰면 `BASE_MISMATCH` 로 드러난다 — 파일 lock 없음.
 - `akeir serve` 는 단일 스레드·연결 하나씩 처리한다. 긴 `run`/`test` 동안 다른 클라이언트는 기다린다.
 - MCP `tools/call` 의 인자와 CLI 의 모르는 플래그는 스키마로 사전 검증하지 않는다 — 오타(`tick` vs `ticks`)가 조용히 무시된다. `query` 에 cursor 페이지네이션이 없다(`limit` 만). `inspect` 는 `entity` 필수.
-- ctest 경로(`build.cmd … test`)는 doctest 이름을 `;` 로 쪼갠다 — 테스트 이름에 `;` 를 쓰지 않는다(v0.1.0 검증에서 11개가 조용히 건너뛰어진 것을 발견해 전부 `—` 로 바꿨다). 정본은 `pme_tests.exe` 직접 실행.
+- ctest 경로(`build.cmd … test`)는 doctest 이름을 `;` 로 쪼갠다 — 테스트 이름에 `;` 를 쓰지 않는다(v0.1.0 검증에서 11개가 조용히 건너뛰어진 것을 발견해 전부 `—` 로 바꿨다). 정본은 `akeir_tests.exe` 직접 실행.
 - `Project` 전체를 복사해 fork 한다 (O(문서 크기)). 수백 entity 에서는 무시할 수준; 큰 프로젝트면 copy-on-write 필요.
 - `akeir query / dump / run` 은 serve 안에서도 호출마다 play world 를 새로 build 한다 (authoring 모델만 상주; play world 상주 + step API 는 미구현).
 - PlayWorld 의 query 는 선형 스캔 (수백 entity 규모에서 충분). Flecs 쿼리 파이프라인은 필요할 때.
@@ -123,9 +123,11 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - `Collider2D.layer` 문자열 → Box2D category/mask bit 매핑은 아직 없다 (전부 0x0001/0xFFFF).
 - CLI 가 `game::registerGameSystems` 를 직접 호출한다 — Game/ 을 교체 가능한 모듈로 만들려면 등록 함수 주입이 필요.
 - `Crash.cpp` 의 `stopWatchdog()` 은 `std::thread` 를 join 하므로 watchdog 스레드가 깨어나는 것을 기다린다(최대 수 ms). 문제 없음이지만 알아둘 것.
-- CMake configure 시 CPM 이 `<name>_SOURCE_DIR` 을 내보내려면 `pme_add_dep` 가 macro 여야 한다 (function 이면 삼킨다). 이미 macro.
+- CMake configure 시 CPM 이 `<name>_SOURCE_DIR` 을 내보내려면 `akeir_add_dep` 가 macro 여야 한다 (function 이면 삼킨다). 이미 macro.
 
 ## 다음 할 일 (우선순위 순)
+
+(2026-08-22 외부 리뷰 반영 후) 새 엔진 기능보다 **실제 게임 제작으로 검증**이 먼저다. 리뷰에서 미룬 항목은 ADR-0033 참조.
 
 1. **§72 실험**: 저장소 루트 `.mcp.json` 이 `akeir mcp`(msvc-debug 빌드, Game/ 프로젝트)를 Claude Code 에 등록한다 — 새 세션에서 MCP tool 만으로 §71 시나리오(고블린 추가, 속도 조정, 테스트, capture)를 수행하고 tool call 수·오류율을 기록. Godot/Bevy arm 은 선택.
 2. Phase 4 잔여: 사람용 텍스트 출력, `--fields`, `project.set`, play world 상주(`run.step`/`run.stop`) + Flecs REST, 파일 watcher.
@@ -141,4 +143,5 @@ git: 공개 저장소 **https://github.com/Joesaeng/AkeirEngine** (branch `main`
 - **2026-08-21 세션 1 (Phase 5 테스트)**: `Engine/Testing`(Expr + TestRunner) + `akeir test` + 샘플 시나리오 2개. GoblinBasicCombat 의 run-twice finalHash 가 `akeir run` 기준값 `0xbc23e49a65efb2e8` 과 같다(러너와 run 경로의 동치 확인). 테스트 71 케이스.
 - **2026-08-21 세션 1 (Phase 2)**: `Engine/Platform` + `Engine/Render` + CLI `run`(창)/`capture`/`input map` + 테스트 capture assertion/golden. software capture 두 번이 byte-identical, `akeir run --ticks 90 --record` → `--headless --replay` 가 같은 finalHash(`0xafcd091ec8be292a`). 골든 `Tests/Golden/CombatCapture/combat_end_256x256.png` 생성. 발견한 버그: `std::optional<unique_ptr>` 를 돌려주며 out-param 을 move 해 null 역참조(crash handler 가 exit 6 + minidump 로 잡음 — §88.4 경로 실증).
 - **2026-08-21 세션 1 (Phase 4/7)**: `akeir serve`(ServeHost + Winsock NDJSON JSON-RPC + token) + 자동 포워딩 + multi-call tx(TTL) + run handle + `--stdio`, `akeir mcp`(stdio MCP 서버). 데몬 위에서 tx begin → create/tag(--tx) → 밖에서는 안 보임 → commit → history 1항목, stop 후 one-shot 으로 history 이어짐을 확인. MCP: initialize/tools/list(13~14)/tools/call(query, apply dryRun, inspect 오류 → isError) 확인. `akeir refs`(§19) 추가로 tools 15/15. 루트 `.mcp.json` 등록. 테스트 75 케이스.
+- **2026-08-22 (리뷰 반영)**: 외부 아키텍처 리뷰(GPT) 의 P0/P1 를 반영 — `pme`→`akeir` 네임스페이스/헤더/타깃/매크로 전면 개명(`akeir_tests.exe`, `AKEIR_REFLECT_*`, `AKEIR_LOG`, `AKEIR_WITH_SDL`), MIT LICENSE + THIRD_PARTY_NOTICES + CONTRIBUTING, `.mcp.json` gitignore + `.mcp.json.example`, README 를 한 줄 메시지 + 4 포인트로, GitHub Actions CI 2 job. 미룬 항목은 ADR-0033. 릴리즈 v0.1.0 zip 재생성.
 - **2026-08-21 세션 1 (v0.1.0 릴리즈)**: `akeir project init` 추가, 이름 결정(MoltEngine → 충돌 발견 → **AKEIR Engine**, 실행 파일 `akeir.exe`; ADR-0032), 첫 커밋 + 태그, `scripts/package.py` → `dist/AKEIR-0.1.zip`. 독립 에이전트 5명이 zip 만 풀어 QUICKSTART 를 따라가는 blind 검증 → 5/5 "동작, 마찰 있음"(blocker 없음). 발견·수정: ctest 가 `;` 든 테스트 11개를 건너뜀, `.mcp.json` 상대경로(`bin\\akeir.exe` 로), MCP outputSchema 의 풀리지 않는 `$ref`(inline 스키마로), 선택자 문법 미노출(bare name 허용 + 설명), `--help` 부재(추가), 릴리즈 exe 의 VC++ 재배포 의존(static CRT), Collider2D 만 있는 벽이 안 막힘(`COLLIDER_WITHOUT_BODY` 경고 + fix), 기타 문서 불일치. 수정 후 재패키징·재태깅.

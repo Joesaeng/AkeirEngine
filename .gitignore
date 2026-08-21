@@ -21,3 +21,6 @@ Thumbs.db
 
 # 리서치 작업 자료는 공개 저장소에 넣지 않는다 (C:\Project\Project_ME_research 에 별도 보관)
 /research/
+
+# MCP client config is machine-specific: copy .mcp.json.example or run `akeir mcp --print-config > .mcp.json`
+.mcp.json

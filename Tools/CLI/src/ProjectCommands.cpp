@@ -2,14 +2,14 @@
 // 설계 문서 §11, §14 (schema), §14.1 (wire_format), §18 (explain), §29 (validate 출력 = envelope), §44 (describe), §5.3 (fmt)
 #include "Commands.h"
 #include "GameSystems.h"
-#include "pme/commands/CommandBus.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
-#include "pme/reflection/Registry.h"
-#include "pme/runtime/Components.h"
-#include "pme/runtime/Project.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
+#include "akeir/reflection/Registry.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/runtime/Project.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -17,7 +17,7 @@
 #include <fstream>
 #include <iterator>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 std::optional<Project> openProject(Context& ctx, Envelope& fail, const std::string& command) {
     registerBuiltinComponents();
@@ -65,8 +65,8 @@ Envelope cmdProjectInfo(Context& ctx) {
     Json comps = Json::array();
     for (const auto* m : Registry::global().all()) comps.push_back(m->name);
     r["components"] = comps;
-    r["fpFlagsHash"] = PME_FP_FLAGS_HASH;
-    r["engineVersion"] = PME_VERSION_STRING;
+    r["fpFlagsHash"] = AKEIR_FP_FLAGS_HASH;
+    r["engineVersion"] = AKEIR_VERSION_STRING;
     Envelope env = Envelope::success("project.info", r);
     for (const auto& d : ctx.loadDiagnostics) env.withWarning(d);
     return env;
@@ -333,4 +333,4 @@ void registerProjectCommands(std::vector<CommandSpec>& table) {
         "akeir explain <id|name:X|path:A/B> [--json]", true, false, true, cmdExplain});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

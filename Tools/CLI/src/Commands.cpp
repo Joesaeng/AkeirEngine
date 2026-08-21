@@ -2,27 +2,27 @@
 // 설계 문서 §8, §13 (exit code 표), §15 (capabilities), §47 (tools[] 15개), §88.4 (크래시/행 테스트)
 #include "Commands.h"
 #include "Serve.h"
-#include "pme/commands/CommandBus.h"
-#include "pme/core/Crash.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/FpEnv.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/core/Crash.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/FpEnv.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
 
 #include <chrono>
 #include <thread>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
 Envelope cmdVersion(Context& ctx) {
     Json r = Json::object();
     r["engine"] = "AKEIR";
-    r["engineVersion"] = PME_VERSION_STRING;
+    r["engineVersion"] = AKEIR_VERSION_STRING;
     r["release"] = "v0.1.0";
-    r["fpFlagsHash"] = PME_FP_FLAGS_HASH;      // §22.3 replay header / §41
-    r["fpFlags"] = PME_FP_FLAGS_STRING;
+    r["fpFlagsHash"] = AKEIR_FP_FLAGS_HASH;      // §22.3 replay header / §41
+    r["fpFlags"] = AKEIR_FP_FLAGS_STRING;
 #if defined(_MSC_VER) && !defined(__clang__)
     r["compiler"] = "msvc " + std::to_string(_MSC_FULL_VER);
 #elif defined(__clang__)
@@ -41,13 +41,13 @@ Envelope cmdCapabilities(Context& ctx) {
 
 Envelope cmdCrashTest(Context& ctx) {
     // §74 Phase 0 성공 기준: "강제 crash 시 minidump 경로가 envelope 에 실리고 exit 6"
-    PME_LOG(Warn, "cli", "crash_test", "Forcing an access violation on purpose.");
+    AKEIR_LOG(Warn, "cli", "crash_test", "Forcing an access violation on purpose.");
     debugForceCrash();
 }
 
 Envelope cmdHangTest(Context& ctx) {
     // watchdog 검증: --timeout 보다 오래 잔다 → TIMEOUT envelope + exit 7
-    PME_LOG(Warn, "cli", "hang_test", "Sleeping forever on purpose (watchdog should fire).");
+    AKEIR_LOG(Warn, "cli", "hang_test", "Sleeping forever on purpose (watchdog should fire).");
     for (;;) std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
@@ -110,7 +110,7 @@ Json envelopeSchema() {
 
 Json capabilitiesJson() {
     Json r = Json::object();
-    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", PME_VERSION_STRING}, {"sdl", sdlAvailable()}};
+    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", AKEIR_VERSION_STRING}, {"sdl", sdlAvailable()}};
 
     // §47 tools[] — MCP 에 노출되는 15개 (이름 = command id 의 '.' → '_'). 구현된 것만 enabled:true. tools/list 는 enabled 만 pass-through 한다.
     // inputSchema 는 CLI 인자와 같은 의미의 JSON. apply.changes[].op 의 oneOf 는 busCommands[] 의 args 스키마다.
@@ -181,4 +181,4 @@ Json capabilitiesJson() {
     return r;
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

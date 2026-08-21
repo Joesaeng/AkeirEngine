@@ -3,18 +3,18 @@
 //
 // 샘플 프로젝트 Game/ 를 임시 디렉터리로 복사해 실제 파일 commit 까지 검증한다.
 #include <doctest/doctest.h>
-#include "pme/commands/CommandBus.h"
-#include "pme/runtime/Components.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/serialization/Canonical.h"
 #include "GameSystems.h"
-#include "pme/core/Hash.h"
+#include "akeir/core/Hash.h"
 
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <thread>
 
-using namespace pme;
+using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {
@@ -43,7 +43,7 @@ struct TempProject {
         registerBuiltinComponents();
         game::registerGameComponents();
         static int n = 0;
-        dir = fs::temp_directory_path() / ("pme_cmd_test_" + std::to_string(++n) + "_" + std::to_string(static_cast<unsigned>(std::hash<std::string>{}(sampleProjectDir()) & 0xffff)));
+        dir = fs::temp_directory_path() / ("akeir_cmd_test_" + std::to_string(++n) + "_" + std::to_string(static_cast<unsigned>(std::hash<std::string>{}(sampleProjectDir()) & 0xffff)));
         std::error_code ec;
         fs::remove_all(dir, ec);
         fs::create_directories(dir);

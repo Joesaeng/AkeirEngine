@@ -1,15 +1,15 @@
-// Render_Capture.cpp — 설계 문서 §27 (software capture 는 결정적), §27.1 (golden 비교). PME_WITH_SDL 빌드에서만 컴파일된다.
+// Render_Capture.cpp — 설계 문서 §27 (software capture 는 결정적), §27.1 (golden 비교). AKEIR_WITH_SDL 빌드에서만 컴파일된다.
 #include <doctest/doctest.h>
 #include "GameSystems.h"
-#include "pme/platform/InputMap.h"
-#include "pme/platform/Platform.h"
-#include "pme/render/Renderer2D.h"
-#include "pme/runtime/Components.h"
+#include "akeir/platform/InputMap.h"
+#include "akeir/platform/Platform.h"
+#include "akeir/render/Renderer2D.h"
+#include "akeir/runtime/Components.h"
 
 #include <filesystem>
 #include <fstream>
 
-using namespace pme;
+using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {
@@ -60,7 +60,7 @@ TEST_CASE("Renderer2D: software renderer works without a window — two captures
     for (std::size_t i = 0; i < px.size(); i += 4) if (!(px[i] == px[4] && px[i + 1] == px[5] && px[i + 2] == px[6])) ++nonBg;
     CHECK(nonBg > 50);
 
-    fs::path dir = fs::temp_directory_path() / "pme_capture_test";
+    fs::path dir = fs::temp_directory_path() / "akeir_capture_test";
     std::error_code ec; fs::create_directories(dir, ec);
     REQUIRE(r->savePng((dir / "a.png").string(), &err));
     auto r2 = Renderer2D::createSoftware(256, 256, &err);

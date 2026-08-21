@@ -1,12 +1,12 @@
 // ChangeSet.cpp — §78 ChangeSet 직렬화 / inverse / compose / applyOps
-#include "pme/commands/ChangeSet.h"
+#include "akeir/commands/ChangeSet.h"
 
-#include "pme/serialization/Canonical.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <algorithm>
 #include <set>
 
-namespace pme {
+namespace akeir {
 
 std::string escapeToken(std::string_view token) {
     std::string out;
@@ -227,4 +227,4 @@ bool applyOps(std::map<std::string, Json>& docs, const std::vector<ChangeOp>& op
     return true;
 }
 
-} // namespace pme
+} // namespace akeir

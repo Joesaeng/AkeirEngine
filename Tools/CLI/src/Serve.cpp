@@ -16,12 +16,12 @@
 
 #include "Serve.h"
 #include "GameSystems.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/Id.h"
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
-#include "pme/runtime/Components.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/Id.h"
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <chrono>
 #include <filesystem>
@@ -31,7 +31,7 @@
 
 namespace fs = std::filesystem;
 
-namespace pme::cli {
+namespace akeir::cli {
 
 // ---------------------------------------------------------------- ServeInfo
 
@@ -264,7 +264,7 @@ int runServe(Context& ctx) {
     Envelope helloOut = Envelope::success("serve", started);
     for (auto& d : hello.warnings) helloOut.withWarning(d);
     std::fputs(helloOut.toJson().dump().c_str(), stdout); std::fputc('\n', stdout); std::fflush(stdout);
-    PME_LOG(Info, "serve", "listening", "akeir serve ready", Json{{"port", host.info().port}, {"pid", host.info().pid}});
+    AKEIR_LOG(Info, "serve", "listening", "akeir serve ready", Json{{"port", host.info().port}, {"pid", host.info().pid}});
 
     const long long idleMs = ctx.args.getInt("idle-timeout").value_or(0);
     auto lastActivity = std::chrono::steady_clock::now();
@@ -288,7 +288,7 @@ int runServe(Context& ctx) {
                 timeval tv{1, 0};
                 int r = select(0, &set, nullptr, nullptr, &tv);
                 if (r == 0) {
-                    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - lastActivity).count() > idleMs) { PME_LOG(Info, "serve", "idle_exit", "idle timeout"); break; }
+                    if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - lastActivity).count() > idleMs) { AKEIR_LOG(Info, "serve", "idle_exit", "idle timeout"); break; }
                     continue;
                 }
             }
@@ -309,7 +309,7 @@ int runServe(Context& ctx) {
         std::error_code ec; fs::remove(ServeInfo::path(ctx.projectDir), ec);
 #endif
     }
-    PME_LOG(Info, "serve", "stopped", "akeir serve stopped", Json{{"requests", host.requests()}});
+    AKEIR_LOG(Info, "serve", "stopped", "akeir serve stopped", Json{{"requests", host.requests()}});
     return kExitOk;
 }
 
@@ -397,4 +397,4 @@ void registerServeCommands(std::vector<CommandSpec>& t) {
     t.push_back({"serve.stop", {"serve", "stop"}, "RuntimeControl", "Stop the daemon", "", "akeir serve stop", false, false, true, cmdServeStop});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

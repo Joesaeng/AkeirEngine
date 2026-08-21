@@ -1,10 +1,10 @@
 // Core_Diagnostic.cpp — 설계 문서 §79 Diagnostic, §13 envelope, §88.4 crash envelope
 #include <doctest/doctest.h>
-#include "pme/core/Crash.h"
-#include "pme/core/Diagnostic.h"
-#include "pme/core/ExitCodes.h"
+#include "akeir/core/Crash.h"
+#include "akeir/core/Diagnostic.h"
+#include "akeir/core/ExitCodes.h"
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Diagnostic: JSON shape matches §79 and round-trips") {
     Fix fix;

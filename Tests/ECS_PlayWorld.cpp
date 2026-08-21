@@ -2,13 +2,13 @@
 #include <doctest/doctest.h>
 #include "GameComponents.h"
 #include "GameSystems.h"
-#include "pme/ecs/PlayWorld.h"
-#include "pme/runtime/Components.h"
-#include "pme/runtime/Project.h"
+#include "akeir/ecs/PlayWorld.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/runtime/Project.h"
 
 #include <filesystem>
 
-using namespace pme;
+using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {

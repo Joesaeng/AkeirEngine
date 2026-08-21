@@ -5,19 +5,19 @@
 #include "Args.h"
 #include "Commands.h"
 #include "Serve.h"
-#include "pme/core/Crash.h"
-#include "pme/core/Envelope.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
+#include "akeir/core/Crash.h"
+#include "akeir/core/Envelope.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
 
 #include <cstdio>
 #include <filesystem>
 #include <iostream>
 #include <string>
 
-using namespace pme;
-using namespace pme::cli;
+using namespace akeir;
+using namespace akeir::cli;
 
 namespace {
 

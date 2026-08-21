@@ -1,8 +1,8 @@
-// pme/core/Diagnostic.cpp — 설계 문서 §79
-#include "pme/core/Diagnostic.h"
-#include "pme/core/Hash.h"
+// akeir/core/Diagnostic.cpp — 설계 문서 §79
+#include "akeir/core/Diagnostic.h"
+#include "akeir/core/Hash.h"
 
-namespace pme {
+namespace akeir {
 
 const char* severityName(Severity s) {
     switch (s) { case Severity::Note: return "note"; case Severity::Warning: return "warning"; default: return "error"; }
@@ -153,4 +153,4 @@ DiagnosticSummary summarize(const std::vector<Diagnostic>& list) {
     return s;
 }
 
-} // namespace pme
+} // namespace akeir

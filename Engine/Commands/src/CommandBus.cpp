@@ -1,17 +1,17 @@
 // CommandBus.cpp — §8 ChangeBuilder/CommandContext, §9 tx/commit, §10 undo/redo, §49 apply, §50 dry-run
-#include "pme/commands/CommandBus.h"
+#include "akeir/commands/CommandBus.h"
 
-#include "pme/core/Hash.h"
-#include "pme/core/Id.h"
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Id.h"
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
-namespace pme {
+namespace akeir {
 
 const char* commandKindName(CommandKind k) {
     switch (k) {
@@ -181,7 +181,7 @@ CommandBus::CommandBus(Project& project, BusOptions options)
     : project_(project), options_(std::move(options)), history_(project.rootDir()) {
     if (options_.persist) {
         std::string err;
-        if (!history_.load(&err)) PME_LOG(Warn, "commands", "history.load_failed", err);
+        if (!history_.load(&err)) AKEIR_LOG(Warn, "commands", "history.load_failed", err);
     }
     std::vector<std::string> all;
     for (const auto& [p, _] : project_.documents()) all.push_back(p);
@@ -358,7 +358,7 @@ std::optional<CommandError> CommandBus::commit(ChangeSet& cs, bool pushHistory) 
         history_.push(cs, nullptr);   // in-memory 만 (persist=false 면 History::push 가 디스크 쓰기 실패를 무시한다)
     }
     refreshBaseHashes(cs.touched);
-    PME_LOG(Info, "commands", "changeset.committed", cs.id, Json{{"ops", cs.ops.size()}, {"touched", cs.touched}});
+    AKEIR_LOG(Info, "commands", "changeset.committed", cs.id, Json{{"ops", cs.ops.size()}, {"touched", cs.touched}});
     return std::nullopt;
 }
 
@@ -700,4 +700,4 @@ Json CommandBus::recoverJournal() {
     return report;
 }
 
-} // namespace pme
+} // namespace akeir

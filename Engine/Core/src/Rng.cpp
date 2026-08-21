@@ -1,8 +1,8 @@
-// pme/core/Rng.cpp — xoshiro256** (Blackman & Vigna, public domain 알고리즘) + SplitMix64 seeding. 설계 문서 §22.2.
-#include "pme/core/Rng.h"
-#include "pme/core/Hash.h"
+// akeir/core/Rng.cpp — xoshiro256** (Blackman & Vigna, public domain 알고리즘) + SplitMix64 seeding. 설계 문서 §22.2.
+#include "akeir/core/Rng.h"
+#include "akeir/core/Hash.h"
 
-namespace pme {
+namespace akeir {
 
 namespace {
 inline std::uint64_t rotl(std::uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
@@ -60,4 +60,4 @@ void RngStream::jump() {
     s_ = {s0, s1, s2, s3};
 }
 
-} // namespace pme
+} // namespace akeir

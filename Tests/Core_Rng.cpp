@@ -1,8 +1,8 @@
 // Core_Rng.cpp — 설계 문서 §22.2 (RNG)
 #include <doctest/doctest.h>
-#include "pme/core/Rng.h"
+#include "akeir/core/Rng.h"
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Rng: same (worldSeed, name) gives same sequence — different name differs") {
     RngStream a(381251, "EnemyAI"), b(381251, "EnemyAI"), c(381251, "Spawner");

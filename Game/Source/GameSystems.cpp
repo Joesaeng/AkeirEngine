@@ -1,9 +1,9 @@
 // Game/Source/GameSystems.cpp — 설계 문서 §59, §71, §22.2
 #include "GameSystems.h"
 #include "GameComponents.h"
-#include "pme/core/Log.h"
-#include "pme/ecs/PlayWorld.h"
-#include "pme/runtime/Components.h"
+#include "akeir/core/Log.h"
+#include "akeir/ecs/PlayWorld.h"
+#include "akeir/runtime/Components.h"
 
 #include <algorithm>
 #include <cmath>
@@ -11,7 +11,7 @@
 
 namespace game {
 
-using namespace pme;
+using namespace akeir;
 
 namespace {
 
@@ -68,13 +68,13 @@ void enemyAttack(PlayWorld& w, const InputFrame&, const SimTime& t) {
         if (!hp || hp->current <= 0.f) continue;
         hp->current = std::max(0.f, hp->current - ai->damage);
         ai->cooldownLeft = ai->attackCooldown;
-        PME_LOG(Info, "game", "damage", "Enemy hit target.", Json{{"game.entity", id}, {"game.target", ai->target.value}, {"game.damage", ai->damage}, {"game.target_hp", hp->current}});
+        AKEIR_LOG(Info, "game", "damage", "Enemy hit target.", Json{{"game.entity", id}, {"game.target", ai->target.value}, {"game.damage", ai->damage}, {"game.target_hp", hp->current}});
     }
     // 죽음 처리: Health 0 이하인 EnemyAI → dead
     for (const auto& id : w.query({"EnemyAI", "Health"})) {
         auto* ai = w.get<EnemyAI>(id);
         const auto* hp = w.get<Health>(id);
-        if (ai->state != AiState::Dead && hp->current <= 0.f) { ai->state = AiState::Dead; PME_LOG(Info, "game", "enemy_dead", "Enemy died.", Json{{"game.entity", id}}); }
+        if (ai->state != AiState::Dead && hp->current <= 0.f) { ai->state = AiState::Dead; AKEIR_LOG(Info, "game", "enemy_dead", "Enemy died.", Json{{"game.entity", id}}); }
     }
 }
 

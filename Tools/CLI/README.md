@@ -1,6 +1,6 @@
 # Tools/CLI (`akeir.exe`)
 
-AI 에이전트와 사람이 같이 쓰는 1급 인터페이스 (§11). 모든 출력은 §12 envelope(JSON), exit code 는 §13 표(`pme/core/ExitCodes.h`).
+AI 에이전트와 사람이 같이 쓰는 1급 인터페이스 (§11). 모든 출력은 §12 envelope(JSON), exit code 는 §13 표(`akeir/core/ExitCodes.h`).
 두 가지 실행 모델 (ADR-0011, 0029): **one-shot**(호출마다 프로젝트를 열고 닫음) 과 **serve 포워딩**(`Cache/serve.json` 이 가리키는 데몬에 RPC). 명령 코드는 같다 — `Context::resident/residentBus` 가 있으면 상주 상태를, 없으면 디스크를 쓴다.
 
 ## 파일
@@ -15,7 +15,7 @@ AI 에이전트와 사람이 같이 쓰는 1급 인터페이스 (§11). 모든 �
 | `src/RunCommands.cpp` | play world: `run --headless`, `dump`, `query` |
 | `src/MutationCommands.cpp` | 쓰기(전부 `CommandBus` 경유): `entity create|delete|rename|reparent`, `component add|remove`, `set`, `tag add|remove`, `prefab create|instantiate`, `world create`, `apply`, `undo|redo|history`, `cmd` |
 | `src/TestCommands.cpp` | `test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--update-golden] [--list]` — `Engine/Testing` 러너, exit 3 on failure. SDL 빌드에서는 capture hook 주입 |
-| `src/SdlCommands.cpp` | `capture`, `input map`, 창 모드 `run`(`--headless` 없을 때), `installCaptureHooks`. `PME_HAS_SDL` 이 없으면 전부 `FEATURE_UNAVAILABLE` |
+| `src/SdlCommands.cpp` | `capture`, `input map`, 창 모드 `run`(`--headless` 없을 때), `installCaptureHooks`. `AKEIR_HAS_SDL` 이 없으면 전부 `FEATURE_UNAVAILABLE` |
 | `src/Serve.h/.cpp` | `ServeHost`(상주 Project + 단일 CommandBus + run registry, JSON-RPC dispatch), `akeir serve`(Winsock loopback NDJSON + token / `--stdio`), `tryRemote`(얇은 클라이언트), `serve status|stop` |
 | `src/Mcp.cpp` | `akeir mcp` — ServeHost 위 stdio MCP 서버 (server/discover, initialize, tools/list, tools/call) |
 | `src/MutationCommands.cpp` (tx) | `tx begin|commit|rollback|list` — serve 의 bus 에서만 (`TX_REQUIRES_SERVE`) |

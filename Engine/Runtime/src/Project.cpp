@@ -1,9 +1,9 @@
-// pme/runtime/Project.cpp — 설계 문서 §5.3, §6, §7, §19, §29, §34
-#include "pme/runtime/Project.h"
-#include "pme/core/Ref.h"
-#include "pme/reflection/Registry.h"
-#include "pme/serialization/Canonical.h"
-#include "pme/serialization/ComponentJson.h"
+// akeir/runtime/Project.cpp — 설계 문서 §5.3, §6, §7, §19, §29, §34
+#include "akeir/runtime/Project.h"
+#include "akeir/core/Ref.h"
+#include "akeir/reflection/Registry.h"
+#include "akeir/serialization/Canonical.h"
+#include "akeir/serialization/ComponentJson.h"
 
 #include <algorithm>
 #include <cctype>
@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -555,11 +555,11 @@ std::vector<Diagnostic> Project::validate() const {
     return out;
 }
 
-} // namespace pme
+} // namespace akeir
 
 // ---------------------------------------------------------------- reference graph (§19)
 
-namespace pme {
+namespace akeir {
 
 Json Project::Reference::toJson() const {
     Json j = Json{{"from", from}, {"kind", kind}, {"doc", doc}, {"pointer", pointer}};
@@ -665,4 +665,4 @@ std::vector<Project::Reference> Project::referencesFrom(std::string_view id) con
     return out;
 }
 
-} // namespace pme
+} // namespace akeir

@@ -1,9 +1,9 @@
 // Testing_Expr.cpp — 설계 문서 §23.1 고정 비교 문법: 파싱, 평가, undefined/has, 매크로, 오류
 #include <doctest/doctest.h>
-#include "pme/testing/Expr.h"
+#include "akeir/testing/Expr.h"
 
-using namespace pme;
-using pme::expr::Expr;
+using namespace akeir;
+using akeir::expr::Expr;
 
 namespace {
 std::map<std::string, Json> env() {

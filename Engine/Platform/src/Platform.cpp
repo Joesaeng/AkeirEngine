@@ -1,11 +1,11 @@
 // Platform.cpp — SDL3 init / window / events (§20)
-#include "pme/platform/Platform.h"
+#include "akeir/platform/Platform.h"
 
-#include "pme/core/Log.h"
+#include "akeir/core/Log.h"
 
 #include <SDL3/SDL.h>
 
-namespace pme {
+namespace akeir {
 
 std::unique_ptr<Platform> Platform::init(const PlatformConfig& cfg, std::string* error) {
     if (!cfg.videoDriver.empty()) SDL_SetHint(SDL_HINT_VIDEO_DRIVER, cfg.videoDriver.c_str());
@@ -24,7 +24,7 @@ std::unique_ptr<Platform> Platform::init(const PlatformConfig& cfg, std::string*
             return nullptr;
         }
     }
-    PME_LOG(Info, "platform", "sdl_init", "SDL initialized.", Json{{"videoDriver", p->currentVideoDriver()}, {"window", cfg.window}});
+    AKEIR_LOG(Info, "platform", "sdl_init", "SDL initialized.", Json{{"videoDriver", p->currentVideoDriver()}, {"window", cfg.window}});
     return p;
 }
 
@@ -48,4 +48,4 @@ bool Platform::pumpEvents() {
     return !quit_;
 }
 
-} // namespace pme
+} // namespace akeir

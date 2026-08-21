@@ -14,7 +14,7 @@ Tools/Editor (Phase 6)├──▶ Engine/Commands ──▶ Engine/Runtime ─�
                                  ▼                   └──▶ Engine/Serialization ──▶ Engine/Reflection ──▶ Core
                           Engine/Validation
 Tools/CLI ──▶ Engine/Testing ──▶ ECS (WorldFactory 주입; Game/ 모름)
-Tools/CLI ──▶ Engine/Platform ──▶ Engine/Render ──▶ ECS   (SDL3; PME_WITH_SDL 빌드만. sim 은 이 둘을 모른다)
+Tools/CLI ──▶ Engine/Platform ──▶ Engine/Render ──▶ ECS   (SDL3; AKEIR_WITH_SDL 빌드만. sim 은 이 둘을 모른다)
 Game/Source ──▶ Engine/Runtime (Core 가 Game 을 알면 안 된다, §76)
 ```
 
@@ -24,35 +24,35 @@ Game/Source ──▶ Engine/Runtime (Core 가 Game 을 알면 안 된다, §76)
 
 | 타깃 | 디렉터리 | 구현하는 § | 상태 |
 |---|---|---|---|
-| `pme_core` | `Engine/Core` | §7 ID · §13 exit code/envelope · §22.2 RNG/Time/Hash · §28 Log · §79 Diagnostic · §88.4 Crash | 구현됨 (Phase 0) |
-| `pme_reflection` | `Engine/Reflection` | §42.2 PropertyMeta registry, §43.1 속성 어휘, PME_REFLECT_* | 구현됨 (Phase 1) |
-| `pme_serialization` | `Engine/Serialization` | §5.3 canonical JSON / JCS, §14 검증 코드, §26.1 visibility mask | 구현됨 (Phase 1) |
-| `pme_runtime` | `Engine/Runtime` | §6 authoring document model (Project), §20.1 fixed-tick Application, §34 prefab resolve, §29 validate, §19 reference graph(`referencesTo/From`), 내장 component | 구현됨 (Phase 0/1) |
-| `pme_ecs` | `Engine/ECS` | §3.1 Flecs 투영 (PlayWorld), §16 query, §25 dump, §26.1 snapshot, §57 physics sync | 구현됨 (Phase 1) |
-| `pme_physics` | `Engine/Physics` | §57 PhysicsWorld + Box2D v3.1.1, §22.2 contact 정렬 | 구현됨 (Phase 1) |
-| `pme_commands` | `Engine/Commands` | §8 CommandBus/CommandKind/ChangeBuilder · §9 Transaction/journal · §10 Undo/History · §49 apply · §50 dry-run · §78 ChangeSet · §78.1 override 매핑 | 구현됨 (Phase 3) — [README](../Engine/Commands/README.md) |
-| `pme_testing` | `Engine/Testing` | §23 Test Scenario 러너 · §23.1 assertion 표현식(Expr) · §24 results.json/JUnit · §22.2 run-twice + snapshot diff | 구현됨 (Phase 5 테스트 부분) — [README](../Engine/Testing/README.md) |
-| `pme_platform` | `Engine/Platform` | §20 SDL3 init/창/driver 보고 · §88.3 InputMap · §20.1 창 모드 accumulator 루프 + `--record` | 구현됨 (Phase 2, `PME_WITH_SDL`) — [README](../Engine/Platform/README.md) |
-| `pme_render` | `Engine/Render` | §27 Renderer2D(SDL_Renderer; software capture) · §27.1 compareCaptures | 구현됨 (Phase 2, `PME_WITH_SDL`) — [README](../Engine/Render/README.md) |
-| `pme_validation` | `Engine/Validation` | §29 rule registry, SARIF 출력 | 예정 — 지금은 `Project::validate()` + `validateComponentJson` 이 규칙이고 `--fix` 는 CLI 가 CommandBus 로 적용한다 |
+| `akeir_core` | `Engine/Core` | §7 ID · §13 exit code/envelope · §22.2 RNG/Time/Hash · §28 Log · §79 Diagnostic · §88.4 Crash | 구현됨 (Phase 0) |
+| `akeir_reflection` | `Engine/Reflection` | §42.2 PropertyMeta registry, §43.1 속성 어휘, AKEIR_REFLECT_* | 구현됨 (Phase 1) |
+| `akeir_serialization` | `Engine/Serialization` | §5.3 canonical JSON / JCS, §14 검증 코드, §26.1 visibility mask | 구현됨 (Phase 1) |
+| `akeir_runtime` | `Engine/Runtime` | §6 authoring document model (Project), §20.1 fixed-tick Application, §34 prefab resolve, §29 validate, §19 reference graph(`referencesTo/From`), 내장 component | 구현됨 (Phase 0/1) |
+| `akeir_ecs` | `Engine/ECS` | §3.1 Flecs 투영 (PlayWorld), §16 query, §25 dump, §26.1 snapshot, §57 physics sync | 구현됨 (Phase 1) |
+| `akeir_physics` | `Engine/Physics` | §57 PhysicsWorld + Box2D v3.1.1, §22.2 contact 정렬 | 구현됨 (Phase 1) |
+| `akeir_commands` | `Engine/Commands` | §8 CommandBus/CommandKind/ChangeBuilder · §9 Transaction/journal · §10 Undo/History · §49 apply · §50 dry-run · §78 ChangeSet · §78.1 override 매핑 | 구현됨 (Phase 3) — [README](../Engine/Commands/README.md) |
+| `akeir_testing` | `Engine/Testing` | §23 Test Scenario 러너 · §23.1 assertion 표현식(Expr) · §24 results.json/JUnit · §22.2 run-twice + snapshot diff | 구현됨 (Phase 5 테스트 부분) — [README](../Engine/Testing/README.md) |
+| `akeir_platform` | `Engine/Platform` | §20 SDL3 init/창/driver 보고 · §88.3 InputMap · §20.1 창 모드 accumulator 루프 + `--record` | 구현됨 (Phase 2, `AKEIR_WITH_SDL`) — [README](../Engine/Platform/README.md) |
+| `akeir_render` | `Engine/Render` | §27 Renderer2D(SDL_Renderer; software capture) · §27.1 compareCaptures | 구현됨 (Phase 2, `AKEIR_WITH_SDL`) — [README](../Engine/Render/README.md) |
+| `akeir_validation` | `Engine/Validation` | §29 rule registry, SARIF 출력 | 예정 — 지금은 `Project::validate()` + `validateComponentJson` 이 규칙이고 `--fix` 는 CLI 가 CommandBus 로 적용한다 |
 | `akeir` | `Tools/CLI` | §11 CLI · §12 envelope/TTY · §13 exit code · §15 capabilities(tools 15 + busCommands) · 읽기: run/dump/query/validate/fmt/schema/explain/entity list · 쓰기(MutationCommands.cpp, 전부 CommandBus 경유): entity/component/set/tag/prefab/world/apply/undo/redo/history/cmd · `validate --fix` · `test`(TestCommands.cpp) · `capture`/`input map`/창 모드 `run`(SdlCommands.cpp, SDL 빌드) · `serve`/`serve status|stop`/`tx *`/`run status`(Serve.cpp) · `mcp`(Mcp.cpp) | 구현됨 (Phase 0–5, 7 명령; one-shot 또는 serve 포워딩) |
-| `pme_game` | `Game/Source` | 샘플 게임 component(Health/Movement/PlayerController/EnemyAI) + systems (§60, §71) | 구현됨 (Phase 1) |
-| `pme_tests` | `Tests` | 각 모듈 단위 테스트 | 74 케이스 (Core/Runtime/Reflection/Serialization/ECS/Commands/Testing + Render[SDL]) |
+| `akeir_game` | `Game/Source` | 샘플 게임 component(Health/Movement/PlayerController/EnemyAI) + systems (§60, §71) | 구현됨 (Phase 1) |
+| `akeir_tests` | `Tests` | 각 모듈 단위 테스트 | 74 케이스 (Core/Runtime/Reflection/Serialization/ECS/Commands/Testing + Render[SDL]) |
 
 ## Core 모듈 파일 ↔ §
 
 | 파일 | § | 한 줄 |
 |---|---|---|
-| `pme/core/Json.h` | §5.3 | `pme::Json = nlohmann::ordered_json` (키 순서 보존) |
-| `pme/core/Id.h/.cpp` | §7.1–7.4 | TypeID grammar, base32, UUIDv7 단조 생성, UUIDv8 결정적 파생, parse/validate/short-form |
-| `pme/core/Hash.h/.cpp` | §22.2, §37, §52 | FNV-1a 64, SplitMix64, `Hasher`(float bit pattern), SHA-256 |
-| `pme/core/Rng.h/.cpp` | §22.2 | xoshiro256** + SplitMix64 seeding, (worldSeed, name) 스트림, state 노출, jump |
-| `pme/core/Time.h` | §22.2 | `SimTime`(tick, dt 상수) / `WallTime`(ns, ISO-8601) / `Stopwatch` |
-| `pme/core/Log.h/.cpp` | §28 | OTel 필드 JSONL, stderr/파일/ring sink, `PME_LOG` 매크로 |
-| `pme/core/Diagnostic.h/.cpp` | §79 | Diagnostic/Fix/Applicability/Location, toJson/fromJson, fingerprint |
-| `pme/core/Envelope.h/.cpp` | §12, §13 | Envelope, CommandError, ErrorCategory → exit code |
-| `pme/core/ExitCodes.h` | §13 | exit code 표 |
-| `pme/core/Crash.h/.cpp` | §88.4 | minidump 핸들러, watchdog, crash/timeout envelope |
+| `akeir/core/Json.h` | §5.3 | `akeir::Json = nlohmann::ordered_json` (키 순서 보존) |
+| `akeir/core/Id.h/.cpp` | §7.1–7.4 | TypeID grammar, base32, UUIDv7 단조 생성, UUIDv8 결정적 파생, parse/validate/short-form |
+| `akeir/core/Hash.h/.cpp` | §22.2, §37, §52 | FNV-1a 64, SplitMix64, `Hasher`(float bit pattern), SHA-256 |
+| `akeir/core/Rng.h/.cpp` | §22.2 | xoshiro256** + SplitMix64 seeding, (worldSeed, name) 스트림, state 노출, jump |
+| `akeir/core/Time.h` | §22.2 | `SimTime`(tick, dt 상수) / `WallTime`(ns, ISO-8601) / `Stopwatch` |
+| `akeir/core/Log.h/.cpp` | §28 | OTel 필드 JSONL, stderr/파일/ring sink, `AKEIR_LOG` 매크로 |
+| `akeir/core/Diagnostic.h/.cpp` | §79 | Diagnostic/Fix/Applicability/Location, toJson/fromJson, fingerprint |
+| `akeir/core/Envelope.h/.cpp` | §12, §13 | Envelope, CommandError, ErrorCategory → exit code |
+| `akeir/core/ExitCodes.h` | §13 | exit code 표 |
+| `akeir/core/Crash.h/.cpp` | §88.4 | minidump 핸들러, watchdog, crash/timeout envelope |
 
 ## 현재 구현된 흐름 (Phase 1 + 3)
 

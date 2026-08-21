@@ -1,6 +1,6 @@
 // Tools/CLI/SdlCommands.cpp — 렌더/창이 필요한 명령: `akeir capture`, `akeir run`(창 모드), `akeir input map`, 그리고 `akeir test` 의 capture hook.
 // 설계 문서 §20 (창/driver), §20.1 (창 모드 accumulator), §27 (capture), §27.1 (golden 비교), §88.3 (input.json).
-// PME_WITH_SDL=OFF(msvc-headless) 빌드에서는 전부 FEATURE_UNAVAILABLE 을 돌려준다 — 같은 command 표를 유지해 capabilities 가 일관되게.
+// AKEIR_WITH_SDL=OFF(msvc-headless) 빌드에서는 전부 FEATURE_UNAVAILABLE 을 돌려준다 — 같은 command 표를 유지해 capabilities 가 일관되게.
 //
 //   akeir capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff diff.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--world W] [--seed S] [--json]
 //     software renderer (CPU) 로 그린다 — 창/GPU 없이 결정적 PNG (ADR-0026). --compare 가 있으면 §27.1 비교 결과 + exit 3 on mismatch.
@@ -8,30 +8,30 @@
 //   akeir input map [--json]        Config/input.json 이 SDL 에서 어떻게 해석되는지 (scancode, 미지원 바인딩)
 #include "Commands.h"
 #include "GameSystems.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/FpEnv.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
-#include "pme/ecs/PlayWorld.h"
-#include "pme/runtime/Components.h"
-#include "pme/testing/TestRunner.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/FpEnv.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
+#include "akeir/ecs/PlayWorld.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/testing/TestRunner.h"
 
-#ifdef PME_HAS_SDL
-#include "pme/platform/Interactive.h"
-#include "pme/platform/InputMap.h"
-#include "pme/platform/Platform.h"
-#include "pme/render/Renderer2D.h"
+#ifdef AKEIR_HAS_SDL
+#include "akeir/platform/Interactive.h"
+#include "akeir/platform/InputMap.h"
+#include "akeir/platform/Platform.h"
+#include "akeir/render/Renderer2D.h"
 #endif
 
 #include <filesystem>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
 Envelope unavailable(const std::string& command) {
     return Envelope::failure(command, CommandError::make(ErrorCategory::Precondition, "FEATURE_UNAVAILABLE",
-        "This build has no SDL3 (PME_WITH_SDL=OFF, preset msvc-headless). Build the msvc-debug preset for capture / windowed run.", Json{{"preset", "msvc-debug"}}));
+        "This build has no SDL3 (AKEIR_WITH_SDL=OFF, preset msvc-headless). Build the msvc-debug preset for capture / windowed run.", Json{{"preset", "msvc-debug"}}));
 }
 
 bool buildWorld(Context& ctx, Project& prj, const std::string& command, Envelope& fail, std::unique_ptr<PlayWorld>& out) {
@@ -59,7 +59,7 @@ bool buildWorld(Context& ctx, Project& prj, const std::string& command, Envelope
     return true;
 }
 
-#ifdef PME_HAS_SDL
+#ifdef AKEIR_HAS_SDL
 
 /// SDL 을 dummy driver 로 한 번만 초기화 (capture / test 용: 창 없음)
 Platform& headlessSdl() {
@@ -68,7 +68,7 @@ Platform& headlessSdl() {
         PlatformConfig pc; pc.videoDriver = "dummy"; pc.window = false;
         std::string err;
         p = Platform::init(pc, &err);
-        if (!p) PME_LOG(Error, "cli", "sdl_init_failed", err);
+        if (!p) AKEIR_LOG(Error, "cli", "sdl_init_failed", err);
     }
     return *p;
 }
@@ -140,7 +140,7 @@ Envelope cmdRunWindowed(Context& ctx) {
     ic.maxTicks = ctx.args.getInt("ticks").value_or(0);
     ic.tickRate = prj->tickRate();
     ic.recordInputsPath = ctx.args.getOr("record", "");
-    PME_LOG(Info, "runtime", "run_start", "Windowed run starting.", Json{{"videoDriver", platform->currentVideoDriver()}, {"renderer", renderer->backendName()}});
+    AKEIR_LOG(Info, "runtime", "run_start", "Windowed run starting.", Json{{"videoDriver", platform->currentVideoDriver()}, {"renderer", renderer->backendName()}});
     InteractiveResult ir = runInteractive(*platform, *renderer, *world, input, ic);
     Json r = ir.toJson();
     r["mode"] = "windowed";
@@ -149,7 +149,7 @@ Envelope cmdRunWindowed(Context& ctx) {
     r["world"] = world->worldId();
     r["seed"] = world->seed();
     if (!ic.recordInputsPath.empty()) r["recordedInputs"] = ic.recordInputsPath;
-    r["fpFlagsHash"] = PME_FP_FLAGS_HASH;
+    r["fpFlagsHash"] = AKEIR_FP_FLAGS_HASH;
     Envelope env = Envelope::success("run.start", r);
     for (auto& d : inputDiags) env.withWarning(d);
     return env;
@@ -178,7 +178,7 @@ Envelope cmdInputMap(Context&) { return unavailable("input.map"); }
 } // namespace
 
 bool sdlAvailable() {
-#ifdef PME_HAS_SDL
+#ifdef AKEIR_HAS_SDL
     return true;
 #else
     return false;
@@ -188,7 +188,7 @@ bool sdlAvailable() {
 Envelope runWindowed(Context& ctx) { return cmdRunWindowed(ctx); }
 
 void installCaptureHooks(TestRunnerOptions& opts) {
-#ifdef PME_HAS_SDL
+#ifdef AKEIR_HAS_SDL
     opts.capture = [](const PlayWorld& w, int width, int height, const std::string& out, std::string* err) { return captureWorld(w, width, height, out, err); };
     opts.compare = [](const std::string& expected, const std::string& actual, const Json& tolJ, const std::string& diffOut) {
         CaptureTolerance tol;
@@ -207,4 +207,4 @@ void registerSdlCommands(std::vector<CommandSpec>& t) {
     t.push_back({"input.map", {"input", "map"}, "Query", "Show the resolved input action map", "Config/input.json as SDL scancodes; lists unsupported bindings (gamepad/mouse).", "akeir input map [--json]", true, false, true, cmdInputMap});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

@@ -1,10 +1,10 @@
 // Runtime_Application.cpp — 설계 문서 §20.1 (fixed-tick headless 루프), §22.1 T0 (run-twice 동일 hash), §88.3 (InputFrame)
 #include <doctest/doctest.h>
-#include "pme/runtime/Application.h"
-#include "pme/runtime/DemoSimulation.h"
-#include "pme/core/FpEnv.h"
+#include "akeir/runtime/Application.h"
+#include "akeir/runtime/DemoSimulation.h"
+#include "akeir/core/FpEnv.h"
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Application: run twice with same seed and inputs gives identical hash sequence (T0, §22.1)") {
     RunConfig cfg; cfg.ticks = 300; cfg.seed = 381251; cfg.hashEvery = 10;

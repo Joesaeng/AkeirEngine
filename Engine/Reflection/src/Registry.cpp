@@ -1,10 +1,10 @@
-// pme/reflection/Registry.cpp — 설계 문서 §42.2, §14.1
-#include "pme/reflection/Registry.h"
+// akeir/reflection/Registry.cpp — 설계 문서 §42.2, §14.1
+#include "akeir/reflection/Registry.h"
 
 #include <cctype>
 #include <charconv>
 
-namespace pme {
+namespace akeir {
 
 namespace detail {
 std::vector<std::string> splitNames(const char* commaSeparated) {
@@ -106,4 +106,4 @@ Json allSchemas() {
     return j;
 }
 
-} // namespace pme
+} // namespace akeir

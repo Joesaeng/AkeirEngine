@@ -1,12 +1,12 @@
 // Expr.cpp — §23.1 고정 비교 문법: 토크나이저 → 재귀 하강 파서 → AST 평가
-#include "pme/testing/Expr.h"
+#include "akeir/testing/Expr.h"
 
 #include <cmath>
 #include <cctype>
 #include <functional>
 #include <set>
 
-namespace pme::expr {
+namespace akeir::expr {
 
 // ---------------------------------------------------------------- AST
 
@@ -473,4 +473,4 @@ Json Expr::probeBindings(const std::map<std::string, Json>& bindings) const {
     return out;
 }
 
-} // namespace pme::expr
+} // namespace akeir::expr

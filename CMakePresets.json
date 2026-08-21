@@ -32,7 +32,7 @@
       "displayName": "MSVC Debug, no SDL (headless-only)",
       "description": "SDL3 를 빌드하지 않는 빠른 구성. 창/입력 없이 Command·테스트만 돌릴 때.",
       "inherits": "msvc-base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "PME_WITH_SDL": "OFF" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "AKEIR_WITH_SDL": "OFF" }
     },
     {
       "name": "clang-cl-debug",

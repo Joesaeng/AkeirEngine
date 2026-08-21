@@ -57,18 +57,18 @@
 
 ## ADR-0008 JSON 문서 타입 = nlohmann::ordered_json
 - **상태**: 확정.
-- **결정**: `pme::Json = nlohmann::ordered_json`. 기본 `nlohmann::json` 은 키를 알파벳 정렬하므로 §5.3 키 순서 규약을 지킬 수 없다.
+- **결정**: `akeir::Json = nlohmann::ordered_json`. 기본 `nlohmann::json` 은 키를 알파벳 정렬하므로 §5.3 키 순서 규약을 지킬 수 없다.
 - **영향**: RFC 6901/6902 patch·diff 는 ordered_json 에서도 동작 (ChangeSet 구현에 사용).
 - **참조**: §5.3, §78
 
 ## ADR-0009 로그 = OTel Logs Data Model 을 JSONL 로, SDK 없이
 - **상태**: 확정.
-- **결정**: `pme::Logger` 가 `{ts, sev, level, event, body, scope, attrs}` 를 stderr/파일에 JSONL 로 쓴다. opentelemetry-cpp 는 가져오지 않는다. stdout 은 envelope 전용.
+- **결정**: `akeir::Logger` 가 `{ts, sev, level, event, body, scope, attrs}` 를 stderr/파일에 JSONL 로 쓴다. opentelemetry-cpp 는 가져오지 않는다. stdout 은 envelope 전용.
 - **참조**: §28
 
 ## ADR-0010 오류 객체 = §79 Diagnostic + category/retryable/details
 - **상태**: 확정 (설계 문서 v2 검증 반영 사항).
-- **결정**: `pme::CommandError` = `Diagnostic` + `category` + `retryable` + `details`. 필드명은 Diagnostic 과 동일 (`ruleId`, `message.text`, `logical`, `physical`, `fixes`, `fingerprint`, `helpUri`). exit code 표는 `pme/core/ExitCodes.h`.
+- **결정**: `akeir::CommandError` = `Diagnostic` + `category` + `retryable` + `details`. 필드명은 Diagnostic 과 동일 (`ruleId`, `message.text`, `logical`, `physical`, `fixes`, `fingerprint`, `helpUri`). exit code 표는 `akeir/core/ExitCodes.h`.
 - **참조**: §13, §79
 
 ## ADR-0011 CLI 프로세스 모델 = Phase 0–3 은 one-shot in-process, Phase 4 부터 `akeir serve` 데몬
@@ -83,12 +83,12 @@
 
 ## ADR-0013 ID = TypeID v0.3 grammar, authoring 은 UUIDv7, runtime-spawned 는 UUIDv8(결정적)
 - **상태**: 확정 (구현·검증됨).
-- **결정**: `pme::Id`. 출력 소문자, 입력은 정규화. 검증기는 v7/v8 만 허용. runtime-spawned id 는 `Id::deterministic(prefix, worldSeed, tick, ordinal)`.
+- **결정**: `akeir::Id`. 출력 소문자, 입력은 정규화. 검증기는 v7/v8 만 허용. runtime-spawned id 는 `Id::deterministic(prefix, worldSeed, tick, ordinal)`.
 - **참조**: §7.1–§7.4
 
 ## ADR-0014 테스트 프레임워크 = doctest v2.5.3 (MSVC 14.44 에서 `DOCTEST_CONFIG_USE_STD_HEADERS` 필요)
 - **상태**: 확정.
-- **결정**: 단일 실행 파일 `pme_tests.exe`, `doctest_discover_tests` 로 ctest 등록. MSVC 14.44 STL `<string_view>` 와 doctest 의 ostream 전방 선언이 충돌하므로 `DOCTEST_CONFIG_USE_STD_HEADERS` 를 정의한다.
+- **결정**: 단일 실행 파일 `akeir_tests.exe`, `doctest_discover_tests` 로 ctest 등록. MSVC 14.44 STL `<string_view>` 와 doctest 의 ostream 전방 선언이 충돌하므로 `DOCTEST_CONFIG_USE_STD_HEADERS` 를 정의한다.
 - **참조**: Tests/CMakeLists.txt
 
 ## ADR-0015 Play world 의 component 는 reflection 으로 Flecs 에 동적 등록한다
@@ -137,7 +137,7 @@
 
 ## ADR-0023 assertion 표현식 = 자체 evaluator(CEL 부분집합), undefined 는 오류
 - **상태**: 확정 (Phase 5).
-- **결정**: §23.1 의 "고정 비교 문법"을 `pme::expr::Expr`(~500 LOC) 로 직접 구현한다. cel-cpp/JSONPath/Luau 는 도입하지 않는다. 존재하지 않는 멤버·바인딩은 `has()` 안에서만 false 이고 다른 연산에 닿으면 `EvalError` → assertion 은 "evaluation error" 로 실패한다.
+- **결정**: §23.1 의 "고정 비교 문법"을 `akeir::expr::Expr`(~500 LOC) 로 직접 구현한다. cel-cpp/JSONPath/Luau 는 도입하지 않는다. 존재하지 않는 멤버·바인딩은 `has()` 안에서만 false 이고 다른 연산에 닿으면 `EvalError` → assertion 은 "evaluation error" 로 실패한다.
 - **근거**: §23.1 결정 그대로(AI 가 가장 못 쓰는 것은 새 DSL; 비교기 수준은 CEL 호환 문법으로 충분). 오타(`player.Helth`)나 따옴표 누락(`== Dead`)이 조용히 false 가 되면 테스트가 거짓 실패/거짓 통과를 낸다 — §23 초안의 실수가 정확히 그것이었다.
 - **참조**: §23.1, §61.1
 
@@ -192,8 +192,14 @@
 - **근거**: Project 복사는 수백 entity 에서 ms 단위라 일관성(쓰기 중 읽기 없음)을 공짜로 얻는다. play world 상주(`run.step`)는 §88.2 의 promote 규칙과 함께 별도 설계가 필요해 미룬다.
 - **참조**: §88.1, §88.2
 
-## ADR-0032 이름 = AKEIR Engine (실행 파일 `akeir.exe`); 코드 접두어 `pme` 유지; 릴리즈 = git tag `v0.1.0` + zip
+## ADR-0032 이름 = AKEIR Engine (실행 파일 `akeir.exe`); 코드 접두어 `akeir` 유지; 릴리즈 = git tag `v0.1.0` + zip
 - **상태**: 확정 (2026-08-22, 사용자 결정). 2026-08-21 에 MoltEngine/ME 로 정했다가 `moltengine.ai` 가 존재해 같은 날 개명.
-- **결정**: 엔진 이름 **AKEIR Engine**(표기 AKEIR, 발음 에이키어). 어원은 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는") — "인간의 손을 탈피한다(Molt of the human hand)"는 원래 의도를 한 단어로 담는다. 실행 파일은 `game.exe` → **`akeir.exe`** (엔진을 부르는 이름이 곧 CLI 이름; `akeir run`, `akeir mcp`). 저장소 디렉터리(`Project_ME`), C++ 네임스페이스 `pme`, CMake 타깃 접두어 `pme_`, 매크로 `PME_*`, 샘플 게임 네임스페이스 `game::` 은 바꾸지 않는다. 사용자에게 보이는 곳(`akeir version`, envelope `meta.engine`, MCP serverInfo, README/Docs, 설계 문서 `AKEIR.md`)만 AKEIR. 버전 정본은 git tag `v0.1.0` 하나(약어 태그 없음); 릴리즈는 `scripts/package.py` 가 만드는 zip(`git archive` + `bin/akeir.exe` + 상대 경로 `.mcp.json` + QUICKSTART; 리서치 자료·`.pdb` 제외).
-- **근거**: 웹/GitHub 검색에서 "Akeir Engine"/`AkeirEngine` 충돌 0건(2026-08-22). 다른 탈피 계열 후보(MoltEngine, Exuvia, Ecdysis, Instar, Apolysis)는 제품·게임·라이브러리와 충돌하거나(Instar 는 한국어로 인스타그램 연상) 발음이 어려웠다. 공개 저장소: https://github.com/Joesaeng/AkeirEngine.
+- **결정**: 엔진 이름 **AKEIR Engine**(표기 AKEIR, 발음 에이키어). 어원은 그리스어 ἀχειροποίητος(acheiropoiētos, "사람 손으로 만들어지지 않은")의 앞부분 ἄχειρ(acheir, "손이 없는") — "인간의 손을 탈피한다(Molt of the human hand)"는 원래 의도를 한 단어로 담는다. 실행 파일은 `game.exe` → **`akeir.exe`** (엔진을 부르는 이름이 곧 CLI 이름; `akeir run`, `akeir mcp`). 저장소 디렉터리(`Project_ME`), C++ 네임스페이스 `akeir`, CMake 타깃 접두어 `pme_`, 매크로 `AKEIR_*`, 샘플 게임 네임스페이스 `game::` 은 바꾸지 않는다. 사용자에게 보이는 곳(`akeir version`, envelope `meta.engine`, MCP serverInfo, README/Docs, 설계 문서 `AKEIR.md`)만 AKEIR. 버전 정본은 git tag `v0.1.0` 하나(약어 태그 없음); 릴리즈는 `scripts/package.py` 가 만드는 zip(`git archive` + `bin/akeir.exe` + 상대 경로 `.mcp.json` + QUICKSTART; 리서치 자료·`.pdb` 제외).
+- **근거**: 웹/GitHub 검색에서 "Akeir Engine"/`AkeirEngine` 충돌 0건(2026-08-22). 다른 탈피 계열 후보(MoltEngine, Exuvia, Ecdysis, Instar, Apolysis)는 제품·게임·라이브러리와 충돌하거나(Instar 는 한국어로 인스타그램 연상) 발음이 어려웠다. 공개 저장소: https://github.com/Joesaeng/AkeirEngine. 접두어까지 바꾼 근거: 외부 아키텍처 리뷰(2026-08-22) — "public API 에 옛 코드네임이 남으면 나중에 breaking change 가 된다".
 - **참조**: §72, Docs/00-START-HERE.md, QUICKSTART.md
+
+## ADR-0033 라이선스 = MIT; 저장소 위생(THIRD_PARTY_NOTICES, CONTRIBUTING, CI, portable `.mcp.json`)
+- **상태**: 확정 (2026-08-22, 외부 아키텍처 리뷰 P0/P1 반영).
+- **결정**: `LICENSE` = MIT (저작권자 Cho Seongmin). 정적으로 링크하는 의존성(Flecs/Box2D/nlohmann/doctest MIT, SDL3 zlib, CPM MIT)은 `THIRD_PARTY_NOTICES.md` 에 표로 고지하고 릴리즈 zip 에 포함한다. `CONTRIBUTING.md` 에 깨면 안 되는 원칙 4개(source of truth, CommandBus 경유, headless/어댑터, 결정론)를 적는다. `.mcp.json` 은 머신별 파일이라 gitignore 하고 `.mcp.json.example`(상대 경로) + `akeir mcp --print-config` 로 만든다. GitHub Actions(`.github/workflows/ci.yml`): headless(빌드·doctest·ctest 등록 수 = doctest 수 검사·validate·시나리오·run-twice 결정론·빈 프로젝트 round-trip) + SDL(빌드·테스트·golden capture·MCP tools/list = 15·release zip artifact). 참조 finalHash 와의 차이는 **경고**(컴파일러 버전이 다르면 T0 는 유지되어도 값은 다를 수 있다, §22.2).
+- **리뷰에서 거른 것(기록)**: Project fork 의 copy-on-write·증분 reindex·증분 validation(측정 전 최적화 금지 — 리뷰도 동의), CLI/MCP 읽기 경로의 서비스 API 추상화(Phase 6~7 시점), Phase 6 Editor, AgentBench 스위트, `akeir trace`, cook/binary 런타임 포맷, `akeir setup mcp`(`--print-config` 로 충분). 전부 `Docs/STATUS.md` "다음 할 일" 에만 둔다.
+- **참조**: §41, §46.2, §72

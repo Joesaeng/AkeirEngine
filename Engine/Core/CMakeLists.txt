@@ -1,5 +1,5 @@
-# pme_core — 설계 문서 §7 (ID), §13 (exit code), §22.2 (RNG/Time/Hash), §28 (Log), §79 (Diagnostic), §88.4 (Crash)
-add_library(pme_core STATIC
+# akeir_core — 설계 문서 §7 (ID), §13 (exit code), §22.2 (RNG/Time/Hash), §28 (Log), §79 (Diagnostic), §88.4 (Crash)
+add_library(akeir_core STATIC
   src/Id.cpp
   src/Hash.cpp
   src/Rng.cpp
@@ -9,12 +9,12 @@ add_library(pme_core STATIC
   src/Envelope.cpp
   src/FpEnv.cpp
 )
-add_library(pme::core ALIAS pme_core)
-target_include_directories(pme_core PUBLIC include)
-target_link_libraries(pme_core
+add_library(akeir::core ALIAS akeir_core)
+target_include_directories(akeir_core PUBLIC include)
+target_link_libraries(akeir_core
   PUBLIC  nlohmann_json::nlohmann_json det_fp_flags
-  PRIVATE pme_warnings)
+  PRIVATE akeir_warnings)
 if(WIN32)
-  target_link_libraries(pme_core PRIVATE dbghelp)
+  target_link_libraries(akeir_core PRIVATE dbghelp)
 endif()
-target_compile_definitions(pme_core PUBLIC PME_VERSION_STRING="${PROJECT_VERSION}")
+target_compile_definitions(akeir_core PUBLIC AKEIR_VERSION_STRING="${PROJECT_VERSION}")

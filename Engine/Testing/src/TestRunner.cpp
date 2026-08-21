@@ -1,12 +1,12 @@
 // TestRunner.cpp — §23 시나리오 파싱/실행, §23.1 assertion 평가, §22.2 run-twice 결정성, §24 results.json / JUnit
-#include "pme/testing/TestRunner.h"
+#include "akeir/testing/TestRunner.h"
 
-#include "pme/core/Hash.h"
-#include "pme/core/Id.h"
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
-#include "pme/runtime/Application.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Id.h"
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
+#include "akeir/runtime/Application.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-namespace pme {
+namespace akeir {
 
 // ---------------------------------------------------------------- parsing
 
@@ -350,7 +350,7 @@ TestResult TestRunner::run(const TestScenario& sc) {
         return r;
     }
     for (const auto& req : sc.requirements) {
-        if (req == "renderer" && !options_.capture) { r.status = "skipped"; r.error = "requires renderer (no CaptureHook: build with PME_WITH_SDL=ON)"; r.durationMs = sw.elapsedMs(); return r; }
+        if (req == "renderer" && !options_.capture) { r.status = "skipped"; r.error = "requires renderer (no CaptureHook: build with AKEIR_WITH_SDL=ON)"; r.durationMs = sw.elapsedMs(); return r; }
         if (req != "renderer") { r.status = "skipped"; r.error = "unknown requirement '" + req + "'"; r.durationMs = sw.elapsedMs(); return r; }
     }
     const std::uint64_t seed = sc.hasSeed ? sc.seed : project_.seed();
@@ -398,7 +398,7 @@ TestResult TestRunner::run(const TestScenario& sc) {
             r.failures.push_back(std::move(f));
             return false;
         };
-        if (!options_.capture) return failWith("TEST_CAPTURE_REQUIRES_RENDERER: this build/run has no renderer (build with PME_WITH_SDL=ON; msvc-debug preset)", nullptr);
+        if (!options_.capture) return failWith("TEST_CAPTURE_REQUIRES_RENDERER: this build/run has no renderer (build with AKEIR_WITH_SDL=ON; msvc-debug preset)", nullptr);
         if (artDir.empty()) return failWith("capture needs a resultsDir for artifacts", nullptr);
         char buf[96];
         std::snprintf(buf, sizeof(buf), "%s_%dx%d.png", p.a->id.c_str(), w, h);
@@ -574,9 +574,9 @@ TestReport TestRunner::runAll(const std::vector<TestScenario>& scenarios) {
     rep.run["videoDriver"] = "dummy";
     Stopwatch sw;
     for (const auto& s : scenarios) {
-        PME_LOG(Info, "test", "start", s.name, Json{{"file", s.file}});
+        AKEIR_LOG(Info, "test", "start", s.name, Json{{"file", s.file}});
         rep.tests.push_back(run(s));
-        PME_LOG(Info, "test", "done", s.name, Json{{"status", rep.tests.back().status}, {"ms", rep.tests.back().durationMs}});
+        AKEIR_LOG(Info, "test", "done", s.name, Json{{"status", rep.tests.back().status}, {"ms", rep.tests.back().durationMs}});
     }
     rep.durationMs = sw.elapsedMs();
     if (!options_.resultsDir.empty()) {
@@ -588,4 +588,4 @@ TestReport TestRunner::runAll(const std::vector<TestScenario>& scenarios) {
     return rep;
 }
 
-} // namespace pme
+} // namespace akeir

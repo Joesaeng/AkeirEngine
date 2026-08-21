@@ -1,8 +1,8 @@
-// pme/core/Crash.cpp — 설계 문서 §88.4
-#include "pme/core/Crash.h"
-#include "pme/core/Envelope.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/Time.h"
+// akeir/core/Crash.cpp — 설계 문서 §88.4
+#include "akeir/core/Crash.h"
+#include "akeir/core/Envelope.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/Time.h"
 
 #include <atomic>
 #include <condition_variable>
@@ -23,7 +23,7 @@
 #  include <dbghelp.h>
 #endif
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -144,4 +144,4 @@ void stopWatchdog() {
     std::abort();
 }
 
-} // namespace pme
+} // namespace akeir

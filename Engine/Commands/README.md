@@ -1,4 +1,4 @@
-# Engine/Commands (`pme_commands`)
+# Engine/Commands (`akeir_commands`)
 
 **프로젝트의 유일한 쓰기 경로.** CLI·Editor·MCP·`validate --fix` 는 전부 `CommandBus` 를 호출하고, 결과는 항상 `ChangeSet`(§78) 으로 남는다.
 설계 문서 §8 (CommandBus / CommandKind / ChangeBuilder), §8.1 (command id), §9 (Transaction, commit 절차), §10 (Undo/History), §49 (apply), §50 (dry-run), §78 (ChangeSet), §78.1 (Command → ops 매핑).
@@ -18,9 +18,9 @@ commit(cs): base 검사 → Cache/journal/<cs>.json → project 에 applyOps →
 
 | 파일 | § | 내용 |
 |---|---|---|
-| `include/pme/commands/ChangeSet.h`, `src/ChangeSet.cpp` | §78, §10.1, §9.2 | `ChangeOp{op, doc, path, from, value, before, blob, beforeBlob}`, `ChangeSet{id, tx, actor, createdAt, intent, base, ops, touched, lossy, diagnostics}`, `toJson/fromJson`, `inverse()`, `compose()`, `applyOps(docs, ops)`, `escapeToken/unescapeToken` |
-| `include/pme/commands/History.h`, `src/History.cpp` | §9.2, §10, §49 | `Cache/history/history.jsonl`(append-only) + `cursor.json` + `idempotency.json`, `Cache/journal/<cs>.json`(write-ahead) |
-| `include/pme/commands/CommandBus.h`, `src/CommandBus.cpp` | §8, §9, §10, §49, §50 | `CommandKind`, `ChangeBuilder`, `CommandContext`(fail/resolveEntity/resolvePrefab/resolveWorldDoc), `CommandDef`, `CommandBus`(execute/apply/tx/undo/redo/recoverJournal), `nextOrderKey` |
+| `include/akeir/commands/ChangeSet.h`, `src/ChangeSet.cpp` | §78, §10.1, §9.2 | `ChangeOp{op, doc, path, from, value, before, blob, beforeBlob}`, `ChangeSet{id, tx, actor, createdAt, intent, base, ops, touched, lossy, diagnostics}`, `toJson/fromJson`, `inverse()`, `compose()`, `applyOps(docs, ops)`, `escapeToken/unescapeToken` |
+| `include/akeir/commands/History.h`, `src/History.cpp` | §9.2, §10, §49 | `Cache/history/history.jsonl`(append-only) + `cursor.json` + `idempotency.json`, `Cache/journal/<cs>.json`(write-ahead) |
+| `include/akeir/commands/CommandBus.h`, `src/CommandBus.cpp` | §8, §9, §10, §49, §50 | `CommandKind`, `ChangeBuilder`, `CommandContext`(fail/resolveEntity/resolvePrefab/resolveWorldDoc), `CommandDef`, `CommandBus`(execute/apply/tx/undo/redo/recoverJournal), `nextOrderKey` |
 | `src/BuiltinCommands.cpp` | §8, §34, §78.1 | 내장 Mutation command 13개 + 각 args JSON Schema |
 
 ## Command 목록 (`akeir capabilities --json` → `result.busCommands[]`)

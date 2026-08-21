@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 enum class OutputMode { Auto, Json, Text, NdJson };
 
@@ -33,4 +33,4 @@ bool stdoutIsTty();
 /// "30s", "2m", "1500ms", "90" (초) → ms
 std::optional<long long> parseDurationMs(const std::string& text);
 
-} // namespace pme::cli
+} // namespace akeir::cli

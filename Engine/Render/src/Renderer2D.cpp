@@ -1,7 +1,7 @@
 // Renderer2D.cpp — SDL_Renderer 기반 placeholder 스프라이트 렌더 + PNG capture + golden 비교 (§27, §27.1)
-#include "pme/render/Renderer2D.h"
+#include "akeir/render/Renderer2D.h"
 
-#include "pme/runtime/Components.h"
+#include "akeir/runtime/Components.h"
 
 #include <SDL3/SDL.h>
 
@@ -9,7 +9,7 @@
 #include <cmath>
 #include <vector>
 
-namespace pme {
+namespace akeir {
 
 std::unique_ptr<Renderer2D> Renderer2D::createForWindow(SDL_Window* window, std::string* error) {
     std::unique_ptr<Renderer2D> r(new Renderer2D());
@@ -205,4 +205,4 @@ CaptureCompareResult compareCaptures(const std::string& expectedPng, const std::
     return r;
 }
 
-} // namespace pme
+} // namespace akeir

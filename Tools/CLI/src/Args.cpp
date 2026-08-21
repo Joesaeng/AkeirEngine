@@ -6,16 +6,16 @@
 
 #ifdef _WIN32
 #  include <io.h>
-#  define PME_ISATTY _isatty
-#  define PME_FILENO _fileno
+#  define AKEIR_ISATTY _isatty
+#  define AKEIR_FILENO _fileno
 #else
 #  include <unistd.h>
-#  define PME_ISATTY isatty
-#  define PME_FILENO fileno
+#  define AKEIR_ISATTY isatty
+#  define AKEIR_FILENO fileno
 #endif
 #include <cstdio>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 // 값이 따라오는 옵션 목록 — 이 목록에 없는 "--x" 는 flag 로 본다.
@@ -83,7 +83,7 @@ Args parseArgs(int argc, char** argv) {
     return parseArgs(v);
 }
 
-bool stdoutIsTty() { return PME_ISATTY(PME_FILENO(stdout)) != 0; }
+bool stdoutIsTty() { return AKEIR_ISATTY(AKEIR_FILENO(stdout)) != 0; }
 
 std::optional<long long> parseDurationMs(const std::string& text) {
     if (text.empty()) return std::nullopt;
@@ -99,4 +99,4 @@ std::optional<long long> parseDurationMs(const std::string& text) {
     return std::nullopt;
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

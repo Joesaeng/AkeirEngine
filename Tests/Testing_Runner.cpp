@@ -1,12 +1,12 @@
 // Testing_Runner.cpp — 설계 문서 §23 (setup/inputs/assert 의미론), §22.2 (run-twice), §24 (results/JUnit). 샘플 Game/ + Game/Source systems 사용.
 #include <doctest/doctest.h>
 #include "GameSystems.h"
-#include "pme/runtime/Components.h"
-#include "pme/testing/TestRunner.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/testing/TestRunner.h"
 
 #include <filesystem>
 
-using namespace pme;
+using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {
@@ -35,7 +35,7 @@ struct Fixture {
         game::registerGameComponents();
         prj = Project::load(sampleDir(), diags);
         REQUIRE(prj);
-        results = fs::temp_directory_path() / "pme_test_results";
+        results = fs::temp_directory_path() / "akeir_test_results";
         std::error_code ec;
         fs::remove_all(results, ec);
     }

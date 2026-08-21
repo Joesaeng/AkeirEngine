@@ -1,5 +1,5 @@
-// pme/core/FpEnv.cpp — 설계 문서 §22.2
-#include "pme/core/FpEnv.h"
+// akeir/core/FpEnv.cpp — 설계 문서 §22.2
+#include "akeir/core/FpEnv.h"
 
 #include <cfenv>
 #if defined(_MSC_VER)
@@ -7,10 +7,10 @@
 #endif
 #if defined(__SSE__) || defined(_M_X64) || defined(_M_IX86)
 #  include <xmmintrin.h>   // _mm_getcsr / _mm_setcsr (MXCSR: FTZ bit 15, DAZ bit 6)
-#  define PME_HAS_MXCSR 1
+#  define AKEIR_HAS_MXCSR 1
 #endif
 
-namespace pme {
+namespace akeir {
 
 Json FpEnvStatus::toJson() const {
     return Json{{"roundToNearest", roundToNearest}, {"flushToZero", flushToZero}, {"denormalsAreZero", denormalsAreZero}, {"ok", ok()}};
@@ -19,7 +19,7 @@ Json FpEnvStatus::toJson() const {
 FpEnvStatus fpEnvStatus() {
     FpEnvStatus s;
     s.roundToNearest = (std::fegetround() == FE_TONEAREST);
-#ifdef PME_HAS_MXCSR
+#ifdef AKEIR_HAS_MXCSR
     unsigned csr = _mm_getcsr();
     s.flushToZero = (csr & 0x8000u) != 0;
     s.denormalsAreZero = (csr & 0x0040u) != 0;
@@ -29,7 +29,7 @@ FpEnvStatus fpEnvStatus() {
 
 FpEnvStatus normalizeFpEnv() {
     std::fesetround(FE_TONEAREST);
-#ifdef PME_HAS_MXCSR
+#ifdef AKEIR_HAS_MXCSR
     unsigned csr = _mm_getcsr();
     csr &= ~0x8000u; // FTZ off
     csr &= ~0x0040u; // DAZ off
@@ -44,4 +44,4 @@ FpEnvStatus normalizeFpEnv() {
     return fpEnvStatus();
 }
 
-} // namespace pme
+} // namespace akeir

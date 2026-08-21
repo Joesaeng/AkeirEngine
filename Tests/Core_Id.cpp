@@ -1,12 +1,12 @@
 // Core_Id.cpp — 설계 문서 §7.1 TypeID / UUIDv7 / UUIDv8
 #include <doctest/doctest.h>
-#include "pme/core/Id.h"
+#include "akeir/core/Id.h"
 
 #include <cctype>
 #include <set>
 #include <vector>
 
-using namespace pme;
+using namespace akeir;
 
 TEST_CASE("Id: generate produces TypeID grammar with UUIDv7 (§7.1)") {
     Id id = Id::generate("entity");

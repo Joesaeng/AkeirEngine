@@ -11,9 +11,9 @@
 //                               apply 는 bus.apply 로 (changes[].op = busCommands[].id).
 //   로그는 stderr(JSONL) 로만 — stdout 은 MCP 채널 (§28: MCP Logging 은 쓰지 않는다).
 #include "Serve.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/core/Log.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/core/Log.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <iostream>
 #include <sstream>
@@ -29,7 +29,7 @@
 #include <io.h>
 #endif
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
@@ -135,7 +135,7 @@ int runMcp(Context& ctx) {
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY);   // LF 만 (텍스트 모드는 \r\n 을 붙인다)
 #endif
-    PME_LOG(Info, "mcp", "ready", "akeir mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
+    AKEIR_LOG(Info, "mcp", "ready", "akeir mcp ready (stdio)", Json{{"projectDir", ctx.projectDir}});
     std::string line;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
@@ -154,7 +154,7 @@ int runMcp(Context& ctx) {
             std::string requested = params.value("protocolVersion", "2025-06-18");
             bool known = false; for (const char** v = kSupportedVersions; *v; ++v) if (requested == *v) known = true;
             resp = rpcOk(id, Json{{"protocolVersion", known ? requested : "2025-06-18"}, {"capabilities", Json{{"tools", Json{{"listChanged", false}}}}},
-                                  {"serverInfo", Json{{"name", "akeir"}, {"title", "AKEIR Engine"}, {"version", PME_VERSION_STRING}}}, {"instructions", instructionsText()}});
+                                  {"serverInfo", Json{{"name", "akeir"}, {"title", "AKEIR Engine"}, {"version", AKEIR_VERSION_STRING}}}, {"instructions", instructionsText()}});
         } else if (method == "notifications/initialized" || method.rfind("notifications/", 0) == 0) {
             continue;   // 알림에는 응답하지 않는다
         } else if (method == "ping") {
@@ -178,7 +178,7 @@ int runMcp(Context& ctx) {
         std::fputs(resp.dump().c_str(), stdout); std::fputc('\n', stdout); std::fflush(stdout);
         if (host.stopRequested()) break;
     }
-    PME_LOG(Info, "mcp", "stopped", "akeir mcp stopped", Json{{"requests", host.requests()}});
+    AKEIR_LOG(Info, "mcp", "stopped", "akeir mcp stopped", Json{{"requests", host.requests()}});
     return kExitOk;
 }
 
@@ -188,4 +188,4 @@ void registerMcpCommands(std::vector<CommandSpec>& t) {
                  "akeir mcp [--project DIR] [--actor A] | akeir mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

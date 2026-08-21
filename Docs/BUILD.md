@@ -48,19 +48,19 @@ ctest --preset msvc-headless
 | 경로 | 내용 |
 |---|---|
 | `build/<preset>/bin/akeir.exe` | CLI (§11). `msvc-release` 는 static CRT(`/MT`) 라 VC++ 재배포 없이 다른 PC 에서 돈다 — 릴리즈 zip 의 `bin/akeir.exe` |
-| `build/<preset>/Tests/pme_tests.exe` | doctest 단위 테스트 |
+| `build/<preset>/Tests/akeir_tests.exe` | doctest 단위 테스트 |
 | `build/<preset>/compile_commands.json` | clangd 등용 |
 
 ## 테스트
 
 ```bash
-build\msvc-headless\Tests\pme_tests.exe              # 전체
-build\msvc-headless\Tests\pme_tests.exe -tc="Id*"    # 이름 필터
-build\msvc-headless\Tests\pme_tests.exe --list-test-cases
+build\msvc-headless\Tests\akeir_tests.exe              # 전체
+build\msvc-headless\Tests\akeir_tests.exe -tc="Id*"    # 이름 필터
+build\msvc-headless\Tests\akeir_tests.exe --list-test-cases
 scripts\build.cmd msvc-headless test                 # ctest 경유 (doctest_discover_tests 로 케이스별 등록)
 ```
 
-테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다. **TEST_CASE 이름에 `;` 금지** — `doctest_discover_tests` 가 CMake 목록 구분자로 쪼개 그 테스트를 조용히 건너뛴다(v0.1.0 검증에서 발견). 정본은 `pme_tests.exe` 직접 실행.
+테스트 파일은 `Tests/<모듈>_<주제>.cpp`. 각 파일 첫 줄 주석에 관련 설계 § 를 적는다. **TEST_CASE 이름에 `;` 금지** — `doctest_discover_tests` 가 CMake 목록 구분자로 쪼개 그 테스트를 조용히 건너뛴다(v0.1.0 검증에서 발견). 정본은 `akeir_tests.exe` 직접 실행.
 
 ## CLI 스모크 테스트 (Phase 0 성공 기준, §74)
 
@@ -104,7 +104,7 @@ cd Game
 ## 쓰기 명령으로 Phase 3 확인 (§8–§10, §49, §50) — 샘플을 복사해서 해 본다
 
 ```bash
-xcopy /E /I Game C:\tmp\pme_demo && cd C:\tmp\pme_demo
+xcopy /E /I Game C:\tmp\akeir_demo && cd C:\tmp\akeir_demo
 set G=C:\Project\Project_ME\build\msvc-headless\bin\akeir.exe
 %G% set name:Goblin_01 Health.max 45 --json                 # 인스턴스 → set override. changes[0].op = add …/set/~1components~1Health~1max
 %G% set name:Goblin Movement.speed 4.5 --json               # prefab 편집 → 모든 고블린 (ADR-0021)
@@ -183,7 +183,7 @@ echo {"jsonrpc":"2.0","id":1,"method":"tools/list"} | ..\build\msvc-headless\bin
 | Flecs | v4.1.6 | MIT | ECS (runtime world) |
 | Box2D | v3.1.1 | MIT | 2D physics |
 | doctest | v2.5.3 | MIT | 테스트 |
-| SDL3 | release-3.4.14 | zlib | 창/입력/headless driver (`PME_WITH_SDL=ON` 일 때만) |
+| SDL3 | release-3.4.14 | zlib | 창/입력/headless driver (`AKEIR_WITH_SDL=ON` 일 때만) |
 
 소스는 `.cpm-cache/<dir>/` 에 shallow clone 되어 있으면 그것을 쓰고, 없으면 configure 때 GitHub 에서 **shallow clone** 으로 받는다 (릴리즈 zip 에는 `.cpm-cache/` 가 없다 — 첫 configure 에 네트워크가 필요하고 1분쯤 걸린다).
 새 머신에서 캐시를 미리 만들려면:
@@ -200,7 +200,7 @@ git clone --depth 1 --branch release-3.4.14 https://github.com/libsdl-org/SDL.gi
 ## 결정론 플래그 (§22.2)
 
 `cmake/DetFpFlags.cmake` 가 `det_fp_flags` INTERFACE target 을 만든다: MSVC `/fp:precise`, Clang/GCC `-ffp-contract=off -fno-fast-math`.
-모든 엔진 타깃이 link 하고, Box2D 에는 `PME_FP_FLAGS_OPTIONS` 를 직접 건다 (export set 때문).
+모든 엔진 타깃이 link 하고, Box2D 에는 `AKEIR_FP_FLAGS_OPTIONS` 를 직접 건다 (export set 때문).
 `akeir version --json` 의 `fpFlagsHash` 가 적용된 플래그의 해시다 — replay header(§22.3)와 비교한다.
 
 ## 알려진 빌드 이슈

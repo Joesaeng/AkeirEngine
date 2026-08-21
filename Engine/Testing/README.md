@@ -1,4 +1,4 @@
-# Engine/Testing (`pme_testing`)
+# Engine/Testing (`akeir_testing`)
 
 데이터화된 테스트 시나리오(§23) 러너와 assertion 표현식(§23.1). `akeir test` 가 쓴다. Game/ 을 모른다 — world 를 만드는 `WorldFactory`(system 등록 포함)를 호출자가 준다.
 
@@ -6,8 +6,8 @@
 
 | 파일 | § | 내용 |
 |---|---|---|
-| `include/pme/testing/Expr.h`, `src/Expr.cpp` | §23.1 | 고정 비교 문법: 토크나이저 → 재귀 하강 파서 → AST 평가. `Expr::parse / eval / evalBool / probeBindings / roots` |
-| `include/pme/testing/TestRunner.h`, `src/TestRunner.cpp` | §23, §24, §22.2 | `TestScenario::fromJson`, `TestRunner::discover / run / runAll / diffSnapshots`, `TestReport::toJson / junitXml` |
+| `include/akeir/testing/Expr.h`, `src/Expr.cpp` | §23.1 | 고정 비교 문법: 토크나이저 → 재귀 하강 파서 → AST 평가. `Expr::parse / eval / evalBool / probeBindings / roots` |
+| `include/akeir/testing/TestRunner.h`, `src/TestRunner.cpp` | §23, §24, §22.2 | `TestScenario::fromJson`, `TestRunner::discover / run / runAll / diffSnapshots`, `TestReport::toJson / junitXml` |
 
 ## 시나리오 파일 (`<project>/Tests/**/*.test.json`)
 

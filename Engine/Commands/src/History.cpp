@@ -1,7 +1,7 @@
 // History.cpp — §9.2 journal, §10 history/cursor, §49 idempotency 캐시
-#include "pme/commands/History.h"
+#include "akeir/commands/History.h"
 
-#include "pme/serialization/Canonical.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <filesystem>
 #include <fstream>
@@ -9,7 +9,7 @@
 
 namespace fs = std::filesystem;
 
-namespace pme {
+namespace akeir {
 
 History::History(std::string projectRoot) : root_(std::move(projectRoot)) {}
 
@@ -205,4 +205,4 @@ bool History::rememberIdempotent(std::string_view key, const Json& envelope, std
     return writeTextAtomic(fs::path(historyDir()) / "idempotency.json", jcsDump(all) + "\n", error);
 }
 
-} // namespace pme
+} // namespace akeir

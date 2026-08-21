@@ -1,4 +1,4 @@
-// Tools/CLI/MutationCommands.cpp — 쓰기 명령. 전부 pme::CommandBus 를 거친다 (§8 단일 Command API, §11 CLI).
+// Tools/CLI/MutationCommands.cpp — 쓰기 명령. 전부 akeir::CommandBus 를 거친다 (§8 단일 Command API, §11 CLI).
 // 설계 문서 §8 (entity/component/property 명령), §9 (commit), §10 (undo/redo/history), §49 (apply), §50 (--dry-run), §78 (envelope.changes = ChangeSet ops)
 //
 //   akeir entity create <name> [--world W] [--parent P] [--prefab X] [--components JSON] [--set JSON] [--tags a,b]
@@ -19,10 +19,10 @@
 //   공통 옵션: --dry-run (§50: fork 에서 실행, 파일 안 건드림, changes 는 돌려줌), --no-validate (commit 전 문서 검증 생략), --actor <id> (history 태깅, 기본 "cli"), --json
 //   출력: §12 envelope. ok 면 result + changes[] (ChangeSet ops) + meta.changeSet. 실패면 error (category/ruleId/details).
 #include "Commands.h"
-#include "pme/commands/CommandBus.h"
-#include "pme/core/ExitCodes.h"
-#include "pme/runtime/Components.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/commands/CommandBus.h"
+#include "akeir/core/ExitCodes.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/serialization/Canonical.h"
 #include "GameSystems.h"
 
 #include <fstream>
@@ -30,7 +30,7 @@
 #include <iterator>
 #include <sstream>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
@@ -374,4 +374,4 @@ void registerMutationCommands(std::vector<CommandSpec>& t) {
     t.push_back({"cmd", {"cmd"}, "Mutation", "Run any bus command by id", "Escape hatch for commands without CLI sugar (e.g. document.patch). Args as JSON.", "akeir cmd <command.id> --args '{json}'", false, false, false, cmdGeneric});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

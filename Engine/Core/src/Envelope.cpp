@@ -1,7 +1,7 @@
-// pme/core/Envelope.cpp — 설계 문서 §12, §13
-#include "pme/core/Envelope.h"
+// akeir/core/Envelope.cpp — 설계 문서 §12, §13
+#include "akeir/core/Envelope.h"
 
-namespace pme {
+namespace akeir {
 
 const char* errorCategoryName(ErrorCategory c) {
     switch (c) {
@@ -85,7 +85,7 @@ Json Envelope::toJson() const {
     Json m = meta;
     if (!m.contains("schemaVersion")) m["schemaVersion"] = 1;
     if (!m.contains("engine")) m["engine"] = "AKEIR";
-    if (!m.contains("engineVersion")) m["engineVersion"] = PME_VERSION_STRING;
+    if (!m.contains("engineVersion")) m["engineVersion"] = AKEIR_VERSION_STRING;
     if (!m.contains("dryRun")) m["dryRun"] = false;
     if (!m.contains("truncated")) m["truncated"] = false;
     if (!m.contains("nextCursor")) m["nextCursor"] = nullptr;
@@ -99,4 +99,4 @@ int Envelope::exitCode() const {
     return defaultExitCode(error.category);
 }
 
-} // namespace pme
+} // namespace akeir

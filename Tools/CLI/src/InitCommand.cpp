@@ -12,18 +12,18 @@
 //   이 command 는 CommandBus 를 거치지 않는다 — 아직 프로젝트가 없기 때문. 만든 뒤 `akeir validate` 를 돌려 결과를 envelope 에 싣는다.
 #include "Commands.h"
 #include "GameSystems.h"
-#include "pme/core/Id.h"
-#include "pme/reflection/Registry.h"
-#include "pme/runtime/Components.h"
-#include "pme/runtime/Project.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/Id.h"
+#include "akeir/reflection/Registry.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/runtime/Project.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <filesystem>
 #include <fstream>
 
 namespace fs = std::filesystem;
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
@@ -146,4 +146,4 @@ void registerInitCommands(std::vector<CommandSpec>& t) {
                  "akeir project init <name> [--dir DIR] [--tick-rate 60] [--seed S] [--force] [--json]", false, false, false, cmdProjectInit});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

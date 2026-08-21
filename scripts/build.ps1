@@ -37,7 +37,7 @@ if ($Test) { $steps += " && ctest --preset $Preset" }
 
 # cmd.exe 에서 vcvars64 를 call 한 뒤 같은 셸에서 cmake 를 실행한다 (환경변수 전파).
 # 따옴표 중첩 문제를 피하려고 임시 .cmd 파일을 만든다.
-$batch = Join-Path $env:TEMP ("pme-build-" + [guid]::NewGuid().ToString("N") + ".cmd")
+$batch = Join-Path $env:TEMP ("akeir-build-" + [guid]::NewGuid().ToString("N") + ".cmd")
 $installerDir = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
 @(
   "@echo off",

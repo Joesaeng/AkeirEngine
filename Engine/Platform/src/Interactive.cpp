@@ -1,9 +1,9 @@
 // Interactive.cpp — 창 모드 루프 (§20.1 accumulator 는 여기에만 있다)
-#include "pme/platform/Interactive.h"
+#include "akeir/platform/Interactive.h"
 
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
-#include "pme/core/Time.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
+#include "akeir/core/Time.h"
 
 #include <SDL3/SDL.h>
 
@@ -11,7 +11,7 @@
 #include <chrono>
 #include <fstream>
 
-namespace pme {
+namespace akeir {
 
 Json InteractiveResult::toJson() const {
     return Json{{"ticksRun", ticksRun}, {"finalHash", toHex64(finalHash)}, {"wallMs", wallMs}, {"frames", frames}, {"closedByUser", closedByUser}};
@@ -56,4 +56,4 @@ InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayW
     return r;
 }
 
-} // namespace pme
+} // namespace akeir

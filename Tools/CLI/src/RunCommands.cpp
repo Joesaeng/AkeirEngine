@@ -2,17 +2,17 @@
 // 설계 문서 §16 (query), §20.1 (headless run), §22.3 (hashes.jsonl), §25 (dump), §26.1 (snapshot), §88.1 (Phase 1: one-shot — 매 명령이 world 를 새로 build 한다; `akeir serve` 는 Phase 4)
 #include "Commands.h"
 #include "GameSystems.h"
-#include "pme/core/Hash.h"
-#include "pme/core/Log.h"
-#include "pme/ecs/PlayWorld.h"
-#include "pme/runtime/Components.h"
-#include "pme/runtime/DemoSimulation.h"
-#include "pme/runtime/Project.h"
-#include "pme/serialization/Canonical.h"
+#include "akeir/core/Hash.h"
+#include "akeir/core/Log.h"
+#include "akeir/ecs/PlayWorld.h"
+#include "akeir/runtime/Components.h"
+#include "akeir/runtime/DemoSimulation.h"
+#include "akeir/runtime/Project.h"
+#include "akeir/serialization/Canonical.h"
 
 #include <fstream>
 
-namespace pme::cli {
+namespace akeir::cli {
 
 namespace {
 
@@ -108,9 +108,9 @@ Envelope cmdRun(Context& ctx) {
         cfg.seed = o->world->seed();
         cfg.tickRate = o->project->tickRate();
         Logger::global().setRunId(Id::generate("run").str());
-        PME_LOG(Info, "runtime", "run_start", "Headless run starting.", Json{{"game.world", o->worldId}, {"game.seed", cfg.seed}, {"game.ticks", cfg.ticks}});
+        AKEIR_LOG(Info, "runtime", "run_start", "Headless run starting.", Json{{"game.world", o->worldId}, {"game.seed", cfg.seed}, {"game.ticks", cfg.ticks}});
         rr = Application::runHeadless(cfg, *o->world, *input);
-        PME_LOG(Info, "runtime", "run_end", "Headless run finished.", Json{{"game.ticks_run", rr.ticksRun}, {"game.final_hash", toHex64(rr.finalHash)}});
+        AKEIR_LOG(Info, "runtime", "run_end", "Headless run finished.", Json{{"game.ticks_run", rr.ticksRun}, {"game.final_hash", toHex64(rr.finalHash)}});
         r = rr.toJson(rr.hashes.size() <= 64 && hashOut.empty());
         r["simulation"] = "project";
         r["world"] = o->worldId;
@@ -125,7 +125,7 @@ Envelope cmdRun(Context& ctx) {
     }
     if (!hashOut.empty()) { std::ofstream out(hashOut, std::ios::binary); for (const auto& h : hashesJson(rr)) out << h.dump() << '\n'; r["hashesFile"] = hashOut; }
     r["videoDriver"] = "none";
-    r["fpFlagsHash"] = PME_FP_FLAGS_HASH;
+    r["fpFlagsHash"] = AKEIR_FP_FLAGS_HASH;
     {
         // run handle (§46.2: run.start / run.status 쌍). serve 안에서는 registry 에 남아 `akeir run status <id>` 로 다시 조회된다
         std::string runId = Id::generate("run").str();
@@ -214,4 +214,4 @@ void registerRunCommands(std::vector<CommandSpec>& table) {
         "akeir query --with EnemyAI,Transform --without Collider2D [--ticks N] [--components] [--limit N] [--json]", true, false, true, cmdQuery});
 }
 
-} // namespace pme::cli
+} // namespace akeir::cli

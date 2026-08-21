@@ -4,9 +4,9 @@
 
 ## 파일 / 네임스페이스
 
-- 네임스페이스 `pme` (Project ME). 모듈별 하위 네임스페이스는 두지 않는다 (CLI 만 `pme::cli`).
-- 헤더는 `Engine/<Module>/include/pme/<module>/Name.h`, 소스는 `Engine/<Module>/src/Name.cpp`. include 는 `"pme/core/Id.h"` 형태.
-- 모든 헤더 첫 줄 주석: 파일 역할 + **설계 문서 § 번호**. 예: `// pme/core/Id.h — Persistent ID. 설계 문서 §7.1`.
+- 네임스페이스 `akeir`. 모듈별 하위 네임스페이스는 두지 않는다 (CLI 만 `akeir::cli`).
+- 헤더는 `Engine/<Module>/include/akeir/<module>/Name.h`, 소스는 `Engine/<Module>/src/Name.cpp`. include 는 `"akeir/core/Id.h"` 형태.
+- 모든 헤더 첫 줄 주석: 파일 역할 + **설계 문서 § 번호**. 예: `// akeir/core/Id.h — Persistent ID. 설계 문서 §7.1`.
 - 주석은 한국어 가능, 식별자는 영어. 문자열 리터럴(로그 body, 진단 message)은 영어 — agent 가 읽는다.
 - UTF-8, LF, 4-space indent (C++), 2-space (CMake/JSON). 배치 파일(.cmd)은 ASCII 만.
 
@@ -23,16 +23,16 @@
 §22.2 체크리스트를 코드 규칙으로 옮긴 것. `akeir lint`(§62, 예정)가 검사한다.
 
 - wall-clock 금지: `std::chrono::*_clock`, `SDL_GetTicks`, `time()` 는 sim 코드에서 호출하지 않는다. `SimTime` 만 받는다.
-- RNG 는 `pme::RngStream` 만. `rand()`, `std::random_device`, `std::mt19937` 금지. (authoring ID 발급 `Id::generate` 만 예외 — sim 밖이다.)
+- RNG 는 `akeir::RngStream` 만. `rand()`, `std::random_device`, `std::mt19937` 금지. (authoring ID 발급 `Id::generate` 만 예외 — sim 밖이다.)
 - `std::unordered_map/set` 순회 금지, `std::hash` 금지, 포인터 값으로 비교/정렬 금지, 동률 가능한 키에 `std::sort` 금지(`std::stable_sort` 또는 total order).
-- `std::sin/cos/tan/atan2/exp/pow` 금지 → `pme::det::Sin/Cos/...` (예정). `std::sqrt` 는 허용.
+- `std::sin/cos/tan/atan2/exp/pow` 금지 → `akeir::det::Sin/Cos/...` (예정). `std::sqrt` 는 허용.
 - float 해시는 bit pattern (`Hasher::f32`).
 - 병렬 시스템 출력은 `(entityId, seq)` 로 정렬 후 적용.
 - 모든 sim 타깃은 `det_fp_flags` 를 link 한다.
 
 ## JSON (§5.3)
 
-- 문서 타입은 `pme::Json` (ordered_json). 출력은 단 하나의 canonical serializer(`pme_serialization`, `writeCanonicalFile`)로만 — 직접 `dump()` 해서 프로젝트 파일을 쓰지 않는다.
+- 문서 타입은 `akeir::Json` (ordered_json). 출력은 단 하나의 canonical serializer(`akeir_serialization`, `writeCanonicalFile`)로만 — 직접 `dump()` 해서 프로젝트 파일을 쓰지 않는다.
 - `ordered_json` 의 `==` 는 키 순서까지 비교한다. 값 동등성은 `jcsDump(a) == jcsDump(b)` (ADR-0018).
 - 파일에 주석 없음. 메모는 `description`/`notes` 필드.
 - ID 는 파일 안의 `"id"`; 외부 자산은 `<file>.meta.json` sidecar.
@@ -48,14 +48,14 @@
 ## 플랫폼 / 렌더 (§20, §27)
 
 - SDL 을 아는 코드는 `Engine/Platform`, `Engine/Render`, `Tools/CLI/src/SdlCommands.cpp` 뿐이다. sim(`Engine/Runtime`, `Engine/ECS`, `Game/`)과 `Engine/Testing` 은 SDL 헤더를 include 하지 않는다 — 렌더가 필요한 곳은 훅(`WorldFactory`, `CaptureHook`)으로 주입받는다.
-- 두 모듈은 `if(PME_WITH_SDL)` 안에서만 추가되고, CLI 는 `PME_HAS_SDL` 매크로로 분기한다. SDL 없는 빌드에서도 같은 command 표가 유지되어야 한다(`FEATURE_UNAVAILABLE`).
+- 두 모듈은 `if(AKEIR_WITH_SDL)` 안에서만 추가되고, CLI 는 `AKEIR_HAS_SDL` 매크로로 분기한다. SDL 없는 빌드에서도 같은 command 표가 유지되어야 한다(`FEATURE_UNAVAILABLE`).
 - 골든/비교용 픽셀은 software renderer 로만 만든다 (ADR-0026). 창 백엔드 픽셀을 테스트에 쓰지 않는다.
 
 ## 로그 / 출력 (§12, §28)
 
-- stdout 에는 envelope 만. 로그는 `PME_LOG(level, scope, name, body, attrs)` → stderr JSONL.
+- stdout 에는 envelope 만. 로그는 `AKEIR_LOG(level, scope, name, body, attrs)` → stderr JSONL.
 - 게임 전용 attrs 키는 `game.` 접두어.
-- 진단은 `pme::Diagnostic` — `ruleId` 는 SCREAMING_SNAKE, `message.text` 는 "고치는 법"을 말한다.
+- 진단은 `akeir::Diagnostic` — `ruleId` 는 SCREAMING_SNAKE, `message.text` 는 "고치는 법"을 말한다.
 
 ## 테스트
 

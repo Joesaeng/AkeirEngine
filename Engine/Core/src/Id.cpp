@@ -1,6 +1,6 @@
-// pme/core/Id.cpp — 설계 문서 §7.1
-#include "pme/core/Id.h"
-#include "pme/core/Hash.h"
+// akeir/core/Id.cpp — 설계 문서 §7.1
+#include "akeir/core/Id.h"
+#include "akeir/core/Hash.h"
 
 #include <algorithm>
 #include <cctype>
@@ -8,7 +8,7 @@
 #include <mutex>
 #include <random>
 
-namespace pme {
+namespace akeir {
 
 namespace {
 
@@ -190,4 +190,4 @@ bool Id::matchesShortForm(std::string_view shortForm) const {
     return text_.size() >= s.size() && text_.compare(0, s.size(), s) == 0 && s.size() > prefixLen_ + 1;
 }
 
-} // namespace pme
+} // namespace akeir
