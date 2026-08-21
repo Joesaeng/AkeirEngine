@@ -17,7 +17,7 @@
 | 7 | MCP sidecar + §72 실험 | **부분** — `game mcp`(stdio MCP 서버, initialize/server/discover/tools/list/tools/call, tools 15/15 enabled). §72 비교 실험은 미실행 |
 
 빌드: `scripts\build.cmd msvc-headless all` 과 `msvc-debug all`(SDL3 포함) 통과. 테스트: `pme_tests.exe` 75 케이스(msvc-debug; headless 는 73) 통과 + `game test` 3 시나리오(SDL) / 2 + 1 skipped(headless) 통과 (2026-08-21). 샘플 `Game/` 은 `validate` 0 error / 0 warning(canonical), `run --headless --ticks 600` 의 기준 finalHash = `0xbc23e49a65efb2e8` (msvc-debug / msvc-headless 동일; 이 값이 바뀌면 결정론 또는 샘플 데이터가 바뀐 것).
-git: 첫 커밋 + 태그 `ME0.1`/`v0.1.0` (2026-08-21, 사용자 지시). 릴리즈 zip 은 `python scripts/package.py` → `dist/MoltEngine-0.1.zip` (소스 + Docs + `bin/game.exe` + QUICKSTART). 이후 커밋도 사용자가 지시할 때만.
+git: 공개 저장소 **https://github.com/Joesaeng/MoltEngine** (branch `main`, 태그 `ME0.1` = `v0.1.0`, GitHub Release ME0.1 에 `MoltEngine-0.1.zip` 첨부 — 소스 + Docs + `bin/game.exe` + QUICKSTART; 리서치 자료와 `.pdb` 는 제외). 릴리즈 zip 은 `python scripts/package.py`. **커밋/푸시는 사용자가 지시할 때만.**
 
 ## §86 체크리스트 진행
 

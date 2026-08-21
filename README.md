@@ -1,6 +1,6 @@
 # MoltEngine (ME) 0.1 — AI-Native Game Framework
 
-> 저장소 디렉터리명은 `Project_ME`, 엔진 이름은 **MoltEngine**, 코드 네임스페이스/타깃 접두어는 `pme`. 릴리즈 태그 `ME0.1` = `v0.1.0`.
+> 저장소 디렉터리명은 `Project_ME`, 엔진 이름은 **MoltEngine**, 코드 네임스페이스/타깃 접두어는 `pme`. 릴리즈: https://github.com/Joesaeng/MoltEngine/releases (태그 `ME0.1` = `v0.1.0`, zip 에 빌드된 `bin/game.exe` 포함 — `QUICKSTART.md`).
 
 AI(코딩 에이전트)가 인간용 에디터를 거치지 않고 **텍스트 프로젝트 데이터 + Command API + headless 실행**만으로 게임을 만들 수 있게 하는 개인용 C++ 게임 프레임워크 PoC.
 
