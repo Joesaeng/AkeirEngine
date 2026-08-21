@@ -44,4 +44,4 @@ MCP for Claude Code: `copy .mcp.json.example .mcp.json` (or `akeir mcp --print-c
 | Design document (§0–§89) | [`AKEIR.md`](AKEIR.md) |
 | Contributing · licenses | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`LICENSE`](LICENSE) (MIT) · [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) |
 
-The repository directory is still called `Project_ME` on the author's machine (historical); code uses `akeir::`, headers `akeir/…`, CMake targets `akeir_*`, macros `AKEIR_*`. Docs are written in Korean; the CLI, error messages and schemas are English.
+The repository directory is still called `Project_ME` on the author's machine (historical); code uses `akeir::`, headers `akeir/…`, CMake targets `akeir_*`, macros `AKEIR_*`. `Docs/` and the design spec `AKEIR.md` are written in Korean (the author's working language); the READMEs, QUICKSTART, the CLI, error messages and schemas are English.

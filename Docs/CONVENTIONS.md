@@ -66,3 +66,4 @@
 
 - 결정 → `Docs/DECISIONS.md` ADR. 진행 → `Docs/STATUS.md`. 설계 변경 → 설계 문서 해당 § 에 `▶ v3` 표기.
 - 새 모듈을 만들면 `Engine/<Module>/README.md` 를 함께 만든다: 역할, § 대응, 공개 API 요약, 구현 범위/미구현.
+- **언어**: 모든 `README.md`, `QUICKSTART.md`, CONTRIBUTING, CLI 출력·오류 메시지·스키마는 **영어**. `Docs/*.md` 와 설계 문서 `AKEIR.md` 는 한국어(작업 언어) — 2026-08-22 통일.

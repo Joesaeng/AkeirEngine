@@ -1,16 +1,16 @@
-# Game/Source (`akeir_game`) — 샘플 게임 "TestArena"
+# Game/Source (`akeir_game`) — the sample game "TestArena"
 
-AI 가 가장 자주 수정하는 영역 (§60). 엔진은 이 디렉터리를 모른다 (§76).
+The area an AI edits most often (§60). The engine knows nothing about this directory (§76).
 
-- `GameComponents.h/.cpp` : `Health`, `Movement`, `PlayerController`, `EnemyAI` (+ `AiState` enum). 전부 aggregate, `AKEIR_REFLECT_*` 로 등록. `registerGameComponents()` 앵커.
-- `GameSystems.h/.cpp` : `registerGameSystems(world)` — spawn hook `HealthInit`(current = max), systems `PlayerMovement`(MoveX/MoveY → velocity) → `EnemyChase`(가장 가까운 `#player` 추적, detection/attack range) → `EnemyAttack`(cooldown, damage, dead).
-- 엔진 API 는 `PlayWorld` 의 `query / get<T> / rng / contactEvents` 만 쓴다 (§59). wall-clock·전역 RNG·unordered 순회 금지 (§22.2). 동률은 id 순으로 결정한다.
+- `GameComponents.h/.cpp`: `Health`, `Movement`, `PlayerController`, `EnemyAI` (+ the `AiState` enum). All aggregates, registered with `AKEIR_REFLECT_*`. `registerGameComponents()` is the anchor.
+- `GameSystems.h/.cpp`: `registerGameSystems(world)` — the spawn hook `HealthInit` (current = max), then the systems `PlayerMovement` (MoveX/MoveY → velocity) → `EnemyChase` (chases the nearest `#player` within detection/attack range) → `EnemyAttack` (cooldown, damage, dead).
+- The only engine API used is `PlayWorld`'s `query / get<T> / rng / contactEvents` (§59). No wall clock, no global RNG, no unordered iteration (§22.2). Ties are broken by id order.
 
-데이터: `Game/project.json`, `Game/Prefabs/*.prefab.json`, `Game/Worlds/TestArena.world.json`, `Game/Config/input.json`. `akeir validate` / `akeir fmt` / `akeir run --headless` / `akeir query` / `akeir dump` 가 `Game/` 안에서(또는 `--project Game`) 동작한다.
+Data: `Game/project.json`, `Game/Prefabs/*.prefab.json`, `Game/Worlds/TestArena.world.json`, `Game/Config/input.json`. `akeir validate` / `akeir fmt` / `akeir run --headless` / `akeir query` / `akeir dump` work from inside `Game/` (or with `--project Game`).
 
-실행 파일/테스트는 이 라이브러리를 `$<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_game>` 로 링크한다 (component 등록 보존).
+Executables and tests link this library with `$<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_game>` (keeps the component registrations).
 
-## 새 component / system 을 추가하려면
-1. `GameComponents.h` 에 aggregate struct, `GameComponents.cpp` 에 `AKEIR_REFLECT_BEGIN … END` + `registerGameComponents()` 에 앵커 한 줄.
-2. system 은 `GameSystems.cpp` 에 함수로 쓰고 `registerGameSystems` 에 순서대로 `addSystem`.
-3. prefab JSON 에 component 를 넣고 `akeir validate` → `akeir run --headless --ticks N --json` 으로 확인.
+## Adding a component / system
+1. Add an aggregate struct to `GameComponents.h`, an `AKEIR_REFLECT_BEGIN … END` block to `GameComponents.cpp`, and one anchor line in `registerGameComponents()`.
+2. Write the system as a function in `GameSystems.cpp` and `addSystem` it in order inside `registerGameSystems`.
+3. Put the component into a prefab JSON, then `akeir validate` → `akeir run --headless --ticks N --json` to check.
