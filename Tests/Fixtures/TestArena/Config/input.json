@@ -1,0 +1,76 @@
+{
+  "$schema": "game://schema/input/1",
+  "schemaVersion": 1,
+  "actions": {
+    "MoveX": {
+      "type": "axis",
+      "bindings": [
+        {
+          "keys": [
+            "A",
+            "D"
+          ],
+          "scale": [
+            -1,
+            1
+          ]
+        },
+        {
+          "keys": [
+            "Left",
+            "Right"
+          ],
+          "scale": [
+            -1,
+            1
+          ]
+        },
+        {
+          "gamepad": "leftStickX"
+        }
+      ]
+    },
+    "MoveY": {
+      "type": "axis",
+      "bindings": [
+        {
+          "keys": [
+            "S",
+            "W"
+          ],
+          "scale": [
+            -1,
+            1
+          ]
+        },
+        {
+          "keys": [
+            "Down",
+            "Up"
+          ],
+          "scale": [
+            -1,
+            1
+          ]
+        },
+        {
+          "gamepad": "leftStickY"
+        }
+      ]
+    },
+    "Attack": {
+      "type": "button",
+      "bindings": [
+        {
+          "key": "Space"
+        },
+        {
+          "mouse": "left"
+        },
+        {
+          "gamepad": "south"
+        }
+      ]
+    }
+  }
+}

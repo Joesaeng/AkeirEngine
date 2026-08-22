@@ -11,13 +11,8 @@ namespace fs = std::filesystem;
 
 namespace {
 std::string sampleDir() {
-    fs::path p = fs::current_path();
-    for (int i = 0; i < 8; ++i) {
-        if (fs::exists(p / "Game" / "project.json")) return (p / "Game").string();
-        if (!p.has_parent_path() || p.parent_path() == p) break;
-        p = p.parent_path();
-    }
-    return "";
+    // frozen fixture (Tests/Fixtures/TestArena, ADR-0036) — never the user's Game/, which may be any game
+    return std::string(AKEIR_TEST_FIXTURES) + "/TestArena";
 }
 WorldFactory factory() {
     return [](const Project& prj, const std::string& worldId, const PlayWorldConfig& cfg, std::vector<Diagnostic>& d) {
@@ -162,7 +157,7 @@ TEST_CASE("TestRunner: expectedFinalHash mismatch and parse problems are reporte
     CHECK(d[0]["b"] == 2.5);
 }
 
-TEST_CASE("TestRunner: discover finds Game/Tests/**/*.test.json and the shipped scenarios pass") {
+TEST_CASE("TestRunner: discover finds <fixture>/Tests/**/*.test.json and the frozen scenarios pass") {
     Fixture f;
     TestRunner r = f.runner();
     auto all = r.discover("Tests");

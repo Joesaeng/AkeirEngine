@@ -11,15 +11,9 @@ using namespace akeir;
 namespace fs = std::filesystem;
 
 namespace {
-// 저장소의 샘플 프로젝트 Game/ 를 찾는다 (테스트 실행 위치와 무관하게 위로 올라가며 탐색)
 std::string sampleProjectDir() {
-    fs::path p = fs::current_path();
-    for (int i = 0; i < 8; ++i) {
-        if (fs::exists(p / "Game" / "project.json")) return (p / "Game").string();
-        if (!p.has_parent_path() || p.parent_path() == p) break;
-        p = p.parent_path();
-    }
-    return "";
+    // frozen fixture (Tests/Fixtures/TestArena, ADR-0036) — never the user's Game/, which may be any game
+    return std::string(AKEIR_TEST_FIXTURES) + "/TestArena";
 }
 std::string idOf(const Project& prj, const char* selector) {
     auto v = prj.resolveSelector(selector);
@@ -28,7 +22,7 @@ std::string idOf(const Project& prj, const char* selector) {
 }
 } // namespace
 
-TEST_CASE("Project: load sample Game/TestArena, index ids, resolve selectors (§6, §7.4)") {
+TEST_CASE("Project: load the TestArena fixture, index ids, resolve selectors (§6, §7.4)") {
     registerBuiltinComponents();
     std::string dir = sampleProjectDir();
     REQUIRE_FALSE(dir.empty());

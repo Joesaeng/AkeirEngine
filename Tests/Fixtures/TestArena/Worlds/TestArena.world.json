@@ -1,0 +1,85 @@
+{
+  "$schema": "game://schema/world/1",
+  "schemaVersion": 1,
+  "id": "world_01m0j3qp6ce00agtz4r2hnntzy",
+  "name": "TestArena",
+  "entities": {
+    "entity_01m0j3qp6ge02b2zmdjg8tbd39": {
+      "name": "Arena",
+      "parent": null,
+      "order": "a0",
+      "components": {
+        "Transform": {
+          "position": [0, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
+    },
+    "entity_01m0j3qp6he02ry5s8k9zd8cvj": {
+      "name": "Player",
+      "prefab": "prefab_01m0j3qp6de00t7ar0k009fhd3",
+      "parent": "entity_01m0j3qp6ge02b2zmdjg8tbd39",
+      "order": "a0",
+      "set": {
+        "/components/Transform/position": [0, 0, 0]
+      }
+    },
+    "entity_01m0j3qp6je0396z0xknpfwvjc": {
+      "name": "Goblin_01",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": "entity_01m0j3qp6pe05a2sf031ga6zq5",
+      "order": "a0",
+      "set": {
+        "/components/Transform/position": [5, 0, 0]
+      }
+    },
+    "entity_01m0j3qp6ke03ty1d2d68mjqzw": {
+      "name": "Goblin_02",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": "entity_01m0j3qp6pe05a2sf031ga6zq5",
+      "order": "a1",
+      "set": {
+        "/components/Transform/position": [6, 2, 0]
+      }
+    },
+    "entity_01m0j3qp6me04bnr0gdb975zq6": {
+      "name": "Goblin_03",
+      "prefab": "prefab_01m0j3qp6fe01rfhd2rqpk447f",
+      "parent": "entity_01m0j3qp6pe05a2sf031ga6zq5",
+      "order": "a2",
+      "set": {
+        "/components/Transform/position": [7, -2, 0]
+      }
+    },
+    "entity_01m0j3qp6ne04rh71th9m5rht4": {
+      "name": "MainCamera",
+      "parent": null,
+      "order": "a1",
+      "components": {
+        "Camera2D": {
+          "orthoSize": 12,
+          "primary": true,
+          "background": [0.1, 0.1, 0.12, 1]
+        },
+        "Transform": {
+          "position": [0, 0, -10],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
+    },
+    "entity_01m0j3qp6pe05a2sf031ga6zq5": {
+      "name": "Encounter_01",
+      "parent": "entity_01m0j3qp6ge02b2zmdjg8tbd39",
+      "order": "a1",
+      "components": {
+        "Transform": {
+          "position": [8, 0, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
+    }
+  }
+}

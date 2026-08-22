@@ -1,5 +1,6 @@
 # The game executable — `build/<preset>/bin/<ProjectName>.exe` (name from Game/project.json; "TestArena.exe" for the sample).
 # Double-click to play: no console, logs in <project>/Cache/player.log. Only in SDL builds.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/Game/project.json")   # renaming the project renames the exe
 file(READ "${CMAKE_SOURCE_DIR}/Game/project.json" _akeir_project_json)
 string(JSON _akeir_game_name ERROR_VARIABLE _akeir_json_err GET "${_akeir_project_json}" name)
 if(_akeir_json_err OR NOT _akeir_game_name)

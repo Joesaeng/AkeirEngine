@@ -224,3 +224,10 @@
 - **대안(기각)**: code generation / AST 검사(빌드 파이프라인 추가), single-source declaration 매크로(`AKEIR_REFLECT(Health, (max, …), (current, …))` — 등록 API 전면 교체). 둘 다 현재 마찰 대비 과하다.
 - **참조**: §42.2, §43, PRINCIPLES §6/§7/§26
 
+## ADR-0036 엔진 단위 테스트는 `Game/` 이 아니라 `Tests/Fixtures/TestArena`(불변 사본)를 쓴다; `Game/` 은 통째로 교체 가능하다
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P1 — 실측: `Game/` 을 CatSurvivor 로 바꾸면 엔진 테스트 7개가 실패/크래시).
+- **문제**: `Tests/*.cpp` 가 cwd 에서 위로 올라가며 `Game/project.json` 을 찾고 `TestArena/Arena`, `Goblin_01`, `game::EnemyAI` 같은 샘플의 이름과 C++ 타입을 전제했다. 테스트 바이너리가 `akeir_game`(사용자 게임) 을 링크하므로 샘플을 교체하는 순간 엔진 회귀 테스트가 깨진다 — 사용자가 엔진 테스트를 자기 게임에 맞게 고쳐 버리는 유인이 생긴다(실제로 그렇게 했다).
+- **결정**: `Tests/Fixtures/TestArena/` 에 원본 샘플의 **불변 사본**(project.json, Worlds, Prefabs, Config, Tests + Golden, `Source/` = `akeir_fixture_game` 라이브러리, 같은 `game` 네임스페이스·헤더 이름)을 둔다. `akeir_tests` 는 `AKEIR_TEST_FIXTURES` 컴파일 정의로 그 경로를 받고 `akeir_fixture_game` 만 링크한다(`akeir_game` 은 링크하지 않는다). `Game/` 은 `akeir.exe`·게임 실행 파일·`akeir test` 가 쓰는 살아 있는 샘플이며 어떤 게임으로든 바꿀 수 있다. fixture 는 테스트를 통과시키려고 고치지 않는다 — 필요하면 fixture 를 추가한다.
+- **검증**: `Game/` 을 CatSurvivor 로 바꾼 채 수정 없는 `akeir_tests.exe` 80/80 통과, `CatSurvivor.exe` 생성·실행, `akeir test` 통과. 샘플 복원 후 finalHash `0xbc23e49a65efb2e8` 불변.
+- **영향**: Game/Source 와 fixture Source 의 C++ 이 두 벌이다(의도). 게임 실행 파일 이름은 `Game/project.json` 의 `name` 에서 오며 `CMAKE_CONFIGURE_DEPENDS` 로 바뀌면 재구성된다.
+- **참조**: §60, §76, PRINCIPLES §3/§16

@@ -1,0 +1,16 @@
+{
+  "$schema": "game://schema/prefab/1",
+  "schemaVersion": 1,
+  "id": "prefab_01m0j3qp6fe01rfhd2rqpk447f",
+  "name": "GoblinElite",
+  "tags": ["enemy", "elite"],
+  "base": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+  "set": {
+    "/components/Collider2D/radius": 0.55,
+    "/components/EnemyAI/damage": 20,
+    "/components/Health/max": 80,
+    "/components/Movement/speed": 4,
+    "/components/SpriteRenderer/tint": [1, 0.5, 0.5, 1],
+    "/components/Transform/scale": [1.3, 1.3, 1]
+  }
+}

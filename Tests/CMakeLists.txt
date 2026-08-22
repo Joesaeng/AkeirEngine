@@ -18,9 +18,12 @@ add_executable(akeir_tests
   Testing_Expr.cpp
   Testing_Runner.cpp
 )
+# The tests use the FROZEN TestArena copy (Tests/Fixtures), not the user's Game/ — Game/ may be any game (ADR-0036).
+add_subdirectory(Fixtures/TestArena/Source)
 target_link_libraries(akeir_tests PRIVATE akeir::core akeir::runtime akeir::reflection akeir::serialization akeir::ecs akeir::physics akeir::commands akeir::testing
-  $<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_game>   # component 등록(static initializer)이 버려지지 않게
+  $<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_fixture_game>   # fixture component 등록(static initializer)이 버려지지 않게
   doctest::doctest akeir_warnings)
+target_compile_definitions(akeir_tests PRIVATE AKEIR_TEST_FIXTURES="${CMAKE_CURRENT_SOURCE_DIR}/Fixtures")
 # MSVC 14.44 (VS 17.14) STL 의 <string_view> 가 doctest 의 ostream forward-declaration 과 충돌한다 → 표준 헤더 사용 (doctest 권장 회피책)
 target_compile_definitions(akeir_tests PRIVATE DOCTEST_CONFIG_USE_STD_HEADERS)
 if(AKEIR_WITH_SDL)

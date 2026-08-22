@@ -1,7 +1,7 @@
 // Commands_Bus.cpp — 설계 문서 §8 (CommandBus, Mutation command), §9 (tx, commit 절차, journal), §10 (undo/redo, conflict), §49 (apply, $ref, idempotency),
 // §50 (dry-run), §78.1 (인스턴스 override 매핑), §5.3 (commit 후 파일이 canonical)
 //
-// 샘플 프로젝트 Game/ 를 임시 디렉터리로 복사해 실제 파일 commit 까지 검증한다.
+// TestArena fixture 를 임시 디렉터리로 복사해 실제 파일 commit 까지 검증한다.
 #include <doctest/doctest.h>
 #include "akeir/commands/CommandBus.h"
 #include "akeir/runtime/Components.h"
@@ -20,13 +20,8 @@ namespace fs = std::filesystem;
 namespace {
 
 std::string sampleProjectDir() {
-    fs::path p = fs::current_path();
-    for (int i = 0; i < 8; ++i) {
-        if (fs::exists(p / "Game" / "project.json")) return (p / "Game").string();
-        if (!p.has_parent_path() || p.parent_path() == p) break;
-        p = p.parent_path();
-    }
-    return "";
+    // frozen fixture (Tests/Fixtures/TestArena, ADR-0036) — never the user's Game/, which may be any game
+    return std::string(AKEIR_TEST_FIXTURES) + "/TestArena";
 }
 
 std::string readFile(const fs::path& p) {
