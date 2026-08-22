@@ -1,15 +1,15 @@
-# AKEIR Engine 0.1.2 — QUICKSTART
+# AKEIR Engine 0.1.3 — QUICKSTART
 
-This zip is release v0.1.2 of the **AKEIR Engine** (pronounced *ay-KEER*; Greek ἄχειρ "without hands" — a game engine for making games without human hands): **source + docs + a prebuilt `bin\akeir.exe` (Windows x64, SDL included, static CRT — no redistributable needed)**.
+This zip is release v0.1.3 of the **AKEIR Engine** (pronounced *ay-KEER*; Greek ἄχειρ "without hands" — a game engine for making games without human hands): **source + docs + a prebuilt `bin\akeir.exe` (Windows x64, SDL included, static CRT — no redistributable needed)**.
 Purpose: a session with no prior conversation context (human or AI) unpacks this directory and **tries to build a game with this engine**.
 
 ## 0. What is inside
 
 ```
-AKEIR-0.1.2/
+AKEIR-0.1.3/
 ├── QUICKSTART.md              ← this file
 ├── RELEASE.md                 version, git hash, sha256 of bin/akeir.exe
-├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (notices for the statically linked Flecs/Box2D/nlohmann/SDL3) · CONTRIBUTING.md
+├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (notices for the statically linked Flecs/Box2D/nlohmann/SDL3/stb) · CONTRIBUTING.md
 ├── bin\akeir.exe               the prebuilt CLI. Works without building. `akeir` in the examples below = this file. Put bin\ on PATH or use the full path
 ├── bin\TestArena.exe           the sample game — double-click to play (WASD, ESC/close to quit). Rebuilding your own game produces bin\<YourProjectName>.exe
 ├── .mcp.json                  MCP server registration for Claude Code (bin\akeir.exe mcp --project Game). Relative path — open this folder as the Claude Code project root
@@ -105,4 +105,4 @@ start %G% serve                                      # in another window. From n
 - Known limitations: the known-issues / technical-debt section of `Docs/STATUS.md` (e.g. MCP argument typos are silently ignored, `query` has `limit` but no cursor).
 - On a crash, report `<project>/Cache/crash/*.dmp` together with the envelope's `error.details.lastLogs` (regenerate the `.pdb` symbols by checking out the same tag and running `scripts\build.cmd msvc-release all`).
 
-git: this release is tag `v0.1.2` (v0.1.0 first release; v0.1.1 rebuild-safe MCP + reflection completeness; v0.1.2 the game executable, texture assets, PlayWorld runtime primitives, test-DSL discoverability, bitmap text/HUD and the resident `play` tool — from the first real game made with the engine). The zip contains no `.git` (`git archive`) — a new project simply creates its own repository (`project init` writes a `.gitignore`).
+git: this release is tag `v0.1.3` (v0.1.0 first release; v0.1.1 rebuild-safe MCP + reflection completeness; v0.1.2 the game executable, texture assets, PlayWorld runtime primitives, test-DSL discoverability, bitmap text/HUD and the resident `play` tool; v0.1.3 — from the second round of feedback on that game — the stale-contact crash fix, collision layers, profiler + stress benchmark, pointer input with edge states, screen-space sprites + hit-test, pause, and TTF fonts (Korean)). The zip contains no `.git` (`git archive`) — a new project simply creates its own repository (`project init` writes a `.gitignore`).

@@ -312,7 +312,7 @@ TEST_CASE("Assets: validate reports missing source, bad rects, unknown sub-asset
 }
 
 // ---- collision layers (ADR-0043) ----
-TEST_CASE("PhysicsLayers: project.json physics.layers → symmetric category/mask bits; undeclared partners are problems") {
+TEST_CASE("PhysicsLayers: project.json physics.layers → symmetric category/mask bits — undeclared partners are problems") {
     std::vector<std::pair<std::string, std::string>> problems;
     Json pj = Json{{"physics", Json{{"layers", Json{{"Player", Json::array({"Enemy", "Pickup"})}, {"Enemy", Json::array({"Enemy"})}, {"Pickup", Json::array()}, {"Effect", Json::array()}, {"Weapon", Json::array({"Enemy", "Ghost"})}}}}}};
     PhysicsLayers pl = PhysicsLayers::fromProjectJson(pj, &problems);

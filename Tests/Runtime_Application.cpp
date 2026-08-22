@@ -89,7 +89,7 @@ TEST_CASE("FpEnv: normalize yields round-to-nearest without FTZ/DAZ (§22.2)") {
     CHECK(fpEnvStatus().toJson()["ok"] == true);
 }
 
-TEST_CASE("InputFrame: edges come from withEdges only; pointer and edges round-trip through JSON for replay (ADR-0045)") {
+TEST_CASE("InputFrame: edges come from withEdges only — pointer and edges round-trip through JSON for replay (ADR-0045)") {
     InputFrame a; a.tick = 0; a.actions["Attack"] = 1.f; a.actions["MoveX"] = 0.3f;
     a.pointer.present = true; a.pointer.x = 100; a.pointer.y = 50; a.pointer.viewportW = 1280; a.pointer.viewportH = 720; a.pointer.buttons = kPointerLeft;
     InputFrame f0 = InputFrame::withEdges(a, nullptr);
