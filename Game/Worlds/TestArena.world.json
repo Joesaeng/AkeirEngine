@@ -101,6 +101,56 @@
           "scale": [1, 1, 1]
         }
       }
+    },
+    "entity_01m0mrsat4etssp6eypb3t263y": {
+      "name": "HudHpBarBack",
+      "tags": ["hud"],
+      "parent": null,
+      "order": "a3",
+      "components": {
+        "SpriteRenderer": {
+          "sprite": "",
+          "layer": "Default",
+          "tint": [0.15, 0.15, 0.15, 1],
+          "flipX": false,
+          "flipY": false,
+          "sortingOrder": 90,
+          "screenSpace": true,
+          "anchor": [0, 0],
+          "pixelSize": [200, 12],
+          "fill": 1
+        },
+        "Transform": {
+          "position": [8, 28, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
+    },
+    "entity_01m0mrsat4ett80v8jjekj1hh1": {
+      "name": "HudHpBar",
+      "tags": ["hud", "hpbar"],
+      "parent": null,
+      "order": "a4",
+      "components": {
+        "SpriteRenderer": {
+          "sprite": "",
+          "layer": "Default",
+          "tint": [0.9, 0.2, 0.2, 1],
+          "flipX": false,
+          "flipY": false,
+          "sortingOrder": 91,
+          "screenSpace": true,
+          "anchor": [0, 0],
+          "pixelSize": [196, 8],
+          "fill": 1
+        },
+        "Transform": {
+          "position": [10, 30, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
     }
   }
 }

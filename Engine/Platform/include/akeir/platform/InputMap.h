@@ -3,8 +3,10 @@
 //   input.json:
 //     { "actions": { "MoveX": { "type": "axis",   "bindings": [ { "keys": ["A", "D"], "scale": [-1, 1] }, { "gamepad": "leftStickX" } ] },
 //                    "Attack": { "type": "button", "bindings": [ { "key": "Space" }, { "mouse": "left" } ] } } }
-//   키 이름은 SDL_GetScancodeFromName 이 아는 이름 ("A", "Left", "Space", "Up" …). gamepad / mouse 바인딩은 이 PoC 에서 무시한다 (파싱은 하고 `unsupported` 로 보고).
+//   키 이름은 SDL_GetScancodeFromName 이 아는 이름 ("A", "Left", "Space", "Up" …). mouse 바인딩(left/middle/right/x1/x2, 선택 "scale")은
+//   버튼이 눌린 동안 action 을 활성화한다(ADR-0045). gamepad 바인딩은 아직 무시한다 (파싱은 하고 `unsupported` 로 보고).
 //   axis: 눌린 키들의 scale 합을 [-1, 1] 로 clamp. button: 눌려 있으면 1.0. 값이 0 인 action 은 InputFrame 에 넣지 않는다 (replay 파일을 작게).
+//   sample() 은 pointer 상태(SDL_GetMouseState + Platform 의 휠/포커스)와 edge(InputFrame::withEdges, 직전 frame 기준)도 채운다.
 #pragma once
 
 #include "akeir/core/Diagnostic.h"
@@ -21,12 +23,20 @@ struct InputBinding {
     std::vector<float> scales;    // scancodes 와 같은 길이 (button 은 1.0)
 };
 
+struct MouseBinding {
+    std::uint32_t mask = 0;   // kPointerLeft …
+    float scale = 1.f;
+};
+
 struct InputAction {
     std::string name;
     bool axis = false;
     std::vector<InputBinding> bindings;
-    std::vector<std::string> unsupported;   // "gamepad:leftStickX", "mouse:left"
+    std::vector<MouseBinding> mouse;        // ADR-0045
+    std::vector<std::string> unsupported;   // "gamepad:leftStickX"
 };
+
+class Platform;
 
 class InputMap {
 public:
@@ -34,13 +44,16 @@ public:
     static InputMap fromJson(const Json& doc, std::vector<Diagnostic>* diagnostics = nullptr);
     static InputMap loadFile(const std::string& path, std::vector<Diagnostic>* diagnostics = nullptr);
 
-    /// 현재 SDL 키보드 상태로 InputFrame 을 만든다. SDL_PumpEvents 는 호출자가(Platform::pumpEvents).
-    InputFrame sample(std::int64_t tick) const;
+    /// 현재 SDL 키보드/마우스 상태로 InputFrame 을 만든다. SDL_PumpEvents 는 호출자가(Platform::pumpEvents).
+    /// platform 을 주면 viewport·휠·포커스를 읽는다(없으면 viewport 0, 휠 0). 직전 sample 과 비교해 edge 를 채운다.
+    InputFrame sample(std::int64_t tick, Platform* platform = nullptr);
     const std::vector<InputAction>& actions() const { return actions_; }
     Json toJson() const;   // 디버그/`akeir input map` 용
 
 private:
     std::vector<InputAction> actions_;
+    InputFrame prev_;
+    bool hasPrev_ = false;
 };
 
 } // namespace akeir

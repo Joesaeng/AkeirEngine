@@ -23,6 +23,10 @@ AKEIR_REFLECT_BEGIN(SpriteRenderer, "Draws a 2D sprite")
     AKEIR_PROP(flipX, "Mirror horizontally");
     AKEIR_PROP(flipY, "Mirror vertically");
     AKEIR_PROP(sortingOrder, "Draw order within layer").range(-1000, 1000);
+    AKEIR_PROP(screenSpace, "true: HUD element — rect top-left = anchor × viewport + Transform.position.xy in pixels (ADR-0045)");
+    AKEIR_PROP(anchor, "screenSpace only: viewport fraction the position is relative to (0,0 top-left, 0.5,0.5 center, 1,1 bottom-right)");
+    AKEIR_PROP(pixelSize, "screenSpace only: size in pixels; 0 = natural (sprite pixels × scale, placeholder 32)");
+    AKEIR_PROP(fill, "horizontal fill fraction kept from the left (HP bars)").range(0.0, 1.0);
 AKEIR_REFLECT_END(SpriteRenderer)
 
 AKEIR_REFLECT_BEGIN(Collider2D, "2D collision shape (Box2D)")

@@ -20,6 +20,8 @@ struct Transform {
 };
 
 /// 2D 스프라이트. sprite 는 asset_…#sprites/<name> 참조 (§19 sub-asset).
+/// screenSpace (ADR-0045): HUD 요소. rect 좌상단 = anchor × viewport + Transform.position.xy (px), 크기 = pixelSize (0 = natural × scale).
+/// fill 은 왼쪽부터 남기는 가로 비율 (HP bar: 0..1). hit-test 는 akeir/ecs/Screen.h 의 같은 rect 를 쓴다.
 struct SpriteRenderer {
     Ref sprite;
     std::string layer = "Default";
@@ -27,6 +29,10 @@ struct SpriteRenderer {
     bool flipX = false;
     bool flipY = false;
     int sortingOrder = 0;
+    bool screenSpace = false;
+    Vec2 anchor{0.f, 0.f};       // viewport 비율 (0,0 좌상단 … 1,1 우하단). screenSpace 에서만
+    Vec2 pixelSize{0.f, 0.f};    // screenSpace 크기(px). 0 = natural (sprite region px × scale, placeholder 32px)
+    float fill = 1.f;            // 가로 fill 비율 0..1 (왼쪽 기준)
 };
 
 enum class ColliderShape { Box, Circle, Capsule };

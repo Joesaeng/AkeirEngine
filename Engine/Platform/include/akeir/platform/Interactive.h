@@ -32,6 +32,6 @@ struct InteractiveResult {
     Json toJson() const;
 };
 
-InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayWorld& world, const InputMap& input, const InteractiveConfig& cfg);
+InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayWorld& world, InputMap& input, const InteractiveConfig& cfg);
 
 } // namespace akeir

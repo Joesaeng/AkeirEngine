@@ -165,3 +165,44 @@ TEST_CASE("TestRunner: discover finds <fixture>/Tests/**/*.test.json and the fro
     TestReport rep = r.runAll(all);
     for (const auto& t : rep.tests) { INFO(t.toJson().dump(1)); CHECK((t.status == "passed" || t.status == "skipped")); }   // Visual/* 는 renderer 가 없으면 skipped
 }
+
+TEST_CASE("TestRunner: pointer steps persist until the next one, carry the scenario viewport and derived edges (ADR-0045)") {
+    Fixture f;
+    Json j = Json::parse(R"json({
+      "name": "PointerClick",
+      "viewport": [640, 360],
+      "inputs": [ { "tick": 2, "pointer": {"x": 100, "y": 50} },
+                  { "tick": 4, "pointer": {"x": 110, "y": 55, "buttons": ["left"], "wheel": 1} },
+                  { "tick": 6, "pointer": {"x": 110, "y": 55} },
+                  { "tick": 6, "press": "Attack" } ],
+      "run": { "ticks": 10 },
+      "assert": [ { "id": "ok", "expr": "true" } ]
+    })json");
+    TestScenario sc = TestScenario::fromJson(j, "Tests/Input/PointerClick.test.json");
+    REQUIRE(sc.problems.empty());
+    std::map<std::int64_t, InputFrame> seen;
+    WorldFactory probe = [&](const Project& prj, const std::string& worldId, const PlayWorldConfig& cfg, std::vector<Diagnostic>& d) {
+        auto w = PlayWorld::build(prj, worldId, cfg, d);
+        if (w) w->addSystem("Probe.Input", [&](PlayWorld&, const InputFrame& in, const SimTime&) { seen[in.tick] = in; });
+        return w;
+    };
+    TestRunnerOptions o; o.resultsDir = f.results.string();
+    TestRunner r(*f.prj, probe, o);
+    TestReport rep = r.runAll({sc});
+    REQUIRE(rep.tests.at(0).status == "passed");
+    REQUIRE(seen.size() == 10);
+    CHECK_FALSE(seen[1].pointer.present);
+    CHECK(seen[2].pointer.present);
+    CHECK(seen[2].pointer.x == 100);
+    CHECK(seen[2].pointer.viewportW == 640);
+    CHECK(seen[3].pointer.x == 100);                 // persists
+    CHECK(seen[4].pointer.justPressed(kPointerLeft));
+    CHECK(seen[4].pointer.wheel == 1.f);
+    CHECK(seen[5].pointer.held(kPointerLeft));
+    CHECK_FALSE(seen[5].pointer.justPressed(kPointerLeft));
+    CHECK(seen[5].pointer.wheel == 0.f);
+    CHECK(seen[6].pointer.justReleased(kPointerLeft));
+    CHECK(seen[6].justPressed("Attack"));
+    CHECK(seen[7].justReleased("Attack"));
+    CHECK(seen[9].pointer.present);
+}

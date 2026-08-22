@@ -37,12 +37,18 @@ public:
     bool quitRequested() const { return quit_; }
     int width() const { return width_; }
     int height() const { return height_; }
+    /// ADR-0045: 이벤트로만 오는 포인터 정보. pumpEvents 가 모으고 InputMap::sample 이 tick 마다 가져간다(휠은 0 으로 리셋).
+    float takeWheel() { float w = wheel_; wheel_ = 0.f; return w; }
+    bool focused() const { return focused_; }
+    bool pointerInside() const { return pointerInside_; }
 
 private:
     Platform() = default;
     SDL_Window* window_ = nullptr;
     bool quit_ = false;
     int width_ = 0, height_ = 0;
+    float wheel_ = 0.f;
+    bool focused_ = true, pointerInside_ = true;
 };
 
 } // namespace akeir

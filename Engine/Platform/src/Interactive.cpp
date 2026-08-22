@@ -18,7 +18,7 @@ Json InteractiveResult::toJson() const {
     return Json{{"ticksRun", ticksRun}, {"finalHash", toHex64(finalHash)}, {"wallMs", wallMs}, {"frames", frames}, {"closedByUser", closedByUser}, {"frameMsAvg", frameMsAvg}, {"frameMsP95", frameMsP95}, {"frameMsMax", frameMsMax}};
 }
 
-InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayWorld& world, const InputMap& input, const InteractiveConfig& cfg) {
+InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayWorld& world, InputMap& input, const InteractiveConfig& cfg) {
     InteractiveResult r;
     SimTime st;
     st.tickRate = cfg.tickRate;
@@ -40,7 +40,7 @@ InteractiveResult runInteractive(Platform& platform, Renderer2D& renderer, PlayW
         while (acc >= dt) {
             if (cfg.maxTicks > 0 && st.tick >= cfg.maxTicks) break;
             logger.setCurrentTick(st.tick);
-            InputFrame in = input.sample(st.tick);
+            InputFrame in = input.sample(st.tick, &platform);
             if (record) { Json j = in.toJson(); record << j.dump() << '\n'; }
             world.tick(in, st);
             st.advance();

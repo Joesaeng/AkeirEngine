@@ -1,6 +1,7 @@
 // InputMap.cpp — input.json → scancode 바인딩 → InputFrame (§88.3)
 #include "akeir/platform/InputMap.h"
 
+#include "akeir/platform/Platform.h"
 #include "akeir/serialization/Canonical.h"
 
 #include <SDL3/SDL.h>
@@ -57,7 +58,11 @@ InputMap InputMap::fromJson(const Json& doc, std::vector<Diagnostic>* diags) {
                 if (!scancodeOf(b["key"].get<std::string>(), sc)) { warn("INPUT_KEY_UNKNOWN", "Unknown key name '" + b["key"].get<std::string>() + "'.", bptr + "/key"); continue; }
                 act.bindings.push_back(InputBinding{{sc}, {1.0f}});
             } else if (b.contains("gamepad")) act.unsupported.push_back("gamepad:" + b["gamepad"].get<std::string>());
-            else if (b.contains("mouse")) act.unsupported.push_back("mouse:" + b["mouse"].get<std::string>());
+            else if (b.contains("mouse") && b["mouse"].is_string()) {
+                const std::uint32_t mask = pointerButtonMask(b["mouse"].get<std::string>());
+                if (!mask) { warn("INPUT_MOUSE_UNKNOWN", "Unknown mouse button '" + b["mouse"].get<std::string>() + "' (left, middle, right, x1, x2).", bptr + "/mouse"); continue; }
+                act.mouse.push_back(MouseBinding{mask, act.axis && b.contains("scale") && b["scale"].is_number() ? b["scale"].get<float>() : 1.f});
+            }
             else warn("INPUT_BINDING_INVALID", "Binding needs 'keys', 'key', 'gamepad' or 'mouse'.", bptr);
         }
         m.actions_.push_back(std::move(act));
@@ -76,20 +81,34 @@ InputMap InputMap::loadFile(const std::string& path, std::vector<Diagnostic>* di
     return fromJson(*j, diags);
 }
 
-InputFrame InputMap::sample(std::int64_t tick) const {
+InputFrame InputMap::sample(std::int64_t tick, Platform* platform) {
     InputFrame f;
     f.tick = tick;
     int numKeys = 0;
     const bool* keys = SDL_GetKeyboardState(&numKeys);
-    if (!keys) return f;
+    const bool focused = !platform || platform->focused();
+    // pointer (ADR-0045): window pixels; SDL's button mask already uses left=1, middle=2, right=4, x1=8, x2=16
+    float mx = 0.f, my = 0.f;
+    const SDL_MouseButtonFlags mb = SDL_GetMouseState(&mx, &my);
+    f.pointer.present = true;
+    f.pointer.x = mx; f.pointer.y = my;
+    f.pointer.buttons = focused ? static_cast<std::uint32_t>(mb) & 31u : 0u;
+    f.pointer.inside = focused && (!platform || platform->pointerInside());
+    if (platform) { f.pointer.viewportW = platform->width(); f.pointer.viewportH = platform->height(); f.pointer.wheel = platform->takeWheel(); }
     for (const auto& a : actions_) {
         float v = 0.f;
-        for (const auto& b : a.bindings)
-            for (std::size_t i = 0; i < b.scancodes.size(); ++i)
-                if (b.scancodes[i] >= 0 && b.scancodes[i] < numKeys && keys[b.scancodes[i]]) v += b.scales[i];
+        if (focused) {   // losing focus releases every key and button (no stuck "MoveX" after alt-tab)
+            if (keys) for (const auto& b : a.bindings)
+                for (std::size_t i = 0; i < b.scancodes.size(); ++i)
+                    if (b.scancodes[i] >= 0 && b.scancodes[i] < numKeys && keys[b.scancodes[i]]) v += b.scales[i];
+            for (const auto& m : a.mouse) if (f.pointer.buttons & m.mask) v += m.scale;
+        }
         if (a.axis) v = std::clamp(v, -1.f, 1.f); else v = v > 0 ? 1.f : 0.f;
         if (v != 0.f) f.actions[a.name] = v;
     }
+    f = InputFrame::withEdges(std::move(f), hasPrev_ ? &prev_ : nullptr);
+    prev_ = f;
+    hasPrev_ = true;
     return f;
 }
 
@@ -102,7 +121,9 @@ Json InputMap::toJson() const {
             for (std::size_t i = 0; i < x.scancodes.size(); ++i) keys.push_back(Json{{"scancode", x.scancodes[i]}, {"name", SDL_GetScancodeName(static_cast<SDL_Scancode>(x.scancodes[i]))}, {"scale", x.scales[i]}});
             b.push_back(keys);
         }
-        arr.push_back(Json{{"name", a.name}, {"type", a.axis ? "axis" : "button"}, {"keys", b}, {"unsupported", a.unsupported}});
+        Json mouse = Json::array();
+        for (const auto& m : a.mouse) mouse.push_back(Json{{"button", pointerButtonNames(m.mask)}, {"scale", m.scale}});
+        arr.push_back(Json{{"name", a.name}, {"type", a.axis ? "axis" : "button"}, {"keys", b}, {"mouse", mouse}, {"unsupported", a.unsupported}});
     }
     return arr;
 }

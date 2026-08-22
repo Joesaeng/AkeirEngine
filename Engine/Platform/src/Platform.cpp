@@ -44,6 +44,11 @@ bool Platform::pumpEvents() {
         if (e.type == SDL_EVENT_QUIT) quit_ = true;
         else if (e.type == SDL_EVENT_KEY_DOWN && e.key.scancode == SDL_SCANCODE_ESCAPE) quit_ = true;
         else if (e.type == SDL_EVENT_WINDOW_RESIZED) { width_ = e.window.data1; height_ = e.window.data2; }
+        else if (e.type == SDL_EVENT_MOUSE_WHEEL) wheel_ += e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -e.wheel.y : e.wheel.y;
+        else if (e.type == SDL_EVENT_WINDOW_FOCUS_LOST) focused_ = false;
+        else if (e.type == SDL_EVENT_WINDOW_FOCUS_GAINED) focused_ = true;
+        else if (e.type == SDL_EVENT_WINDOW_MOUSE_LEAVE) pointerInside_ = false;
+        else if (e.type == SDL_EVENT_WINDOW_MOUSE_ENTER) pointerInside_ = true;
     }
     return !quit_;
 }

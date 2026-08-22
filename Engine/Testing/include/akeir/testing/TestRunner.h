@@ -52,6 +52,7 @@ struct TestInputStep {
     Json axis = Json::object();              // hold 와 같다 (의미상 축)
     std::string press;                       // 한 tick 1.0
     std::string release;                     // 이후 0 (hold 종료)
+    Json pointer;                            // ADR-0045: {x, y, buttons:[...], wheel} — 다음 pointer step 까지 유지 (null = 없음)
 };
 
 struct TestAssert {
@@ -74,6 +75,7 @@ struct TestScenario {
     bool hasSeed = false;
     std::vector<TestSetupStep> setup;
     std::vector<TestInputStep> inputs;
+    int viewportW = 1280, viewportH = 720;   // pointer step 의 viewport (ADR-0045; "viewport": [w, h])
     std::int64_t ticks = 600;
     int tickRate = 0;                 // 0 = project.tickRate
     int determinismRuns = 1;

@@ -18,3 +18,4 @@ Design doc §20 (SDL3 dummy/offscreen driver), §20.1 (headless has no accumulat
 ## Not implemented
 
 - Gamepad / mouse bindings, an input remapping UI, camera aspect correction on window resize (the renderer only uses the vertical orthoSize), the `offscreen` driver path (§20 — the software renderer covers it, ADR-0026), audio.
+- Pointer (ADR-0045): `InputMap::sample(tick, &platform)` fills `InputFrame.pointer` from `SDL_GetMouseState` + the wheel/focus/enter-leave events `Platform::pumpEvents` collects; `{"mouse": "left"}` bindings activate actions; edges come from the previous sample. Losing focus releases everything.

@@ -9,6 +9,7 @@ The authoring document model, the built-in components, and the fixed-tick loop.
 | `akeir/runtime/Application.h` | §20.1, §22.2 | `ISimulation`, `IInputSource` (Null/Scripted), `RunConfig`, `RunResult`, `Application::runHeadless` (fixed tick without an accumulator, FP env normalization, hashEvery) |
 | `akeir/runtime/Input.h` | §88.3, §22.3 | `InputFrame {tick, actions, commands}` + JSON |
 | `akeir/runtime/DemoSimulation.h` | — | Placeholder sim for exercising the loop (`akeir run --demo`) |
+| `akeir/runtime/Input.h` | §88.3, ADR-0045 | `InputFrame` = tick + actions + edges (`justPressed/justReleased`) + `PointerState` (window px, viewport, buttons, wheel, inside) + commands; `InputFrame::withEdges` is the only edge computation |
 | `akeir/runtime/PhysicsLayers.h` | ADR-0043 | `PhysicsLayers::fromProjectJson` — `physics.layers` collision matrix → category/mask bits (symmetric), `collides(a, b)` |
 | `akeir/runtime/Assets.h` | §37, §88.7, ADR-0037 | `AssetMeta` / `SpriteRegion` / `AssetTable` (parsed from `Assets/**/*.meta.json` documents; `resolveSprite("asset_…#sprites/x")`), `pngDimensions` |
 

@@ -261,21 +261,26 @@ void PlayWorld::tick(const InputFrame& input, const SimTime& simTime) {
     }
     std::size_t slot = 0;
     auto runSystem = [&](SystemRec& s) {
+        SystemProfile& p = profile_.systems[slot++];
+        if (paused_ && !s.runWhilePaused) return;   // ADR-0045
         const auto t0 = ProfClock::now();
         s.fn(*this, input, simTime);
         const double ms = msSince(t0);
-        SystemProfile& p = profile_.systems[slot++];
         ++p.calls; p.ms += ms; if (ms > p.maxMs) p.maxMs = ms;
     };
     for (auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) runSystem(s);   // 등록 순서 (결정적)
-    const auto physStart = ProfClock::now();
-    syncToPhysics();
-    physics_->step(simTime.dt(), cfg_.physics.subSteps);
-    syncFromPhysics();
-    events_ = physics_->drainContactEvents();
-    const double physMs = msSince(physStart);
-    profile_.physicsMs += physMs; if (physMs > profile_.maxPhysicsMs) profile_.maxPhysicsMs = physMs;
-    profile_.contactEvents += events_.size();
+    if (!paused_) {
+        const auto physStart = ProfClock::now();
+        syncToPhysics();
+        physics_->step(simTime.dt(), cfg_.physics.subSteps);
+        syncFromPhysics();
+        events_ = physics_->drainContactEvents();
+        const double physMs = msSince(physStart);
+        profile_.physicsMs += physMs; if (physMs > profile_.maxPhysicsMs) profile_.maxPhysicsMs = physMs;
+        profile_.contactEvents += events_.size();
+    } else {
+        events_.clear();   // paused: no physics, no contacts this tick
+    }
     for (auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) runSystem(s);  // 이번 tick 의 contactEvents() 를 본다 (ADR-0038)
     tick_ = simTime.tick + 1;   // "지금까지 시뮬레이션한 tick 수". snapshot.tick / dump.tick 이 이 값 (N tick 돌리면 N)
     const double tickMs = msSince(tickStart);
@@ -298,7 +303,7 @@ Json PlayWorld::profileJson() const {
                 {"systems", systems}};
 }
 
-void PlayWorld::addSystem(std::string name, SystemFn fn, SystemPhase phase) { systems_.push_back({std::move(name), std::move(fn), phase}); }
+void PlayWorld::addSystem(std::string name, SystemFn fn, SystemPhase phase, bool runWhilePaused) { systems_.push_back({std::move(name), std::move(fn), phase, runWhilePaused}); }
 void PlayWorld::addSpawnHook(std::string name, SpawnHook fn) {
     for (const auto& id : ids_) fn(*this, id);   // 기존 entity 에 즉시 적용 (id 순)
     spawnHooks_.emplace_back(std::move(name), std::move(fn));

@@ -3,6 +3,7 @@
 #include "GameComponents.h"
 #include "GameSystems.h"
 #include "akeir/ecs/PlayWorld.h"
+#include "akeir/ecs/Screen.h"
 #include "akeir/runtime/Components.h"
 #include "akeir/runtime/Project.h"
 
@@ -303,4 +304,81 @@ TEST_CASE("PlayWorld: physics.layers drive Box2D filters — sensors and contact
     CHECK_FALSE(pairs.count("Enemy2/Gem:sensor"));
     for (const auto& p : pairs) CHECK(p.find("Fx") == std::string::npos);   // Effect collides with nothing
     fs::remove_all(dir, ec);
+}
+
+TEST_CASE("Screen: world<->screen projection, world/screen-space sprite rects and hitTest share one definition (ADR-0045)") {
+    registerBuiltinComponents();
+    fs::path dir = fs::temp_directory_path() / "akeir_screen_test";
+    fs::remove_all(dir);
+    fs::create_directories(dir / "Worlds");
+    std::ofstream(dir / "project.json") << Json{{"name", "Screen"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw80"}}.dump();
+    auto ent = [](const char* name, Json comps) { return Json{{"name", name}, {"components", comps}}; };
+    std::ofstream(dir / "Worlds" / "S.world.json") << Json{{"id", "world_01j5xq8z3mf0n9k2c7p4rtvw80"}, {"name", "S"}, {"entities", Json{
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw81", ent("Cam", Json{{"Transform", Json{{"position", Json::array({2, 1, 0})}}}, {"Camera2D", Json{{"orthoSize", 5}}}})},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw82", ent("Box", Json{{"Transform", Json{{"position", Json::array({2, 1, 0})}}}, {"Collider2D", Json{{"size", Json::array({2, 1})}}}, {"SpriteRenderer", Json{{"sortingOrder", 0}}}})},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw83", ent("Hud", Json{{"Transform", Json{{"position", Json::array({-40, 10, 0})}}}, {"SpriteRenderer", Json{{"screenSpace", true}, {"anchor", Json::array({1, 0})}, {"pixelSize", Json::array({30, 20})}, {"sortingOrder", 5}}}})},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw84", ent("Bar", Json{{"Transform", Json{{"position", Json::array({10, 10, 0})}}}, {"SpriteRenderer", Json{{"screenSpace", true}, {"pixelSize", Json::array({100, 10})}, {"fill", 0.5}, {"sortingOrder", 5}}}})}}}}.dump();
+    std::vector<Diagnostic> d;
+    auto prj = Project::load(dir.string(), d);
+    REQUIRE(prj);
+    PlayWorldConfig cfg; cfg.seed = 1; cfg.tickRate = 60;
+    auto w = PlayWorld::build(*prj, *prj->defaultWorld(), cfg, d);
+    REQUIRE(w);
+    auto byName = [&](const char* n) { for (const auto& id : w->entityIds()) if (w->name(id) == n) return id; return std::string(); };
+    const Viewport vp{800, 600};
+    CameraView cam = primaryCamera(*w);
+    CHECK(cam.orthoSize == 5.f);
+    CHECK(pixelsPerUnit(cam, vp) == doctest::Approx(60.f));   // 600 / (2 * 5)
+    Vec2 c = worldToScreen(cam, vp, Vec2{2, 1});
+    CHECK(c.x == doctest::Approx(400)); CHECK(c.y == doctest::Approx(300));
+    Vec2 up = worldToScreen(cam, vp, Vec2{3, 2});
+    CHECK(up.x == doctest::Approx(460)); CHECK(up.y == doctest::Approx(240));   // y up in world = up on screen
+    Vec2 back = screenToWorld(cam, vp, up);
+    CHECK(back.x == doctest::Approx(3)); CHECK(back.y == doctest::Approx(2));
+
+    auto box = spriteScreenRect(*w, byName("Box"), cam, vp);
+    REQUIRE(box);
+    CHECK(box->w == doctest::Approx(120)); CHECK(box->h == doctest::Approx(60));
+    CHECK(box->x == doctest::Approx(340)); CHECK(box->y == doctest::Approx(270));   // centered pivot
+    auto hud = spriteScreenRect(*w, byName("Hud"), cam, vp);
+    REQUIRE(hud);
+    CHECK(hud->x == doctest::Approx(760)); CHECK(hud->y == doctest::Approx(10));   // anchor (1,0) + (-40, 10)
+    CHECK(hud->w == 30); CHECK(hud->h == 20);
+    CHECK(spriteScreenRect(*w, byName("Cam"), cam, vp) == std::nullopt);
+
+    CHECK(hitTest(*w, vp, Vec2{400, 300}) == byName("Box"));
+    CHECK(hitTest(*w, vp, Vec2{770, 15}) == byName("Hud"));
+    CHECK(hitTest(*w, vp, Vec2{30, 15}) == byName("Bar"));
+    CHECK(hitTest(*w, vp, Vec2{80, 15}).empty());   // fill 0.5 → only the left 50px count
+    CHECK(hitTest(*w, vp, Vec2{5, 5}).empty());
+    fs::remove_all(dir);
+}
+
+TEST_CASE("PlayWorld: pause skips physics and ordinary systems, runWhilePaused systems keep running, hash is untouched (ADR-0045)") {
+    Fixture f;
+    auto w = f.world();
+    int paused = 0, normal = 0;
+    w->addSystem("Probe.Menu", [&](PlayWorld&, const InputFrame&, const SimTime&) { ++paused; }, PlayWorld::SystemPhase::PrePhysics, true);
+    w->addSystem("Probe.Game", [&](PlayWorld&, const InputFrame&, const SimTime&) { ++normal; });
+    SimTime st; st.tickRate = 60;
+    auto step = [&](float moveX) { InputFrame fr; fr.tick = st.tick; if (moveX != 0.f) fr.actions["MoveX"] = moveX; w->tick(fr, st); st.advance(); };
+    for (int i = 0; i < 30; ++i) step(1.f);
+    auto stateOf = [&]() { Json j = w->snapshot(); j.erase("tick"); j.erase("worldHash"); return j; };   // both embed the tick
+    Json before = stateOf();
+    w->setPaused(true);
+    CHECK(w->paused());
+    for (int i = 0; i < 30; ++i) step(1.f);   // input keeps coming, nothing moves
+    CHECK(w->snapshot()["tick"] == 60);   // tick numbers keep counting (replay stays 1:1) — the hash covers the tick, so compare the state
+    CHECK(stateOf() == before);
+    CHECK(w->contactEvents().empty());
+    CHECK(paused == 60);
+    CHECK(normal == 30);
+    w->setPaused(false);
+    step(1.f);
+    CHECK(stateOf() != before);
+    CHECK(normal == 31);
+    Json prof = w->profileJson();
+    bool sawMenu = false;
+    for (const auto& s : prof["systems"]) if (s["name"] == "Probe.Menu") { sawMenu = true; CHECK(s["calls"] == 61); }
+    CHECK(sawMenu);
 }

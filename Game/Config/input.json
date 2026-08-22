@@ -71,6 +71,14 @@
           "gamepad": "south"
         }
       ]
+    },
+    "Pause": {
+      "type": "button",
+      "bindings": [
+        {
+          "key": "P"
+        }
+      ]
     }
   }
 }

@@ -204,7 +204,7 @@ void registerSdlCommands(std::vector<CommandSpec>& t) {
     t.push_back({"capture", {"capture"}, "RuntimeControl", "Render the world to a PNG (§27)",
                  "Software-rasterized capture (no window/GPU; deterministic bytes). --ticks N advances first. --compare golden.png runs the §27.1 comparison (exit 3 on mismatch, --diff writes a diff image).",
                  "akeir capture [--ticks N] [--width W] [--height H] [--out f.png] [--compare golden.png] [--diff d.png] [--per-pixel 0.1] [--max-mismatch 0.002] [--json]", true, false, true, cmdCapture});
-    t.push_back({"input.map", {"input", "map"}, "Query", "Show the resolved input action map", "Config/input.json as SDL scancodes; lists unsupported bindings (gamepad/mouse).", "akeir input map [--json]", true, false, true, cmdInputMap});
+    t.push_back({"input.map", {"input", "map"}, "Query", "Show the resolved input action map", "Config/input.json as SDL scancodes and mouse buttons; lists unsupported bindings (gamepad).", "akeir input map [--json]", true, false, true, cmdInputMap});
 }
 
 } // namespace akeir::cli

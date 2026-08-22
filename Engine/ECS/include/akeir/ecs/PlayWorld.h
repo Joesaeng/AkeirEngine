@@ -62,7 +62,12 @@ public:
     /// PostPhysics systems run after it and see THIS tick's contactEvents() (contact damage, pickups …).
     /// Within a phase, registration order. Names must be unique across phases (systemHashes/firstDivergentSystem).
     enum class SystemPhase { PrePhysics, PostPhysics };
-    void addSystem(std::string name, SystemFn fn, SystemPhase phase = SystemPhase::PrePhysics);
+    /// runWhilePaused (ADR-0045): paused 상태에서도 실행되는 system (메뉴/HUD/입력). 기본은 pause 중 건너뛴다.
+    void addSystem(std::string name, SystemFn fn, SystemPhase phase = SystemPhase::PrePhysics, bool runWhilePaused = false);
+    /// pause (ADR-0045): true 면 tick 은 runWhilePaused system 만 돌리고 physics step 을 건너뛴다. tick 번호는 계속 올라간다
+    /// (replay 의 InputFrame 과 1:1 이어야 하므로). pause 전환은 sim 상태가 아니다 — hash 에 들어가지 않으며, 게임 system 이 input 으로 토글한다.
+    void setPaused(bool paused) { paused_ = paused; }
+    bool paused() const { return paused_; }
     std::vector<std::string> systemNames() const;   // execution order
     /// OnSpawn 훅 (§18 lifecycle "init"): 등록 즉시 기존 entity 전부에 적용되고, 이후 spawn() 마다 호출된다.
     /// 예: Health.current = Health.max 초기화 (runtimeOnly 값은 authoring 파일에 없으므로 여기서 채운다)
@@ -159,8 +164,9 @@ private:
     AssetTable assets_;
     PhysicsLayers layers_;
     std::vector<std::string> ids_;                    // 정렬 유지
-    struct SystemRec { std::string name; SystemFn fn; SystemPhase phase; };
+    struct SystemRec { std::string name; SystemFn fn; SystemPhase phase; bool runWhilePaused = false; };
     std::vector<SystemRec> systems_;
+    bool paused_ = false;
     std::map<std::string, PrefabInfo> prefabs_;
     std::vector<std::pair<std::string, SpawnHook>> spawnHooks_;
     std::vector<ContactEvent> events_;

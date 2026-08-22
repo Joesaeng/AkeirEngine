@@ -1,5 +1,6 @@
 // TestRunner.cpp — §23 시나리오 파싱/실행, §23.1 assertion 평가, §22.2 run-twice 결정성, §24 results.json / JUnit
 #include "akeir/testing/TestRunner.h"
+#include "akeir/runtime/Input.h"
 
 #include "akeir/core/Hash.h"
 #include "akeir/core/Id.h"
@@ -36,7 +37,9 @@ Json TestScenario::schema() {
         {"hold", Json{{"type", "object"}, {"description", "{action: value} held (default 1.0); action names = keys of Config/input.json"}}},
         {"axis", Json{{"type", "object"}, {"description", "{action: value in -1..1} held"}}},
         {"press", str("action pressed for exactly this tick (1.0)")},
-        {"release", str("action released (ends a hold without untilTick)")}}}, {"required", Json::array({"tick"})}, {"additionalProperties", false}};
+        {"release", str("action released (ends a hold without untilTick)")},
+        {"pointer", Json{{"type", "object"}, {"description", "pointer state from this tick until the next pointer step: {x, y} window pixels (scenario viewport, default 1280x720), buttons: [\"left\"|\"middle\"|\"right\"|\"x1\"|\"x2\"], wheel. Edges (pressed/released) are derived automatically"}}}}},
+        {"required", Json::array({"tick"})}, {"additionalProperties", false}};
     Json assertion = Json{{"type", "object"}, {"properties", Json{
         {"id", str("assertion id (reported in failures[])")},
         {"expr", str("expression over the bindings (see `akeir schema test` → expression)")},
@@ -58,6 +61,7 @@ Json TestScenario::schema() {
         {"requires", Json{{"type", "array"}, {"items", Json{{"type", "string"}}}, {"description", "capabilities the build must have, e.g. [\"renderer\"] — otherwise the test is skipped"}}},
         {"setup", Json{{"type", "array"}, {"items", setupStep}}},
         {"inputs", Json{{"type", "array"}, {"items", inputStep}}},
+        {"viewport", Json{{"type", "array"}, {"items", Json{{"type", "integer"}}}, {"description", "[width, height] in pixels that pointer steps refer to (default [1280, 720])"}}},
         {"run", Json{{"type", "object"}, {"properties", Json{{"ticks", integer("ticks to simulate")}, {"tickRate", integer("0/omitted = project.tickRate")}}}}},
         {"determinism", Json{{"type", "object"}, {"properties", Json{{"runs", integer(">= 2 runs the scenario again and compares world hashes (T0)")}, {"hashEvery", integer("compare every N ticks")}, {"expectedFinalHash", Json{{"description", "fixed finalHash to compare against, or null"}}}}}}},
         {"assert", Json{{"type", "array"}, {"items", assertion}}}};
@@ -99,9 +103,14 @@ TestScenario TestScenario::fromJson(const Json& j, const std::string& file) {
             if (in.contains("axis") && in["axis"].is_object()) step.axis = in["axis"];
             step.press = in.value("press", "");
             step.release = in.value("release", "");
-            if (step.hold.empty() && step.axis.empty() && step.press.empty() && step.release.empty()) s.problems.push_back("inputs[" + std::to_string(s.inputs.size()) + "] needs hold/axis/press/release");
+            if (in.contains("pointer") && in["pointer"].is_object()) step.pointer = in["pointer"];
+            if (step.hold.empty() && step.axis.empty() && step.press.empty() && step.release.empty() && step.pointer.is_null()) s.problems.push_back("inputs[" + std::to_string(s.inputs.size()) + "] needs hold/axis/press/release/pointer");
             s.inputs.push_back(std::move(step));
         }
+    }
+    if (j.contains("viewport")) {
+        if (j["viewport"].is_array() && j["viewport"].size() == 2 && j["viewport"][0].is_number_integer() && j["viewport"][1].is_number_integer()) { s.viewportW = j["viewport"][0].get<int>(); s.viewportH = j["viewport"][1].get<int>(); }
+        else s.problems.push_back("'viewport' must be [width, height]");
     }
     if (j.contains("requires") && j["requires"].is_array()) for (const auto& r : j["requires"]) if (r.is_string()) s.requirements.push_back(r.get<std::string>());
     if (j.contains("run") && j["run"].is_object()) {
@@ -324,6 +333,34 @@ SimSetup prepare(const Project& project, const WorldFactory& factory, const Test
         for (const auto& [action, v] : in.hold.items()) setRange(action, v.is_number() ? v.get<float>() : 1.0f, in.tick, in.untilTick ? *in.untilTick : releaseAfter(action, in.tick));
         for (const auto& [action, v] : in.axis.items()) setRange(action, v.is_number() ? v.get<float>() : 1.0f, in.tick, in.untilTick ? *in.untilTick : releaseAfter(action, in.tick));
         if (!in.press.empty()) setRange(in.press, 1.0f, in.tick, in.tick + 1);
+    }
+    // pointer steps (ADR-0045): a pointer state persists until the next pointer step; wheel applies to its first tick only
+    std::vector<const TestInputStep*> pointerSteps;
+    for (const auto& in : sc.inputs) if (in.pointer.is_object()) pointerSteps.push_back(&in);
+    std::sort(pointerSteps.begin(), pointerSteps.end(), [](const TestInputStep* a, const TestInputStep* b) { return a->tick < b->tick; });
+    for (std::size_t i = 0; i < pointerSteps.size(); ++i) {
+        const Json& p = pointerSteps[i]->pointer;
+        const std::int64_t from = std::max<std::int64_t>(0, pointerSteps[i]->tick);
+        const std::int64_t to = std::min(sc.ticks, i + 1 < pointerSteps.size() ? pointerSteps[i + 1]->tick : sc.ticks);
+        PointerState ps;
+        ps.present = true;
+        ps.x = p.value("x", 0.f); ps.y = p.value("y", 0.f);
+        ps.viewportW = sc.viewportW; ps.viewportH = sc.viewportH;
+        if (p.contains("buttons") && p["buttons"].is_array()) for (const auto& b : p["buttons"]) if (b.is_string()) ps.buttons |= pointerButtonMask(b.get<std::string>());
+        ps.inside = p.value("inside", true);
+        for (std::int64_t t = from; t < to; ++t) { auto& f = out.frames[t]; f.tick = t; f.pointer = ps; f.pointer.wheel = t == from ? p.value("wheel", 0.f) : 0.f; }
+    }
+    // edges: frames are sparse, so make sure a tick right after a non-empty frame exists (it carries the releases)
+    std::vector<std::int64_t> ticksWithFrames;
+    for (const auto& [t, f] : out.frames) ticksWithFrames.push_back(t);
+    for (std::int64_t t : ticksWithFrames) if (t + 1 < sc.ticks && !out.frames.count(t + 1)) { InputFrame e; e.tick = t + 1; out.frames[t + 1] = e; }
+    const InputFrame* prev = nullptr;
+    InputFrame prevStore;
+    for (auto& [t, f] : out.frames) {
+        const bool consecutive = prev && prev->tick + 1 == t;
+        f = InputFrame::withEdges(std::move(f), consecutive ? prev : nullptr);
+        prevStore = f;
+        prev = &prevStore;
     }
     return out;
 }

@@ -60,13 +60,17 @@ def main():
     print(f"[3] tick={s2['tick']} enemies={q['total']} player.hp={hp}")
     assert hp < 100, 'goblins should have hit the player by tick 360'
     snap = m.play(action='snapshot', run=run)
-    assert snap['snapshot']['tick'] == 360 and len(snap['snapshot']['entities']) == 8, snap['snapshot'].get('tick')
+    assert snap['snapshot']['tick'] == 360 and len(snap['snapshot']['entities']) == 10, snap['snapshot'].get('tick')
     # a second run from the same seed stepped the same way lands on the same hash (T0 through the resident path)
     r2 = m.play(action='open')['run']
     m.play(action='step', run=r2, ticks=60, input={'MoveX': 1}); s2b = m.play(action='step', run=r2, ticks=300)
     assert s2b['hash'] == s2['hash'], (s2b['hash'], s2['hash'])
     print(f"[4] second run reproduces hash {s2['hash']}")
     assert len(m.play(action='list')['runs']) == 2
+    # ADR-0045: pointer input is accepted by step (window pixels + buttons); edges derive from the previous step
+    s3 = m.play(action='step', run=r2, ticks=2, input={'Attack': 1, 'pointer': {'x': 640, 'y': 360, 'buttons': ['left']}})
+    assert s3['tick'] == 362, s3
+    print("[4b] pointer input step accepted")
     m.play(action='close', run=run); m.play(action='close', run=r2)
     assert len(m.play(action='list')['runs']) == 0
     print('[5] closed; adapter exit', m.close())

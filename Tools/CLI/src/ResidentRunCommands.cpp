@@ -97,13 +97,27 @@ Envelope cmdRunStep(Context& ctx) {
     if (auto in = ctx.args.get("input")) {
         std::string err;
         auto j = parseJson(*in, &err);
-        if (!j || !j->is_object()) return Envelope::failure("run.step", CommandError::make(ErrorCategory::Usage, "ARG_TYPE", "--input must be a JSON object {action: value}, e.g. {\"MoveX\": 1}: " + err));
-        for (const auto& [k, v] : j->items()) { if (!v.is_number()) return Envelope::failure("run.step", CommandError::make(ErrorCategory::Usage, "ARG_TYPE", "input action '" + k + "' must be a number.")); frame.actions[k] = v.get<float>(); }
+        if (!j || !j->is_object()) return Envelope::failure("run.step", CommandError::make(ErrorCategory::Usage, "ARG_TYPE", "--input must be a JSON object {action: value, pointer?: {x, y, buttons, wheel, viewport}}, e.g. {\"MoveX\": 1}: " + err));
+        for (const auto& [k, v] : j->items()) {
+            if (k == "pointer") {   // ADR-0045
+                if (!v.is_object()) return Envelope::failure("run.step", CommandError::make(ErrorCategory::Usage, "ARG_TYPE", "input 'pointer' must be an object {x, y, buttons: [\"left\"], wheel, viewport: [w, h]}."));
+                Json p = v;
+                if (!p.contains("viewport")) p["viewport"] = Json::array({1280, 720});
+                frame.pointer = InputFrame::fromJson(Json{{"pointer", p}}).pointer;
+                continue;
+            }
+            if (v.is_boolean()) { frame.actions[k] = v.get<bool>() ? 1.f : 0.f; continue; }
+            if (!v.is_number()) return Envelope::failure("run.step", CommandError::make(ErrorCategory::Usage, "ARG_TYPE", "input action '" + k + "' must be a number."));
+            frame.actions[k] = v.get<float>();
+        }
     }
     const std::uint64_t before = run->world->hash();
     for (long long i = 0; i < ticks; ++i) {
         frame.tick = run->sim.tick;
-        run->world->tick(frame, run->sim);
+        InputFrame f = InputFrame::withEdges(frame, run->hasLastInput ? &run->lastInput : nullptr);   // edges only on the first tick of a changed input
+        if (i > 0) f.pointer.wheel = 0.f;
+        run->world->tick(f, run->sim);
+        run->lastInput = f; run->hasLastInput = true;
         run->sim.advance();
         ++run->ticksRun;
     }

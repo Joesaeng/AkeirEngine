@@ -3,6 +3,7 @@
 
 #include "Font5x7.h"
 #include "akeir/core/Log.h"
+#include "akeir/ecs/Screen.h"
 #include "akeir/runtime/Components.h"
 
 #include <SDL3/SDL.h>
@@ -57,22 +58,14 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     stats.backend = backendName();
     if (surface_ == nullptr) SDL_GetCurrentRenderOutputSize(renderer_, &width_, &height_);
 
-    // 카메라
-    Vec3 camPos{};
-    float ortho = 10.f;
-    Color bg{0.1f, 0.1f, 0.12f, 1.f};
-    std::string camEntity;
-    for (const auto& id : world.entityIds()) {
-        const Camera2D* cam = world.get<Camera2D>(id);
-        if (!cam || !cam->primary) continue;
-        if (const Transform* t = world.get<Transform>(id)) camPos = t->position;
-        ortho = cam->orthoSize > 0.01f ? cam->orthoSize : 10.f;
-        bg = cam->background;
-        camEntity = id;
-        break;
-    }
-    stats.camera = Json{{"entity", camEntity}, {"position", Json::array({camPos.x, camPos.y})}, {"orthoSize", ortho}};
-    const float ppu = static_cast<float>(height_) / (2.f * ortho);   // pixels per world unit
+    // camera + projection: one definition shared with game-side hit tests (akeir/ecs/Screen.h, ADR-0045)
+    const CameraView cam = primaryCamera(world);
+    const Viewport vp{width_, height_};
+    const Vec2 camPos = cam.position;
+    const float ortho = cam.orthoSize;
+    const Color bg = cam.background;
+    stats.camera = Json{{"entity", cam.entity}, {"position", Json::array({camPos.x, camPos.y})}, {"orthoSize", ortho}};
+    const float ppu = pixelsPerUnit(cam, vp);   // pixels per world unit
     const float cx = width_ * 0.5f, cy = height_ * 0.5f;
 
     SDL_SetRenderDrawColor(renderer_, toByte(bg.r), toByte(bg.g), toByte(bg.b), 255);
@@ -82,43 +75,30 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     std::vector<Item> items;
     for (const auto& id : world.entityIds()) {
         const SpriteRenderer* sp = world.get<SpriteRenderer>(id);
-        const Transform* t = world.get<Transform>(id);
-        if (!sp || !t) continue;
-        float w = 1.f, h = 1.f;
-        bool circle = false;
+        if (!sp) continue;
+        SpriteGeometry g;
+        auto rect = spriteScreenRect(world, id, cam, vp, &g);
+        if (!rect) continue;
         SDL_Texture* tex = nullptr;
         SDL_FRect src{};
-        Vec2 pivot{0.5f, 0.5f};
-        if (!sp->sprite.empty()) {
+        if (g.region && g.asset) {
             // ADR-0037: "asset_…#sprites/<name>" → texture region. Unresolvable refs are validate errors; here we fall back to the shape
-            const AssetMeta* asset = nullptr;
-            std::string why;
-            if (const SpriteRegion* reg = world.assets().resolveSprite(sp->sprite, &asset, &why)) {
-                if (SDL_Texture* loaded = textureFor(*asset)) {
-                    tex = loaded;
-                    src = SDL_FRect{static_cast<float>(reg->x), static_cast<float>(reg->y), static_cast<float>(reg->w), static_cast<float>(reg->h)};
-                    w = static_cast<float>(reg->w) / asset->pixelsPerUnit;
-                    h = static_cast<float>(reg->h) / asset->pixelsPerUnit;
-                    pivot = reg->pivot;
-                }
-            } else if (warnedAssets_.insert(sp->sprite.value).second) {
-                AKEIR_LOG(Warn, "render", "sprite_unresolved", "Sprite reference does not resolve; drawing the placeholder shape.", Json{{"game.entity", id}, {"sprite", sp->sprite.value}, {"why", why}});
+            if (SDL_Texture* loaded = textureFor(*g.asset)) {
+                tex = loaded;
+                src = SDL_FRect{static_cast<float>(g.region->x), static_cast<float>(g.region->y), static_cast<float>(g.region->w), static_cast<float>(g.region->h)};
             }
+        } else if (!sp->sprite.empty() && warnedAssets_.insert(sp->sprite.value).second) {
+            AKEIR_LOG(Warn, "render", "sprite_unresolved", "Sprite reference does not resolve; drawing the placeholder shape.", Json{{"game.entity", id}, {"sprite", sp->sprite.value}, {"why", g.why}});
         }
-        if (!tex) {
-            if (const Collider2D* c = world.get<Collider2D>(id)) {
-                if (c->shape == ColliderShape::Box) { w = c->size.x; h = c->size.y; }
-                else { w = h = c->radius * 2.f; circle = c->shape == ColliderShape::Circle; }
-            }
+        SDL_FRect r{rect->x, rect->y, rect->w, rect->h};
+        const float fill = std::clamp(sp->fill, 0.f, 1.f);
+        if (fill < 1.f) {   // keep the left part: crop the destination (and the source region proportionally)
+            r.w *= fill;
+            src.w *= fill;
+            if (r.w <= 0.f) { ++stats.culled; continue; }
         }
-        w *= t->scale.x; h *= t->scale.y;
-        SDL_FRect r;
-        r.w = std::max(1.f, w * ppu);
-        r.h = std::max(1.f, h * ppu);
-        r.x = cx + (t->position.x - camPos.x) * ppu - r.w * pivot.x;
-        r.y = cy - (t->position.y - camPos.y) * ppu - r.h * (1.f - pivot.y);
         if (r.x + r.w < 0.f || r.y + r.h < 0.f || r.x > static_cast<float>(width_) || r.y > static_cast<float>(height_)) { ++stats.culled; continue; }   // ADR-0044 frustum cull
-        items.push_back({sp->sortingOrder, id, r, sp->tint, circle, tex, src, sp->flipX, sp->flipY});
+        items.push_back({sp->sortingOrder, id, r, sp->tint, g.circle && !tex, tex, src, sp->flipX, sp->flipY});
     }
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.order != b.order ? a.order < b.order : a.id < b.id; });
     for (const auto& it : items) {

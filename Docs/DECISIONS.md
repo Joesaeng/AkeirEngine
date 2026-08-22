@@ -292,3 +292,16 @@
 - **결정**: ① `PlayWorld` 가 항상 켜진 저비용 카운터를 든다(system 별 calls/ms/max, physics ms, contact 수, query 호출·순회·결과 수) — wall-clock 은 보고에만 쓰이고 sim 은 읽지 않는다(결정론 무관). 노출: `run --headless --profile`, `play step {profile:true}`(직전 profile 이후 구간), 게임 exe 의 `player.stop` 로그(+ frame ms avg/p95/max). ② `Renderer2D` 가 viewport 밖 sprite/text 를 sort·draw 전에 버리고 `RenderStats.culled`/`renderMs` 를 `capture` 에 보고. ③ `query()` 는 이름을 호출당 한 번 해석하고 entity map 을 직접 걷는다(등록 안 된 component → 즉시 빈 결과) — 샘플 Stress world(고블린 100, query 107회/tick) 에서 1.40 → 0.33 ms/tick, hash 불변. "compiled query"·spatial query 는 이 수치로 필요가 증명되면. ④ `Game/Worlds/Stress.world.json`(CommandBus 로 생성) + `Tests/Stress/HundredGoblins.test.json`(run-twice) + `scripts/test_perf.py`(18000 tick profile, 두 run hash 동일, avg < 4 ms/tick 는 공용 runner 용 느슨한 상한 — 실제 수치가 산출물) 를 CI 에.
 - **실측(로컬 Release)**: TestArena 0.02 ms/tick, Stress 0.33 ms/tick(physics 0.09), CatSurvivor 5분 replay 0.7 ms/tick. 60 FPS 예산 16.7 ms.
 - **참조**: §27, §16, PRINCIPLES §15/§16/§31
+
+## ADR-0045 pointer 입력 + edge 상태, screen-space sprite(anchor/pixelSize/fill) + 공유 hit-test, pause
+- **상태**: 확정 (2026-08-22, CatSurvivor v0.1.2 피드백 P0/P1 — 메뉴·버튼·HP bar·pause 를 엔진 밖에서 흉내 내야 했다).
+- **결정**:
+  1. **Pointer 는 InputFrame 의 일부** (`PointerState`: 창 픽셀 x/y, viewport, buttons mask, pressed/released edge, wheel, inside). sim 은 여전히 장치를 모른다 — `InputMap::sample` 이 SDL 마우스 상태 + `Platform` 의 휠/포커스 이벤트를 frame 에 싣는다. `input.json` 의 `{"mouse": "left"}` 바인딩이 실제로 동작한다(gamepad 만 unsupported). 포커스를 잃으면 키·버튼 전부 release(alt-tab 후 계속 달리는 버그 방지).
+  2. **Edge 는 한 곳에서**: `InputFrame::withEdges(cur, prev)` 가 `pressedActions/releasedActions`, `pointer.pressed/released` 를 계산한다. InputMap(직전 sample), test DSL(`pointer` step; 희소 frame 사이에 release frame 을 만들어 준다), `play step`(`run->lastInput`), replay(기록된 값) 모두 같은 함수. 게임 system 은 `in.justPressed("Attack")` 만 보면 된다 — "지난 tick 에 눌려 있었나" 를 system 마다 기억하지 않는다. 기존 `pressed(name)` 은 "눌려 있음"(= `held`) 으로 유지.
+  3. **screen-space sprite**: `SpriteRenderer.screenSpace/anchor/pixelSize/fill`. rect 좌상단 = `anchor × viewport + Transform.position.xy(px)`, 크기 = `pixelSize`(0 = natural) — `TextRenderer.screenSpace` 와 같은 규칙, pivot 은 world-space 에서만. `fill` 은 왼쪽부터 남기는 가로 비율(HP bar). 창 크기가 바뀌면 anchor 가 따라간다.
+  4. **하나의 rect 정의**: `akeir/ecs/Screen.h` — `primaryCamera`, `worldToScreen/screenToWorld`, `spriteScreenRect`, `hitTest(world, viewport, px)`. Renderer2D 가 이 함수로 그리므로 게임의 "버튼 위인가" 판정과 그려진 것이 어긋날 수 없다. viewport 는 `InputFrame.pointer.viewportW/H` 로 system 에 온다.
+  5. **pause**: `PlayWorld::setPaused(bool)` — paused 면 physics step 과 일반 system 을 건너뛰고 `addSystem(..., runWhilePaused=true)` 인 system 만 돈다. tick 번호는 계속 올라가(replay 1:1, `hash()` 는 tick 을 포함하므로 pause 중에도 변함 — state 는 그대로), contactEvents 는 비워진다. pause 여부는 sim 상태가 아니다 — 게임 system 이 input 으로 토글한다(샘플 `PauseToggle`, P 키).
+- **hash 이동**: SpriteRenderer 에 reflected 멤버가 늘어 world hash 가 모든 샘플에서 바뀐다(기준값 `0x3879c0f0d675ebc8`, 샘플에 HUD bar entity 2개 추가 포함). 결정론 회귀가 아니라 schema 변화.
+- **샘플**: `Game/` 에 `HudHpBarBack/HudHpBar`(screenSpace, `#hpbar` 의 fill 을 `HudHpBar` system 이 갱신), `Pause` action(P) + `PauseToggle`(runWhilePaused) + HUD 의 "PAUSED". golden 재생성.
+- **안 한 것**: gamepad, 터치 멀티포인트, sprite pivot 의 screen-space 적용, 9-slice/UI 레이아웃. 게임이 요구하면.
+- **참조**: §88.3, §23, §27, ADR-0040

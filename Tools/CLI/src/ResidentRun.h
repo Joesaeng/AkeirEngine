@@ -27,6 +27,8 @@ struct ResidentRun {
     std::unique_ptr<PlayWorld> world;
     SimTime sim;                       // next tick to simulate
     std::int64_t ticksRun = 0;
+    InputFrame lastInput;              // ADR-0045: edge detection across step calls
+    bool hasLastInput = false;
     std::string openedAt;
 };
 

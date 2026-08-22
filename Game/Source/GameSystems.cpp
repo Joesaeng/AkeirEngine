@@ -87,7 +87,22 @@ void hudText(PlayWorld& w, const InputFrame&, const SimTime&) {
     int alive = 0;
     for (const auto& id : w.query({"EnemyAI"})) if (w.get<EnemyAI>(id)->state != AiState::Dead) ++alive;
     std::string text = "HP " + std::to_string(hp ? static_cast<int>(std::lround(hp->current)) : 0) + "  GOBLINS " + std::to_string(alive);
+    if (w.paused()) text += "  PAUSED";
     for (const auto& id : w.query({"TextRenderer", "#hud"})) w.get<TextRenderer>(id)->text = text;
+}
+
+// HP bar (ADR-0045): a screen-space sprite whose `fill` follows the player's health. Same rect as the renderer → hit-testable.
+void hudHpBar(PlayWorld& w, const InputFrame&, const SimTime&) {
+    auto players = w.query({"#player"});
+    const Health* hp = players.empty() ? nullptr : w.get<Health>(players.front());
+    const float ratio = hp && hp->max > 0.f ? std::clamp(hp->current / hp->max, 0.f, 1.f) : 0.f;
+    for (const auto& id : w.query({"SpriteRenderer", "#hpbar"})) w.get<SpriteRenderer>(id)->fill = ratio;
+}
+
+// Pause toggle (ADR-0045): runs while paused (registered with runWhilePaused) so the key that resumes is still seen.
+// Edge (justPressed) comes from the InputFrame — no per-system "was it down last tick" bookkeeping.
+void pauseToggle(PlayWorld& w, const InputFrame& in, const SimTime&) {
+    if (in.justPressed("Pause")) { w.setPaused(!w.paused()); AKEIR_LOG(Info, "game", "pause", w.paused() ? "Paused." : "Resumed.", Json{{"paused", w.paused()}}); }
 }
 
 } // namespace
@@ -99,7 +114,9 @@ void registerGameSystems(PlayWorld& world) {
     world.addSystem("PlayerMovement", playerMovement);
     world.addSystem("EnemyChase", enemyChase);
     world.addSystem("EnemyAttack", enemyAttack);
-    world.addSystem("HudText", hudText, PlayWorld::SystemPhase::PostPhysics);   // sees the damage dealt this tick
+    world.addSystem("PauseToggle", pauseToggle, PlayWorld::SystemPhase::PrePhysics, /*runWhilePaused*/ true);
+    world.addSystem("HudText", hudText, PlayWorld::SystemPhase::PostPhysics, true);   // sees the damage dealt this tick; shows PAUSED
+    world.addSystem("HudHpBar", hudHpBar, PlayWorld::SystemPhase::PostPhysics);
 }
 
 } // namespace game

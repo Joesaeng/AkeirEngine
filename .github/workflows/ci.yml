@@ -9,7 +9,7 @@ on:
 
 env:
   CPM_SOURCE_CACHE: ${{ github.workspace }}/.cpm-source-cache
-  REFERENCE_FINAL_HASH: '0x404c60567ccb9e85'
+  REFERENCE_FINAL_HASH: '0x3879c0f0d675ebc8'
 
 jobs:
   headless:

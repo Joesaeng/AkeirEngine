@@ -88,3 +88,41 @@ TEST_CASE("FpEnv: normalize yields round-to-nearest without FTZ/DAZ (§22.2)") {
     CHECK(s.ok());
     CHECK(fpEnvStatus().toJson()["ok"] == true);
 }
+
+TEST_CASE("InputFrame: edges come from withEdges only; pointer and edges round-trip through JSON for replay (ADR-0045)") {
+    InputFrame a; a.tick = 0; a.actions["Attack"] = 1.f; a.actions["MoveX"] = 0.3f;
+    a.pointer.present = true; a.pointer.x = 100; a.pointer.y = 50; a.pointer.viewportW = 1280; a.pointer.viewportH = 720; a.pointer.buttons = kPointerLeft;
+    InputFrame f0 = InputFrame::withEdges(a, nullptr);
+    CHECK(f0.justPressed("Attack"));
+    CHECK_FALSE(f0.justPressed("MoveX"));   // 0.3 is not "active" (> 0.5)
+    CHECK(f0.pointer.justPressed(kPointerLeft));
+    CHECK(f0.pointer.nx() == doctest::Approx(100.f / 1280.f));
+
+    InputFrame b; b.tick = 1; b.actions["Attack"] = 1.f; b.pointer = a.pointer; b.pointer.buttons = kPointerLeft | kPointerRight;
+    InputFrame f1 = InputFrame::withEdges(b, &f0);
+    CHECK_FALSE(f1.justPressed("Attack"));   // still held
+    CHECK(f1.held("Attack"));
+    CHECK(f1.pointer.pressed == kPointerRight);
+    CHECK(f1.pointer.released == 0);
+
+    InputFrame c; c.tick = 2; c.pointer = b.pointer; c.pointer.inside = false;   // focus lost: everything releases
+    InputFrame f2 = InputFrame::withEdges(c, &f1);
+    CHECK(f2.justReleased("Attack"));
+    CHECK(f2.pointer.buttons == 0);
+    CHECK(f2.pointer.released == (kPointerLeft | kPointerRight));
+
+    Json j = f1.toJson();
+    CHECK(j["pointer"]["buttons"] == Json::array({"left", "right"}));
+    CHECK(j["pointer"]["pressed"] == Json::array({"right"}));
+    CHECK(j["pointer"]["viewport"] == Json::array({1280, 720}));
+    CHECK_FALSE(j.contains("pressed"));
+    InputFrame back = InputFrame::fromJson(j);
+    CHECK(back.pointer.buttons == f1.pointer.buttons);
+    CHECK(back.pointer.pressed == kPointerRight);
+    CHECK(back.pointer.x == 100);
+    CHECK(back.held("Attack"));
+    InputFrame noPtr = InputFrame::fromJson(Json{{"tick", 3}, {"actions", Json::object()}});
+    CHECK_FALSE(noPtr.pointer.present);
+    CHECK(pointerButtonMask("middle") == kPointerMiddle);
+    CHECK(pointerButtonMask("wat") == 0);
+}
