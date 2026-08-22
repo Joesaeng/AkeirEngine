@@ -52,7 +52,7 @@ def main():
     player = m.play(action='inspect', run=run, entity='Player')
     x = player['components']['Transform']['position'][0]
     assert x > 2.0, f'player did not move right: {x}'
-    print(f"[2] stepped 60 with MoveX=1 → player.x={x:.2f} hash={s1['hash']}")
+    print(f"[2] stepped 60 with MoveX=1 -> player.x={x:.2f} hash={s1['hash']}")
     q = m.play(action='query', run=run, **{'with': ['EnemyAI']})
     assert q['total'] == 3, q
     s2 = m.play(action='step', run=run, ticks=300)

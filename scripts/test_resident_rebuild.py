@@ -82,7 +82,7 @@ def main():
     assert caps['ok'], caps
     sha_before = caps['result']['info']['exe']['sha256']
     assert sha_before == sha256(exe), 'worker sha256 must equal the file it was started from'
-    print(f'[1] worker exe {sha_before[:19]}…')
+    print(f'[1] worker exe {sha_before[:19]}...')
 
     # 2. rebuild while the adapter (and its worker) keep akeir.exe open
     src = ROOT / 'Game' / 'Source' / 'GameSystems.cpp'
@@ -103,7 +103,7 @@ def main():
     caps2 = m.call('capabilities')
     sha_after = caps2['result']['info']['exe']['sha256']
     notes = [w.get('ruleId') for w in caps2.get('warnings', [])]
-    print(f'[3] worker exe after rebuild {sha_after[:19]}… notes={notes}')
+    print(f'[3] worker exe after rebuild {sha_after[:19]}... notes={notes}')
     assert sha_after == sha_disk, f'worker still runs the old build: {sha_after} != {sha_disk}'
     assert 'MCP_WORKER_RESTARTED' in notes, 'first response after the restart must carry MCP_WORKER_RESTARTED'
     run = m.call('run', {'ticks': 60})
