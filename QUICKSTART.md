@@ -11,6 +11,7 @@ AKEIR-0.1.1/
 ├── RELEASE.md                 version, git hash, sha256 of bin/akeir.exe
 ├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (notices for the statically linked Flecs/Box2D/nlohmann/SDL3) · CONTRIBUTING.md
 ├── bin\akeir.exe               the prebuilt CLI. Works without building. `akeir` in the examples below = this file. Put bin\ on PATH or use the full path
+├── bin\TestArena.exe           the sample game — double-click to play (WASD, ESC/close to quit). Rebuilding your own game produces bin\<YourProjectName>.exe
 ├── .mcp.json                  MCP server registration for Claude Code (bin\akeir.exe mcp --project Game). Relative path — open this folder as the Claude Code project root
 ├── Docs/                      00-START-HERE → STATUS → DECISIONS → BUILD → ARCHITECTURE → CONVENTIONS
 ├── AKEIR.md   the design spec (§0–§89, with ▶ v3 implementation notes)
@@ -30,7 +31,7 @@ cd Game
 %G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0xbc23e49a65efb2e8
 %G% test --json                                 # 3 data-driven tests (Combat / Movement / Visual golden)
 %G% capture --ticks 300 --out Cache\capture\f.png --json   # CPU-rendered PNG
-%G% run --ticks 120                             # opens a window that closes itself after 2 seconds. Without --ticks it runs until ESC/close. WASD/arrows to move
+%G% run --ticks 120                             # the same windowed run from the CLI (closes itself after 2 s). To just play, double-click bin\TestArena.exe
 ```
 
 - stdout is a single JSON envelope (`{ok, command, result|error, changes, warnings, meta}`). Without `--json` it is pretty-printed on a terminal (TTY); when piped it is always one line.

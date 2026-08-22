@@ -40,3 +40,7 @@ endif()
 
 # 샘플 게임 코드 (Game/Source). Engine 은 Game 을 모른다 (§76); akeir.exe 와 테스트가 링크한다.
 add_subdirectory(Game/Source)
+# 게임 실행 파일 bin/<ProjectName>.exe — 더블클릭으로 플레이 (SDL 빌드에서만). Tools/Player
+if(AKEIR_WITH_SDL)
+  add_subdirectory(Tools/Player)
+endif()

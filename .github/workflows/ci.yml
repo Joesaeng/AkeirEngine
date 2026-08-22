@@ -144,6 +144,9 @@ jobs:
       - name: akeir test (3 scenarios incl. Visual golden capture)
         working-directory: Game
         run: ../build/msvc-release/bin/akeir.exe test --json
+      - name: Game executable smoke (bin/TestArena.exe, dummy video driver)
+        working-directory: Game
+        run: ../build/msvc-release/bin/TestArena.exe --ticks 30 --video-driver dummy
       - name: Capture smoke (software renderer)
         working-directory: Game
         run: ../build/msvc-release/bin/akeir.exe capture --ticks 300 --out Cache/capture/ci.png --json

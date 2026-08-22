@@ -48,6 +48,7 @@ ctest --preset msvc-headless
 | 경로 | 내용 |
 |---|---|
 | `build/<preset>/bin/akeir.exe` | CLI (§11). `msvc-release` 는 static CRT(`/MT`) 라 VC++ 재배포 없이 다른 PC 에서 돈다 — 릴리즈 zip 의 `bin/akeir.exe` |
+| `build/<preset>/bin/<ProjectName>.exe` (샘플: `TestArena.exe`) | **게임 실행 파일** (Tools/Player, SDL 빌드만). 더블클릭하면 창이 뜨고 닫을 때까지 플레이. 콘솔 없음 — 로그는 `Game/Cache/player.log`, 오류는 메시지 박스. 프로젝트는 exe 옆 `project.json` → 상위 디렉터리의 `Game/project.json` 순으로 찾는다(`--project DIR` 로 지정 가능). `--ticks N`, `--video-driver dummy` 는 스모크용 |
 | `build/<preset>/Tests/akeir_tests.exe` | doctest 단위 테스트 |
 | `build/<preset>/compile_commands.json` | clangd 등용 |
 

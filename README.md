@@ -29,6 +29,8 @@ cd Game
 ..\build\msvc-headless\bin\akeir.exe mcp                                  # MCP server over stdio
 ```
 
+An SDL build (`scripts\build.cmd msvc-release all`) also produces the **game executable** `build\msvc-release\bin\TestArena.exe` (named after `Game/project.json`) — double-click to play, no terminal.
+
 MCP for Claude Code: `copy .mcp.json.example .mcp.json` (or `akeir mcp --print-config > .mcp.json` for absolute paths).
 
 ## Documentation
