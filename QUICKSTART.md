@@ -1,12 +1,12 @@
-# AKEIR Engine 0.1.1 — QUICKSTART
+# AKEIR Engine 0.1.2 — QUICKSTART
 
-This zip is release v0.1.1 of the **AKEIR Engine** (pronounced *ay-KEER*; Greek ἄχειρ "without hands" — a game engine for making games without human hands): **source + docs + a prebuilt `bin\akeir.exe` (Windows x64, SDL included, static CRT — no redistributable needed)**.
+This zip is release v0.1.2 of the **AKEIR Engine** (pronounced *ay-KEER*; Greek ἄχειρ "without hands" — a game engine for making games without human hands): **source + docs + a prebuilt `bin\akeir.exe` (Windows x64, SDL included, static CRT — no redistributable needed)**.
 Purpose: a session with no prior conversation context (human or AI) unpacks this directory and **tries to build a game with this engine**.
 
 ## 0. What is inside
 
 ```
-AKEIR-0.1.1/
+AKEIR-0.1.2/
 ├── QUICKSTART.md              ← this file
 ├── RELEASE.md                 version, git hash, sha256 of bin/akeir.exe
 ├── LICENSE (MIT) · THIRD_PARTY_NOTICES.md (notices for the statically linked Flecs/Box2D/nlohmann/SDL3) · CONTRIBUTING.md
@@ -101,4 +101,4 @@ start %G% serve                                      # in another window. From n
 - Known limitations: the known-issues / technical-debt section of `Docs/STATUS.md` (e.g. MCP argument typos are silently ignored, `query` has `limit` but no cursor).
 - On a crash, report `<project>/Cache/crash/*.dmp` together with the envelope's `error.details.lastLogs` (regenerate the `.pdb` symbols by checking out the same tag and running `scripts\build.cmd msvc-release all`).
 
-git: this release is tag `v0.1.1` (v0.1.0 was the first release; v0.1.1 adds the rebuild-safe MCP server, the reflection completeness check and English READMEs). The zip contains no `.git` (`git archive`) — a new project simply creates its own repository (`project init` writes a `.gitignore`).
+git: this release is tag `v0.1.2` (v0.1.0 first release; v0.1.1 rebuild-safe MCP + reflection completeness; v0.1.2 the game executable, texture assets, PlayWorld runtime primitives, test-DSL discoverability, bitmap text/HUD and the resident `play` tool — from the first real game made with the engine). The zip contains no `.git` (`git archive`) — a new project simply creates its own repository (`project init` writes a `.gitignore`).
