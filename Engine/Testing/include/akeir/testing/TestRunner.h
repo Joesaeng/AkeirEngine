@@ -84,6 +84,8 @@ struct TestScenario {
     std::vector<std::string> problems;   // 파싱 문제 (있으면 errored)
 
     static TestScenario fromJson(const Json& j, const std::string& file);
+    /// JSON Schema 2020-12 of a *.test.json file (`akeir schema test`, capabilities.testScenario). ADR-0039
+    static Json schema();
 };
 
 struct TestFailure {

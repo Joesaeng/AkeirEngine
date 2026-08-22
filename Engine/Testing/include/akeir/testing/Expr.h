@@ -47,6 +47,11 @@ public:
     /// 표현식 안의 모든 경로(`player.Health.current`)를 평가해 {path: value} 로 (§24 failures[].bindings)
     Json probeBindings(const std::map<std::string, Json>& bindings) const;
     const std::string& text() const { return text_; }
+    /// Names of the built-in functions (parse-time validation; "did you mean"). ADR-0039
+    static const std::vector<std::string>& functionNames();
+    /// Machine-readable reference of the language: grammar, functions, macros, bindings, semantics, examples
+    /// (`akeir schema test`, capabilities.testScenario.expression). ADR-0039
+    static Json reference();
 
 private:
     std::string text_;

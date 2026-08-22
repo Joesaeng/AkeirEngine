@@ -5,6 +5,8 @@
 #include "Serve.h"
 #include "akeir/commands/CommandBus.h"
 #include "akeir/core/Crash.h"
+#include "akeir/testing/Expr.h"
+#include "akeir/testing/TestRunner.h"
 #include "akeir/core/ExitCodes.h"
 #include "akeir/core/FpEnv.h"
 #include "akeir/core/Hash.h"
@@ -134,7 +136,7 @@ Json capabilitiesJson() {
     Json tools = Json::array();
     tools.push_back(tool("capabilities", "Capability discovery", "Full tool/command descriptors, exit codes and error codes (§15).", props({}), true, false, true, "akeir capabilities --json", true));
     tools.push_back(tool("project_info", "Project summary", "Name, tickRate, seed, worlds, prefabs, registered components.", props({}), true, false, true, "akeir project info --json", true));
-    tools.push_back(tool("schema_describe", "Component schemas", "JSON Schema 2020-12 (+x-*) and wire format of components (§14).", props({{"component", S}, {"all", B}}), true, false, true, "akeir schema component <Name> --json", true));
+    tools.push_back(tool("schema_describe", "Component / test schemas", "JSON Schema 2020-12 (+x-*) and wire format of components (§14); kind:\"test\" returns the test scenario schema and the assertion expression reference (grammar, functions, examples).", props({{"component", S}, {"all", B}, {"kind", Json{{"enum", Json::array({"component", "test"})}, {"description", "test = scenario file schema + expression language"}}}}), true, false, true, "akeir schema component <Name> --json | akeir schema test --json", true));
     tools.push_back(tool("query", "Query play world", "Build the world, run N ticks, return entities matching with/without (components or #tags) (§16).", props({{"with", Json{{"type", "array"}, {"items", S}, {"description", "component names the entity must have; prefix # for tags (#enemy)"}}}, {"without", Json{{"type", "array"}, {"items", S}, {"description", "component names / #tags to exclude"}}}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"components", Json{{"type", "boolean"}, {"description", "include each entity's full component values"}}}, {"limit", Json{{"type", "integer"}, {"description", "max rows (default 100); raise it to see more — there is no cursor yet"}}}, {"world", S}}), true, false, true, "akeir query --with EnemyAI --ticks 300 --json", true));
     tools.push_back(tool("inspect", "Inspect an entity", "Resolved components of one entity after N ticks (play world) — `akeir dump` (§25).", props({{"entity", SEL}, {"ticks", Json{{"type", "integer"}, {"description", "simulate this many ticks first (default 0)"}}}, {"world", S}}), true, false, true, "akeir dump <selector> --ticks 600 --json", true));
     tools.push_back(tool("explain", "Explain an authoring object", "Where it lives, prefab chain, overrides, children, resolved components, lifecycle (§18).", props({{"selector", SEL}}), true, false, true, "akeir explain <selector> --json", true));
@@ -149,6 +151,7 @@ Json capabilitiesJson() {
     tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list: opaque tx handle + TTL (10 min); pass tx to apply to group several calls into one undo step. Works directly inside an MCP session; from the CLI it needs `akeir serve`.", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "akeir tx begin|commit|rollback|list", true));
     tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "akeir undo|redo|history", true));
     r["tools"] = tools;
+    r["testScenario"] = Json{{"scenario", TestScenario::schema()}, {"expression", expr::Expr::reference()}};   // ADR-0039: the test DSL is discoverable without reading a README
 
     // busCommands[] — CommandBus 의 Mutation command (apply.changes[].op 의 oneOf). 스키마는 Engine/Commands/BuiltinCommands.cpp 가 선언한다.
     {
@@ -181,7 +184,7 @@ Json capabilitiesJson() {
                                 "RUN_UNKNOWN_OR_EXPIRED", "RUN_STATUS_REQUIRES_SERVE", "SERVE_NOT_RUNNING", "SERVE_ALREADY_RUNNING", "FEATURE_UNAVAILABLE", "TEST_FAILED", "TESTS_NOT_FOUND", "CAPTURE_MISMATCH", "CAPTURE_FAILED",
                                 "APPLY_INVALID", "APPLY_BAD_REFERENCE", "CHANGESET_BEFORE_MISMATCH", "CHANGESET_APPLY_FAILED", "JOURNAL_WRITE_FAILED", "SAVE_FAILED",
                                 "REFLECT_MEMBER_UNLISTED", "MCP_WORKER_RESTARTED", "SERVE_STALE_EXE",
-                                "ASSET_META_INVALID", "ASSET_SOURCE_MISSING", "ASSET_SOURCE_INVALID", "ASSET_SUBASSET_RECT_INVALID", "ASSET_SUBASSET_MISSING"});
+                                "ASSET_META_INVALID", "ASSET_SOURCE_MISSING", "ASSET_SOURCE_INVALID", "ASSET_SUBASSET_RECT_INVALID", "ASSET_SUBASSET_MISSING", "EXPR_PARSE_ERROR"});
     return r;
 }
 

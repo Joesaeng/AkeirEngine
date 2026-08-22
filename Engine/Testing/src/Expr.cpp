@@ -2,6 +2,7 @@
 #include "akeir/testing/Expr.h"
 
 #include <cmath>
+#include <vector>
 #include <cctype>
 #include <functional>
 #include <set>
@@ -119,6 +120,29 @@ private:
     bool isIdent(const char* s) const { return peek().type == Tok::Ident && peek().text == s; }
     bool accept(const char* s) { if (isOp(s)) { next(); return true; } return false; }
     void fail(const std::string& m) { if (!failed_ && err_) *err_ = {m, peek().pos}; failed_ = true; }
+    void failAt(const std::string& m, std::size_t pos) { if (!failed_ && err_) *err_ = {m, pos}; failed_ = true; }
+    /// unknown function names are a parse error (not a surprise at evaluation time) — with a "did you mean" (ADR-0039)
+    bool checkCall(const std::string& name, std::size_t pos) {
+        for (const auto& f : Expr::functionNames()) if (f == name) return true;
+        std::string best; std::size_t bestD = 99;
+        for (const auto& f : Expr::functionNames()) { std::size_t d = editDistance(name, f); if (d < bestD) { bestD = d; best = f; } }
+        std::string msg = "unknown function '" + name + "()'";
+        if (bestD <= 2) msg += " — did you mean '" + best + "()'?";
+        msg += " (functions: " + joinNames() + "; list macros: .all(v, p) .exists(v, p) .exists_one(v, p) .size())";
+        failAt(msg, pos);
+        return false;
+    }
+    static std::size_t editDistance(const std::string& a, const std::string& b) {
+        std::vector<std::size_t> prev(b.size() + 1), cur(b.size() + 1);
+        for (std::size_t j = 0; j <= b.size(); ++j) prev[j] = j;
+        for (std::size_t i = 1; i <= a.size(); ++i) {
+            cur[0] = i;
+            for (std::size_t j = 1; j <= b.size(); ++j) cur[j] = std::min({prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1)});
+            std::swap(prev, cur);
+        }
+        return prev[b.size()];
+    }
+    static std::string joinNames() { std::string s; for (const auto& f : Expr::functionNames()) s += (s.empty() ? "" : ", ") + f; return s; }
     std::shared_ptr<Node> make(Kind k) { auto n = std::make_shared<Node>(); n->kind = k; return n; }
 
     NodePtr parseOr() {
@@ -180,6 +204,7 @@ private:
                         if (!accept(")")) { fail("expected ')'"); return nullptr; }
                         n = m;
                     } else {
+                        if (!checkCall(field, peek().pos)) return nullptr;
                         auto c = make(Kind::Call); c->name = field; c->args.push_back(n);   // method call: x.size() == size(x)
                         if (!parseArgs(c->args, ")")) return nullptr;
                         n = c;
@@ -204,8 +229,9 @@ private:
         if (t.type == Tok::Ident) {
             if (t.text == "true" || t.text == "false") { auto n = make(Kind::Literal); n->literal = next().text == "true"; return n; }
             if (t.text == "null") { next(); auto n = make(Kind::Literal); n->literal = nullptr; return n; }
+            const std::size_t namePos = t.pos;
             std::string name = next().text;
-            if (accept("(")) { auto c = make(Kind::Call); c->name = name; if (!parseArgs(c->args, ")")) return nullptr; return c; }
+            if (accept("(")) { if (!checkCall(name, namePos)) return nullptr; auto c = make(Kind::Call); c->name = name; if (!parseArgs(c->args, ")")) return nullptr; return c; }
             auto id = make(Kind::Ident); id->name = name; return id;
         }
         if (accept("[")) { auto l = make(Kind::List); if (!parseArgs(l->args, "]")) return nullptr; return l; }
@@ -423,6 +449,51 @@ void collectRoots(const Node& n, std::set<std::string>& out) {
 } // namespace
 
 // ---------------------------------------------------------------- Expr
+
+const std::vector<std::string>& Expr::functionNames() {
+    static const std::vector<std::string> names = {"has", "size", "abs", "min", "max", "dist"};
+    return names;
+}
+
+Json Expr::reference() {
+    Json r = Json::object();
+    r["summary"] = "Assertion expressions are a fixed comparator (§23.1, a CEL subset): no loops, assignment or user functions. Evaluated on the frame snapshot after N ticks.";
+    r["grammar"] = Json::array({
+        "expr    := or ;  or := and ('||' and)* ;  and := rel ('&&' rel)*",
+        "rel     := add (('=='|'!='|'<'|'<='|'>'|'>='|'in') add)?",
+        "add     := mul (('+'|'-') mul)* ;  mul := unary (('*'|'/'|'%') unary)*",
+        "unary   := ('!'|'-') unary | postfix",
+        "postfix := primary ( '.' IDENT | '.' IDENT '(' args ')' | '[' expr ']' )*",
+        "primary := NUMBER | STRING | true | false | null | '[' args ']' | IDENT | IDENT '(' args ')' | '(' expr ')'"});
+    r["functions"] = Json::array({
+        Json{{"name", "has"}, {"signature", "has(path) -> bool"}, {"doc", "true when the path resolves to a defined, non-null value; the only place an undefined path is allowed"}},
+        Json{{"name", "size"}, {"signature", "size(x) -> int   |   x.size()"}, {"doc", "length of a list, string or object"}},
+        Json{{"name", "abs"}, {"signature", "abs(x) -> number"}, {"doc", ""}},
+        Json{{"name", "min"}, {"signature", "min(a, b) -> number"}, {"doc", ""}},
+        Json{{"name", "max"}, {"signature", "max(a, b) -> number"}, {"doc", ""}},
+        Json{{"name", "dist"}, {"signature", "dist(a, b) -> number"}, {"doc", "euclidean distance between two numeric lists of equal length (e.g. Transform.position)"}}});
+    r["macros"] = Json::array({
+        Json{{"name", "all"}, {"signature", "list.all(v, predicate) -> bool"}, {"doc", "predicate holds for every element"}},
+        Json{{"name", "exists"}, {"signature", "list.exists(v, predicate) -> bool"}, {"doc", "predicate holds for at least one element"}},
+        Json{{"name", "exists_one"}, {"signature", "list.exists_one(v, predicate) -> bool"}, {"doc", "predicate holds for exactly one element"}}});
+    r["bindings"] = Json::array({
+        "<as>  — a setup binding: the entity's components object, e.g. player.Health.current (despawned → null, so has(player.Health) is false)",
+        "world — the whole snapshot: world.tick, world.entities[i].components.X, world.entities[i].name, world.entities[i].tags"});
+    r["semantics"] = Json::array({
+        "a missing member or binding is undefined; using it outside has() is an evaluation ERROR, not false (typos never pass silently)",
+        "numbers compare as double; == is JSON value equality (1 == 1.0); enum values are the reflection strings (\"chase\", lowercase) — quote them",
+        "'in': string in string = substring, value in list, key in object",
+        "assert modes: always (every tick, aborts at the first violation) | eventually {withinTicks} | at: N | at: \"end\" (default)"});
+    r["examples"] = Json::array({
+        "player.Health.current > 0",
+        "g.EnemyAI.state == \"dead\"",
+        "player.Transform.position[0] > 2",
+        "dist(player.Transform.position, g.Transform.position) < 1.5",
+        "world.entities.all(e, !has(e.components.EnemyAI) || has(e.components.Collider2D))",
+        "world.entities.exists(e, \"enemy\" in e.tags)",
+        "size(world.entities) >= 4"});
+    return r;
+}
 
 std::optional<Expr> Expr::parse(std::string_view text, ParseError* error) {
     ParseError err;

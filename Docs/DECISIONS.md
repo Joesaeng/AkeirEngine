@@ -254,3 +254,9 @@
   4. `spawn(...)` 에 `std::string* error` — 모르는 component 면 "" 를 돌려주고 등록된 이름 목록을 error 에 적는다(로그 `ecs.spawn_unknown_component`).
 - **검증**: `Tests/ECS_PlayWorld.cpp` 4 케이스(phase 관찰 순서, prefab spawn + override/tag/body, unknown component, 런타임 add/remove 결정론). 샘플·fixture finalHash 불변.
 - **참조**: §18 lifecycle, §7.1, §16, PRINCIPLES §9/§22
+
+## ADR-0039 테스트 DSL 발견성: `akeir schema test`, `capabilities.testScenario`, parse 시점 함수 검증 + "did you mean", `akeir test explain <expr>`
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P1 — "지원 함수와 문법을 README 에서 찾아야 하고 잘못된 표현식의 후보/예시가 부족").
+- **결정**: 문법·함수·매크로·바인딩·의미론·예시를 `expr::Expr::reference()`(JSON) 로, 시나리오 파일 형식을 `TestScenario::schema()`(JSON Schema 2020-12) 로 코드에 둔다. 노출: `akeir schema test --json`, `capabilities.testScenario`, MCP `schema_describe {kind: "test"}`. 모르는 함수 이름은 평가 시점이 아니라 **parse 시점** 오류(offset + 편집 거리 ≤ 2 의 "did you mean 'size()'?" + 전체 함수 목록). `akeir test explain "<expr>" [--snapshot f --as name=id]` 가 파싱 결과(roots)와 caret 위치를 보여주고, `run --snapshot-out` 의 snapshot 위에서 평가해 `value`/`bindings` 를 돌려준다(`EXPR_PARSE_ERROR`). README 는 reference 의 사본이 아니라 포인터가 된다(§8: 규칙은 Schema/Capabilities 로 드러낸다).
+- **검증**: `Tests/Testing_Expr.cpp` — 오타 제안, offset, reference 의 모든 예시가 parse 됨, schema 키.
+- **참조**: §23, §23.1, §24, PRINCIPLES §8/§22-4

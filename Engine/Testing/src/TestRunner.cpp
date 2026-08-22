@@ -19,6 +19,53 @@ namespace akeir {
 
 // ---------------------------------------------------------------- parsing
 
+Json TestScenario::schema() {
+    auto str = [](const char* d) { return Json{{"type", "string"}, {"description", d}}; };
+    auto integer = [](const char* d) { return Json{{"type", "integer"}, {"description", d}}; };
+    Json setupStep = Json{{"type", "object"}, {"description", "bind an existing entity OR spawn a prefab, before tick 0"}, {"properties", Json{
+        {"entity", str("selector of an existing entity (id | name:X | path:World/Parent/Child) to bind")},
+        {"spawn", str("prefab selector (id | name:X) to instantiate — same path as PlayWorld::spawnPrefab")},
+        {"as", str("binding name usable in assert expressions")},
+        {"name", str("entity name for a spawned instance (default: the binding name)")},
+        {"position", Json{{"type", "array"}, {"items", Json{{"type", "number"}}}, {"description", "[x, y, z] shortcut for /components/Transform/position"}}},
+        {"set", Json{{"type", "object"}, {"description", "JSON Pointer overrides into the resolved prefab, e.g. {\"/components/Health/max\": 5}"}}},
+        {"tags", Json{{"type", "array"}, {"items", Json{{"type", "string"}}}}}}}, {"additionalProperties", false}};
+    Json inputStep = Json{{"type", "object"}, {"description", "scripted input: hold/axis over [tick, untilTick), press for one tick, release ends a hold"}, {"properties", Json{
+        {"tick", integer("first tick the step applies to")},
+        {"untilTick", integer("exclusive end of a hold/axis (default: until the matching release, else the end)")},
+        {"hold", Json{{"type", "object"}, {"description", "{action: value} held (default 1.0); action names = keys of Config/input.json"}}},
+        {"axis", Json{{"type", "object"}, {"description", "{action: value in -1..1} held"}}},
+        {"press", str("action pressed for exactly this tick (1.0)")},
+        {"release", str("action released (ends a hold without untilTick)")}}}, {"required", Json::array({"tick"})}, {"additionalProperties", false}};
+    Json assertion = Json{{"type", "object"}, {"properties", Json{
+        {"id", str("assertion id (reported in failures[])")},
+        {"expr", str("expression over the bindings (see `akeir schema test` → expression)")},
+        {"always", Json{{"type", "boolean"}, {"description", "checked every tick; the first violation aborts the run"}}},
+        {"eventually", Json{{"type", "object"}, {"properties", Json{{"withinTicks", integer("window length; passes once true, fails when the window closes")}}}}},
+        {"at", Json{{"description", "tick number to check once, or \"end\" (default)"}, {"anyOf", Json::array({Json{{"type", "integer"}}, Json{{"const", "end"}}})}}},
+        {"capture", Json{{"type", "object"}, {"description", "golden-image assertion (SDL builds): {golden, width, height, tolerance{perPixel, maxMismatchRatio}}"}}}}},
+        {"required", Json::array({"id", "expr"})}, {"additionalProperties", false}};
+    Json s = Json::object();
+    s["$schema"] = "https://json-schema.org/draft/2020-12/schema";
+    s["$id"] = "game://schema/test/1";
+    s["title"] = "AKEIR test scenario (Tests/**/*.test.json)";
+    s["type"] = "object";
+    s["properties"] = Json{
+        {"$schema", Json{{"const", "game://schema/test/1"}}},
+        {"name", str("scenario name (default: file stem)")},
+        {"world", str("world selector (id | name:X); default: project.defaultWorld")},
+        {"seed", integer("RNG seed (default: project.seed)")},
+        {"requires", Json{{"type", "array"}, {"items", Json{{"type", "string"}}}, {"description", "capabilities the build must have, e.g. [\"renderer\"] — otherwise the test is skipped"}}},
+        {"setup", Json{{"type", "array"}, {"items", setupStep}}},
+        {"inputs", Json{{"type", "array"}, {"items", inputStep}}},
+        {"run", Json{{"type", "object"}, {"properties", Json{{"ticks", integer("ticks to simulate")}, {"tickRate", integer("0/omitted = project.tickRate")}}}}},
+        {"determinism", Json{{"type", "object"}, {"properties", Json{{"runs", integer(">= 2 runs the scenario again and compares world hashes (T0)")}, {"hashEvery", integer("compare every N ticks")}, {"expectedFinalHash", Json{{"description", "fixed finalHash to compare against, or null"}}}}}}},
+        {"assert", Json{{"type", "array"}, {"items", assertion}}}};
+    s["required"] = Json::array({"run"});
+    s["additionalProperties"] = false;
+    return s;
+}
+
 TestScenario TestScenario::fromJson(const Json& j, const std::string& file) {
     TestScenario s;
     s.file = file;

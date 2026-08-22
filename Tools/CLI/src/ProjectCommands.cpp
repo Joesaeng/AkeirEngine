@@ -8,6 +8,8 @@
 #include "akeir/core/Log.h"
 #include "akeir/reflection/Registry.h"
 #include "akeir/runtime/Components.h"
+#include "akeir/testing/Expr.h"
+#include "akeir/testing/TestRunner.h"
 #include "akeir/runtime/Project.h"
 #include "akeir/serialization/Canonical.h"
 
@@ -194,6 +196,9 @@ Envelope cmdSchema(Context& ctx) {
         }
         return Envelope::success("schema.describe", Json{{"schema", m->toSchema()}, {"wireFormat", m->toWireFormat()}});
     }
+    if (sub == "test") {   // ADR-0039: the scenario file format and the expression language, machine-readable
+        return Envelope::success("schema.describe", Json{{"scenario", TestScenario::schema()}, {"expression", expr::Expr::reference()}, {"files", "<project>/Tests/**/*.test.json"}});
+    }
     if (sub == "wire-format" && !name.empty()) {
         const ComponentMeta* m = Registry::global().find(name);
         if (!m) return Envelope::failure("schema.describe", CommandError::make(ErrorCategory::NotFound, "COMPONENT_UNKNOWN", "Unknown component '" + name + "'.", Json::object()));
@@ -203,7 +208,7 @@ Envelope cmdSchema(Context& ctx) {
     Json comps = Json::object();
     for (const auto* m : Registry::global().all())
         comps[m->name] = ctx.args.has("all") ? m->toSchema() : Json{{"description", m->description}, {"requires", m->requiresComponents}, {"properties", m->props.size()}, {"$id", "game://schema/component/" + m->name + "/" + std::to_string(m->version)}};
-    return Envelope::success("schema.describe", Json{{"components", comps}, {"hint", "akeir schema component <Name> for the full JSON Schema + wire format; --all for every schema"}});
+    return Envelope::success("schema.describe", Json{{"components", comps}, {"hint", "akeir schema component <Name> for the full JSON Schema + wire format; --all for every schema; akeir schema test for the test scenario format and expression language"}});
 }
 
 Envelope cmdEntityList(Context& ctx) {

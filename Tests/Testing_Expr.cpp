@@ -1,6 +1,7 @@
 // Testing_Expr.cpp — 설계 문서 §23.1 고정 비교 문법: 파싱, 평가, undefined/has, 매크로, 오류
 #include <doctest/doctest.h>
 #include "akeir/testing/Expr.h"
+#include "akeir/testing/TestRunner.h"
 
 using namespace akeir;
 using akeir::expr::Expr;
@@ -64,7 +65,10 @@ TEST_CASE("Expr: has() and undefined semantics (오타는 false 가 아니라 �
     CHECK_THROWS_AS(ev("player.Health.current > \"x\""), expr::EvalError);
     CHECK_THROWS_AS(ev("player.Health"), expr::EvalError);            // bool 아님
     CHECK_THROWS_AS(ev("1 / 0 == 1"), expr::EvalError);
-    CHECK_THROWS_AS(ev("frobnicate(1)"), expr::EvalError);
+    // unknown functions are now a parse error (ADR-0039), see the dedicated test case below
+    expr::ParseError pe;
+    CHECK_FALSE(Expr::parse("frobnicate(1)", &pe));
+    CHECK(pe.message.find("unknown function") != std::string::npos);
 }
 
 TEST_CASE("Expr: quantifier macros over world.entities") {
@@ -95,4 +99,27 @@ TEST_CASE("Expr: parse errors carry an offset — probeBindings reports the valu
     CHECK(probe["player.Stamina"] == "<undefined>");
     auto roots = e->roots();
     CHECK(roots == std::vector<std::string>{"goblin", "player"});
+}
+
+TEST_CASE("Expr: unknown functions fail at parse time with a suggestion; the language reference and scenario schema are machine-readable (ADR-0039)") {
+    using namespace akeir::expr;
+    ParseError err;
+    CHECK_FALSE(Expr::parse("siz(world.entities) > 1", &err));
+    CHECK(err.message.find("unknown function 'siz()'") != std::string::npos);
+    CHECK(err.message.find("did you mean 'size()'") != std::string::npos);
+    CHECK(err.offset == 0);
+    CHECK_FALSE(Expr::parse("player.Health.current > 0 && world.entities.sizee() > 1", &err));
+    CHECK(err.message.find("did you mean 'size()'") != std::string::npos);
+    CHECK(err.offset > 20);
+    CHECK(Expr::parse("world.entities.size() > 1 && has(player.Health)", &err));
+    CHECK(Expr::functionNames().size() == 6);
+    akeir::Json ref = Expr::reference();
+    CHECK(ref["functions"].size() == 6);
+    CHECK(ref["macros"].size() == 3);
+    CHECK(ref["examples"].size() >= 5);
+    for (const auto& ex : ref["examples"]) { INFO(ex.get<std::string>()); CHECK(Expr::parse(ex.get<std::string>(), &err)); }   // every example parses
+    akeir::Json schema = akeir::TestScenario::schema();
+    CHECK(schema["$id"] == "game://schema/test/1");
+    CHECK(schema["properties"].contains("assert"));
+    CHECK(schema["properties"]["setup"]["items"]["properties"].contains("spawn"));
 }

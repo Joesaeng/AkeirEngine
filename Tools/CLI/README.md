@@ -10,11 +10,11 @@ Two execution models (ADR-0011, 0029): **one-shot** (the project is opened and c
 | `src/main.cpp` | parseArgs → crash handler (`Cache/crash`) → `--timeout` watchdog → findCommand → run → envelope output → exit code. C++ exceptions become `INTERNAL_ERROR` (exit 1) |
 | `src/Args.h/.cpp` | `--key value` / `--key=value` / flags. Options that take a value must be listed in `kValueOptions` (otherwise they are treated as flags) |
 | `src/Commands.h/.cpp` | the `CommandSpec{id, cli spelling, kind, …, run}` table, `findCommand` (longest prefix match), `capabilitiesJson()` (15 tools + commands + busCommands + exitCodes + errorCodes), version / debug crash-test / hang-test |
-| `src/ProjectCommands.cpp` | reads: `project info`, `validate [--fix]`, `fmt`, `schema`, `entity list`, `explain`, `refs`. Shared `openProject()` |
+| `src/ProjectCommands.cpp` | reads: `project info`, `validate [--fix]`, `fmt`, `schema` (`component <Name>`, `--all`, `test` = scenario schema + expression reference), `entity list`, `explain`, `refs`. Shared `openProject()` |
 | `src/InitCommand.cpp` | `project init <name> [--dir D] [--tick-rate] [--seed] [--force]` — creates an empty project (works without a project; not forwarded to serve) |
 | `src/RunCommands.cpp` | play world: `run --headless`, `dump`, `query` |
 | `src/MutationCommands.cpp` | writes (all through `CommandBus`): `entity create\|delete\|rename\|reparent`, `component add\|remove`, `set`, `tag add\|remove`, `prefab create\|instantiate`, `world create`, `asset import`, `apply`, `undo\|redo\|history`, `cmd` |
-| `src/TestCommands.cpp` | `test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--update-golden] [--list]` — the `Engine/Testing` runner, exit 3 on failure. SDL builds inject the capture hook |
+| `src/TestCommands.cpp` | `test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--update-golden] [--list]` — the `Engine/Testing` runner, exit 3 on failure. SDL builds inject the capture hook. `test explain "<expr>" [--snapshot f --as name=id]` parses/evaluates an assertion expression (ADR-0039) |
 | `src/SdlCommands.cpp` | `capture`, `input map`, windowed `run` (without `--headless`), `installCaptureHooks`. Without `AKEIR_HAS_SDL` everything returns `FEATURE_UNAVAILABLE` |
 | `src/Serve.h/.cpp` | `ServeHost` (resident Project + single CommandBus + run registry, JSON-RPC dispatch), `akeir serve` (Winsock loopback NDJSON + token / `--stdio`), `tryRemote` (thin client), `serve status\|stop` |
 | `src/Mcp.cpp` | the MCP **worker** (`akeir mcp --worker`) — a stdio MCP server on top of ServeHost (server/discover, initialize, tools/list, tools/call) |

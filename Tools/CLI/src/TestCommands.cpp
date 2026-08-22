@@ -8,6 +8,8 @@
 #include "akeir/core/ExitCodes.h"
 #include "akeir/core/FpEnv.h"
 #include "akeir/runtime/Components.h"
+#include "akeir/serialization/Canonical.h"
+#include "akeir/testing/Expr.h"
 #include "akeir/testing/TestRunner.h"
 
 #include <filesystem>
@@ -77,7 +79,65 @@ Envelope cmdTest(Context& ctx) {
 
 } // namespace
 
+namespace {
+std::vector<std::string> splitCsv(const std::string& s) {
+    std::vector<std::string> out; std::string cur;
+    for (char c : s) { if (c == ',') { if (!cur.empty()) out.push_back(cur); cur.clear(); } else cur += c; }
+    if (!cur.empty()) out.push_back(cur);
+    return out;
+}
+} // namespace
+
+// akeir test explain "<expr>" [--snapshot f.json --as name=entity_id …] — parse an assertion expression, show what it
+// references, and (with a snapshot from `run --snapshot-out`) evaluate it. ADR-0039: typos are caught before a test runs.
+Envelope cmdTestExplain(Context& ctx) {
+    const std::string text = ctx.args.positional(2);
+    if (text.empty()) return Envelope::failure("test.explain", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "akeir test explain \"<expr>\" [--snapshot Cache/snap.json] [--as player=<entity id>]", Json{{"reference", expr::Expr::reference()}}));
+    expr::ParseError perr;
+    auto e = expr::Expr::parse(text, &perr);
+    if (!e) {
+        std::string caret(perr.offset, ' ');
+        return Envelope::failure("test.explain", CommandError::make(ErrorCategory::Usage, "EXPR_PARSE_ERROR", perr.message + " at offset " + std::to_string(perr.offset),
+                                 Json{{"expr", text}, {"offset", perr.offset}, {"pointer", text + "\n" + caret + "^"}, {"functions", expr::Expr::functionNames()}, {"hint", "akeir schema test --json -> expression (grammar, functions, examples)"}}));
+    }
+    Json r = Json{{"expr", text}, {"ok", true}, {"roots", e->roots()}};
+    if (auto snap = ctx.args.get("snapshot")) {
+        std::string err;
+        auto sj = readJsonFile(*snap, &err);
+        if (!sj) return Envelope::failure("test.explain", CommandError::make(ErrorCategory::NotFound, "SNAPSHOT_UNREADABLE", "Cannot read snapshot " + *snap + ": " + err));
+        std::map<std::string, Json> bindings;
+        bindings["world"] = *sj;
+        // --as name=entity_id binds an entity's components like a setup step would
+        if (auto as = ctx.args.get("as")) {
+            for (const auto& pair : splitCsv(*as)) {
+                auto eq = pair.find('=');
+                if (eq == std::string::npos) continue;
+                std::string name = pair.substr(0, eq), id = pair.substr(eq + 1);
+                Json comps = nullptr;
+                if (sj->contains("entities") && (*sj)["entities"].is_array())
+                    for (const auto& ent : (*sj)["entities"]) if (ent.value("id", "") == id) comps = ent.value("components", Json::object());
+                bindings[name] = comps;
+            }
+        }
+        try {
+            Json value = e->eval(bindings);
+            r["value"] = value;
+            r["bindings"] = e->probeBindings(bindings);
+        } catch (const expr::EvalError& ev) {
+            r["error"] = ev.message;
+            r["bindings"] = e->probeBindings(bindings);
+            r["hint"] = "an undefined path outside has() is an error, not false — check the binding names (roots) and the snapshot";
+        }
+    } else {
+        r["hint"] = "add --snapshot <file from run --snapshot-out> [--as name=entity_id] to evaluate it";
+    }
+    return Envelope::success("test.explain", r);
+}
+
 void registerTestCommands(std::vector<CommandSpec>& t) {
+    t.push_back({"test.explain", {"test", "explain"}, "Query", "Parse / evaluate an assertion expression (§23.1)",
+                 "Parses an assertion expression, reports what it references (roots), and with --snapshot evaluates it against a snapshot from `akeir run --headless --snapshot-out f`. Unknown functions and syntax errors come back with the offset and a 'did you mean'. The language reference: `akeir schema test`.",
+                 "akeir test explain \"player.Health.current > 0\" [--snapshot Cache/snap.json] [--as player=<entity id>] [--json]", true, false, true, cmdTestExplain});
     t.push_back({"test", {"test"}, "Query", "Run data-driven test scenarios (§23)",
                  "Runs Tests/**/*.test.json: setup (spawn/bind), scripted inputs, assertions on frame snapshots (always/eventually/at), run-twice determinism. Writes results.json (+ --junit). Exit 3 on failures.",
                  "akeir test [filter] [--junit out.xml] [--results-dir DIR] [--no-artifacts] [--update-golden] [--list] [--json]", true, false, true, cmdTest});

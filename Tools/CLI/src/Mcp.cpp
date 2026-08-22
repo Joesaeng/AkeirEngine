@@ -71,7 +71,7 @@ Json callTool(ServeHost& host, const std::string& name, const Json& a) {
 
     if (name == "capabilities") { argv = {"capabilities"}; }
     else if (name == "project_info") { argv = {"project", "info"}; }
-    else if (name == "schema_describe") { argv = {"schema"}; if (flag(a, "all")) argv.push_back("--all"); else if (!str(a, "component").empty()) { argv.push_back("component"); argv.push_back(str(a, "component")); } else argv.push_back("--all"); }
+    else if (name == "schema_describe") { argv = {"schema"}; if (str(a, "kind") == "test") argv.push_back("test"); else if (flag(a, "all")) argv.push_back("--all"); else if (!str(a, "component").empty()) { argv.push_back("component"); argv.push_back(str(a, "component")); } else argv.push_back("--all"); }
     else if (name == "query") { argv = {"query"}; opt("with", joinList(a.value("with", Json()))); opt("without", joinList(a.value("without", Json()))); opt("ticks", num(a, "ticks")); opt("limit", num(a, "limit")); opt("world", str(a, "world")); boolFlag("components", "components"); }
     else if (name == "inspect") {
         if (str(a, "entity").empty()) return Envelope::failure("inspect", CommandError::make(ErrorCategory::Usage, "ARG_REQUIRED", "inspect needs 'entity' (selector: id | name | name:<n> | path:<World/Parent/Child>). For the whole world use query.")).toJson();

@@ -32,6 +32,8 @@ The runner for data-driven test scenarios (§23) and the assertion expression la
 - **assert** semantics (§23.1): expressions are evaluated on the **frame snapshot after N ticks** (`world.tick == N`). `always` is checked every tick and aborts the run at the first violation (`abortedAt`; the remaining asserts are evaluated on the snapshot at the abort point and annotated). `eventually` passes once it is true anywhere inside the window and fails at the tick the window closes if it never was. `at: N` is checked once at that tick (failing if never reached). `at: "end"` (default) is the end of the run.
 - **capture** assertions are reported as `errored` when there is no render layer (Phase 2).
 
+**Discoverability (ADR-0039)**: `akeir schema test --json` (and `capabilities.testScenario`, MCP `schema_describe {kind:"test"}`) returns the scenario JSON Schema plus the expression reference below as JSON; `akeir test explain "<expr>" [--snapshot f --as player=<id>]` parses/evaluates one expression. Unknown functions are parse errors with a "did you mean".
+
 ## Expressions (§23.1 — "a comparator, not a language")
 
 ```
