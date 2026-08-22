@@ -153,7 +153,7 @@ Json ServeHost::dispatch(const Json& req, bool checkToken) {
     // ---- 서버 전용
     if (method == "serve.status") {
         Envelope env = Envelope::success("serve.status", Json{{"pid", info_.pid}, {"port", info_.port}, {"startedAt", info_.startedAt}, {"projectDir", projectDir_}, {"requests", requests_},
-                                                            {"transactions", bus_->txList()}, {"history", bus_->historyJson(5)}, {"runs", runRegistry_.size()}, {"documents", project_->documents().size()}});
+                                                            {"transactions", bus_->txList()}, {"history", bus_->historyJson(5)}, {"runs", runRegistry_.size()}, {"residentRuns", residentRuns_.size()}, {"documents", project_->documents().size()}});
         return rpcResult(id, env);
     }
     if (method == "serve.stop") { stop_ = true; return rpcResult(id, Envelope::success("serve.stop", Json{{"stopping", true}})); }
@@ -199,6 +199,7 @@ Json ServeHost::dispatch(const Json& req, bool checkToken) {
     ctx.resident = &*project_;
     ctx.residentBus = bus_.get();
     ctx.runRegistry = &runRegistry_;
+    ctx.residentRuns = &residentRuns_;
     Envelope env;
     try { env = spec->run(ctx); }
     catch (const std::exception& e) { env = Envelope::failure(spec->id, CommandError::make(ErrorCategory::Internal, "INTERNAL_ERROR", std::string("Unhandled C++ exception: ") + e.what())); }

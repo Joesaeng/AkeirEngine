@@ -2850,6 +2850,8 @@ MCP sidecar (TypeScript 또는 Python 공식 SDK, < 300 lines)
 
 ---
 
+▶ v3 (ADR-0041): tool 16개 — `play {action: open|step|inspect|query|snapshot|close|list}` 가 상주 play world 를 다룬다 (CLI `akeir run open/step/…`, serve 안에서만). `run` 은 여전히 one-shot.
+
 # 47. MCP Tool 수를 무한히 늘리지 않는다
 
 나쁜 방향:

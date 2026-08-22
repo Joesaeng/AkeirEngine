@@ -267,3 +267,10 @@
 - **만들지 않은 것**: panel/button/bar 같은 retained UI 위젯(PRINCIPLES §8 — 게임 영역; 데이터+system 으로 만들 수 있다), TTF/SDL_ttf 와 한글(폰트를 asset 으로 다루는 후속 — 실제 요구가 생길 때), 줄바꿈/폭 제한.
 - **검증**: `Tests/Render_Capture.cpp` 픽셀 단위('I','a'→'A', 결정성). 샘플 골든 재생성, 기준 finalHash `0x404c60567ccb9e85`.
 - **참조**: §27, ADR-0026, PRINCIPLES §8/§11
+
+## ADR-0041 상주 play world: `run open/step/inspect/query/snapshot/close/list` (serve·MCP 안에서만) + MCP tool `play`
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P1 "플레이 중 관찰/step 기능 부족"; STATUS 의 Phase 4 잔여 `run.step`).
+- **결정**: `ServeHost` 가 `ResidentRuns`(run id → {Project 사본, PlayWorld, SimTime, ticksRun}) 를 소유하고 `Context::residentRuns` 로 명령에 넘긴다. 명령: `run.open [--world --seed]` → run id, `run.step <run> [--ticks N] [--input '{"MoveX":1}']`(같은 입력을 N tick 동안 유지; 반환 tick/hash/contact 수), `run.inspect <run> <selector>`(런타임 spawn entity 도 id/이름으로), `run.query <run> --with/--without`, `run.snapshot <run> [--out]`, `run.close`, `run.list`. one-shot 프로세스에서는 `RUN_REQUIRES_SERVE`; `akeir serve` 가 떠 있으면 CLI 호출이 포워딩되어 그대로 동작. MCP 는 tool 하나 `play {action, run, ticks, input, entity, with, without, …}` (tool 수 15→16, headless 15) — tool 목록이 action 마다 불어나지 않게.
+- **만들지 않은 것**: TTL/자동 정리(serve 수명과 같다), 한 run 의 authoring 변경 반영(world 는 open 시점 사본 — 바꾸면 새로 open), 창 모드 연동, per-tick hash 이력(`run --headless --hash-out` 이 있다).
+- **검증**: `scripts/test_mcp_play.py`(CI 두 job): open → step(입력) → inspect(이동 확인) → query → step → snapshot → 같은 seed·입력의 두 번째 run 이 같은 hash → close.
+- **참조**: §46.2, §88.1, §88.2, ADR-0031

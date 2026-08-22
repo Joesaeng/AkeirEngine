@@ -77,6 +77,7 @@ def main():
     m.notify('notifications/initialized')
     tools = m.request('tools/list')['result']['tools']
     print(f'[1] adapter up, {len(tools)} tools')
+    assert len(tools) in (15, 16), tools
     caps = m.call('capabilities')
     assert caps['ok'], caps
     sha_before = caps['result']['info']['exe']['sha256']

@@ -84,6 +84,16 @@ Json callTool(ServeHost& host, const std::string& name, const Json& a) {
     else if (name == "run_status") { argv = {"run", "status"}; if (!str(a, "run").empty()) argv.push_back(str(a, "run")); }
     else if (name == "test") { argv = {"test"}; if (!str(a, "filter").empty()) argv.push_back(str(a, "filter")); opt("junit", str(a, "junit")); opt("results-dir", str(a, "resultsDir")); boolFlag("update-golden", "updateGolden"); }
     else if (name == "capture") { argv = {"capture"}; opt("ticks", num(a, "ticks")); opt("width", num(a, "width")); opt("height", num(a, "height")); opt("out", str(a, "out")); opt("compare", str(a, "compare")); }
+    else if (name == "play") {
+        std::string action = str(a, "action", "list");
+        if (action == "open") { argv = {"run", "open"}; opt("world", str(a, "world")); opt("seed", num(a, "seed")); }
+        else if (action == "step") { argv = {"run", "step", str(a, "run")}; opt("ticks", num(a, "ticks")); if (a.contains("input") && a["input"].is_object()) { argv.push_back("--input"); argv.push_back(a["input"].dump()); } }
+        else if (action == "inspect") { argv = {"run", "inspect", str(a, "run"), str(a, "entity")}; }
+        else if (action == "query") { argv = {"run", "query", str(a, "run")}; opt("with", joinList(a.value("with", Json()))); opt("without", joinList(a.value("without", Json()))); opt("limit", num(a, "limit")); boolFlag("components", "components"); }
+        else if (action == "snapshot") { argv = {"run", "snapshot", str(a, "run")}; opt("out", str(a, "out")); }
+        else if (action == "close") { argv = {"run", "close", str(a, "run")}; }
+        else argv = {"run", "list"};
+    }
     else if (name == "history") {
         std::string action = str(a, "action", "list");
         if (action == "undo") { argv = {"undo"}; if (!num(a, "steps").empty()) argv.push_back(num(a, "steps")); opt("actor", str(a, "actor")); }

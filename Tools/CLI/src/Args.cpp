@@ -22,7 +22,7 @@ namespace {
 const char* kValueOptions[] = {"output", "project", "timeout", "tx", "fields", "limit", "cursor", "world", "seed",
                                "ticks", "frames", "tick-rate", "threads", "hash-every", "hash-out", "replay-out",
                                "name", "importer", "filter", "grid", "names", "ppu", "pivot", "snapshot", "as", "expr", "jq", "if-match", "format", "run", "with", "without", "snapshot-out", "replay",
-                               "args", "actor", "idempotency-key", "junit", "results-dir", "width", "height", "out", "compare", "diff", "per-pixel", "max-mismatch", "record", "video-driver", "ttl", "port", "idle-timeout", "dir", "parent", "prefab", "components", "set", "value", "position", "tags", "base", "order", nullptr};
+                               "args", "actor", "idempotency-key", "junit", "results-dir", "width", "height", "out", "compare", "diff", "per-pixel", "max-mismatch", "record", "video-driver", "input", "ttl", "port", "idle-timeout", "dir", "parent", "prefab", "components", "set", "value", "position", "tags", "base", "order", nullptr};
 bool takesValue(const std::string& key) {
     for (const char** p = kValueOptions; *p; ++p) if (key == *p) return true;
     return false;

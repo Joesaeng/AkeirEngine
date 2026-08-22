@@ -75,6 +75,7 @@ const std::vector<CommandSpec>& commandTable() {
         registerProjectCommands(t);
         registerInitCommands(t);
         registerRunCommands(t);
+        registerResidentRunCommands(t);
         registerMutationCommands(t);
         registerTestCommands(t);
         registerSdlCommands(t);
@@ -149,6 +150,13 @@ Json capabilitiesJson() {
     tools.push_back(tool("test", "Run data-driven tests", "Tests/**/*.test.json scenarios: setup, scripted inputs, snapshot assertions (always/eventually/at), run-twice determinism; results.json + JUnit (§23, §24).", props({{"filter", S}, {"junit", S}, {"resultsDir", S}}), true, false, true, "akeir test [filter] --json", true));
     tools.push_back(tool("capture", "Capture a frame", "Software-rasterized PNG of the world after N ticks (no GPU; deterministic). compare: golden comparison with tolerance (§27, §27.1).", props({{"ticks", I}, {"width", I}, {"height", I}, {"out", S}, {"compare", S}}), true, false, true, "akeir capture --ticks 60 --out Cache/capture/f.png --json", sdlAvailable()));
     tools.push_back(tool("tx", "Multi-call transaction", "begin/commit/rollback/list: opaque tx handle + TTL (10 min); pass tx to apply to group several calls into one undo step. Works directly inside an MCP session; from the CLI it needs `akeir serve`.", props({{"action", Json{{"enum", Json::array({"begin", "commit", "rollback", "list"})}}}, {"tx", S}, {"ttl", I}}), false, false, false, "akeir tx begin|commit|rollback|list", true));
+    tools.push_back(tool("play", "Resident play world: open / step / inspect / query / snapshot / close (ADR-0041)",
+                         "Keep a play world alive across calls and advance it tick by tick. action=open (world?, seed?) → run id; step (run, ticks?=1, input? {action: value} held on every stepped tick) → tick + hash + contact events; inspect (run, entity selector) → runtime component values; query (run, with?, without?, components?, limit?); snapshot (run, out?); close (run); list. Runtime-spawned entities are visible. Use this instead of `run`/`inspect` when you need to watch state change while playing.",
+                         props({{"action", Json{{"enum", Json::array({"open", "step", "inspect", "query", "snapshot", "close", "list"})}}}, {"run", Json{{"type", "string"}, {"description", "run id from open"}}}, {"world", S}, {"seed", I},
+                                {"ticks", Json{{"type", "integer"}, {"description", "ticks to simulate on step (default 1)"}}},
+                                {"input", Json{{"type", "object"}, {"description", "{action: value} held on every stepped tick, e.g. {\"MoveX\": 1}; action names from Config/input.json"}}},
+                                {"entity", SEL}, {"with", Json{{"type", "array"}, {"items", S}}}, {"without", Json{{"type", "array"}, {"items", S}}}, {"components", B}, {"limit", I}, {"out", Json{{"type", "string"}, {"description", "write the snapshot to this file instead of returning it"}}}}),
+                         false, false, false, "akeir run open|step|inspect|query|snapshot|close|list (inside akeir serve)", true));
     tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "akeir undo|redo|history", true));
     r["tools"] = tools;
     r["testScenario"] = Json{{"scenario", TestScenario::schema()}, {"expression", expr::Expr::reference()}};   // ADR-0039: the test DSL is discoverable without reading a README

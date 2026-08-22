@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Args.h"
+#include "ResidentRun.h"
 #include "akeir/core/Envelope.h"
 #include "akeir/commands/CommandBus.h"
 #include "akeir/runtime/Project.h"
@@ -26,6 +27,7 @@ struct Context {
     Project* resident = nullptr;
     CommandBus* residentBus = nullptr;
     Json* runRegistry = nullptr;   // run_id → 마지막 run 결과 (run.status 용)
+    ResidentRuns* residentRuns = nullptr;   // 상주 play world 들 (run open/step/…, ADR-0041) — serve/mcp 안에서만
     bool inServe() const { return residentBus != nullptr; }
 };
 
@@ -47,6 +49,7 @@ const std::vector<CommandSpec>& commandTable();
 void registerProjectCommands(std::vector<CommandSpec>& table);
 /// RunCommands.cpp — run / dump / query (world 를 build 해서 실행)
 void registerRunCommands(std::vector<CommandSpec>& table);
+void registerResidentRunCommands(std::vector<CommandSpec>& table);   // ResidentRunCommands.cpp (ADR-0041)
 /// MutationCommands.cpp — CommandBus 경유 쓰기 명령: entity create/delete/rename/reparent, component add/remove, set, tag, prefab, world, apply, undo/redo/history, cmd
 void registerMutationCommands(std::vector<CommandSpec>& table);
 /// InitCommand.cpp — `akeir project init` (빈 프로젝트)

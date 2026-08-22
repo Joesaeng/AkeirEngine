@@ -101,7 +101,7 @@ TEST_CASE("Expr: parse errors carry an offset — probeBindings reports the valu
     CHECK(roots == std::vector<std::string>{"goblin", "player"});
 }
 
-TEST_CASE("Expr: unknown functions fail at parse time with a suggestion; the language reference and scenario schema are machine-readable (ADR-0039)") {
+TEST_CASE("Expr: unknown functions fail at parse time with a suggestion — the language reference and scenario schema are machine-readable (ADR-0039)") {
     using namespace akeir::expr;
     ParseError err;
     CHECK_FALSE(Expr::parse("siz(world.entities) > 1", &err));

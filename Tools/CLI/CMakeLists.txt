@@ -6,6 +6,7 @@ add_executable(akeir
   src/ProjectCommands.cpp
   src/InitCommand.cpp
   src/RunCommands.cpp
+  src/ResidentRunCommands.cpp
   src/MutationCommands.cpp
   src/TestCommands.cpp
   src/SdlCommands.cpp

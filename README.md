@@ -9,7 +9,7 @@
 - **Text-first authoring** — worlds, prefabs and config are canonical JSON; the files are the source of truth, ECS/physics are projections.
 - **Single reversible Command API** — every mutation goes through one `CommandBus` and returns a self-inverting ChangeSet: undo/redo, multi-call transactions, dry-run, structured diagnostics with machine-applicable fixes.
 - **Deterministic headless testing** — fixed tick, explicit seed, same input → same `finalHash`; tests are data files with snapshot assertions, run-twice determinism checks and golden captures.
-- **CLI / MCP as adapters** — `akeir <cmd>`, `akeir serve` (resident process) and `akeir mcp` (MCP server, 15 tools) share one command table over the same engine.
+- **CLI / MCP as adapters** — `akeir <cmd>`, `akeir serve` (resident process) and `akeir mcp` (MCP server, 16 tools) share one command table over the same engine.
 
 > **AKEIR** ← Greek ἄχειρ (*acheir*, "without hands"), from ἀχειροποίητος ("not made by human hands"). Pronounced *ay-KEER*.
 

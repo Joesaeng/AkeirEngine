@@ -115,7 +115,7 @@ snapshot / dump / trace / capture / test results ───┘ (Query, RuntimeCon
 
 - **authoring world / play world**: §88.2. 파일에 있는 것 vs 실행 중인 것. play 변경은 `promote` 없이는 authoring 에 닿지 않는다.
 - **command id**: `<noun>.<verb>` (예 `entity.create`). envelope.command, apply.changes[].op, ChangeSet.intent.op 모두 이것. BRP 이름은 alias (§8.1).
-- **tool**: MCP 에 노출되는 15개 (§47). command 와 1:1 이 아니다.
+- **tool**: MCP 에 노출되는 16개 (§47 의 15개 + `play`, ADR-0041). command 와 1:1 이 아니다.
 - **ChangeSet**: §78. RFC 6902 superset. `replace` 의 새 값은 `value`, 옛 값은 `before`. `doc` 으로 문서를 가리키고 `path` 는 그 문서 안 JSON Pointer. `before` 비교는 JCS(ADR-0018).
 - **actor**: history 항목의 주체 문자열 (`cli`, `cli:validate-fix`, `ai:claude#42`, `human:editor`). `--actor` 로 지정, undo 필터에 쓴다.
 - **selector**: §7.4. id / id prefix / `name:X` / `path:World/Parent/Child`. Mutation command 의 `entity` 인자는 prefab selector 도 받는다(ADR-0021).

@@ -26,7 +26,7 @@ set G=%CD%\bin\akeir.exe
 cd Game
 %G% --help                                      # full command list (`%G% <command> --help` shows that command's usage)
 %G% version --json
-%G% capabilities --json                         # 15 tools, busCommands (14 write commands + argument schemas), exit/error code tables
+%G% capabilities --json                         # 16 tools, busCommands (14 write commands + argument schemas), exit/error code tables
 %G% project info --json
 %G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0x404c60567ccb9e85
 %G% test --json                                 # 3 data-driven tests (Combat / Movement / Visual golden)
@@ -75,7 +75,7 @@ Open the unpacked directory in Claude Code and `.mcp.json` registers the `akeir`
 ```bat
 %G% mcp --print-config --project C:\work\MyGame > .mcp.json
 ```
-15 tools: `capabilities, project_info, schema_describe, query, inspect, explain, refs, apply, validate, run, run_status, test, capture, tx, history`. All writes go through the single `apply` tool (`changes[].op` = `entity.create`, `property.set` …; `$name` references an earlier result; `dryRun`). Each op's argument schema is in the `capabilities` tool's `busCommands[]`. `tx` (begin → apply… → commit) works directly inside an MCP session.
+16 tools: `capabilities, project_info, schema_describe, query, inspect, explain, refs, apply, validate, run, run_status, test, capture, play, tx, history`. `play` keeps a world alive across calls (open → step with input → inspect/query/snapshot → close) — the way to watch state change while playing. All writes go through the single `apply` tool (`changes[].op` = `entity.create`, `property.set` …; `$name` references an earlier result; `dryRun`). Each op's argument schema is in the `capabilities` tool's `busCommands[]`. `tx` (begin → apply… → commit) works directly inside an MCP session.
 
 Manual check:
 ```bat

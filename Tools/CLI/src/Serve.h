@@ -56,6 +56,7 @@ private:
     std::optional<Project> project_;
     std::unique_ptr<CommandBus> bus_;
     Json runRegistry_ = Json::object();
+    ResidentRuns residentRuns_;   // ADR-0041
     ServeInfo info_;
     bool stop_ = false;
     long long requests_ = 0;
