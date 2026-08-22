@@ -301,7 +301,14 @@
   3. **screen-space sprite**: `SpriteRenderer.screenSpace/anchor/pixelSize/fill`. rect 좌상단 = `anchor × viewport + Transform.position.xy(px)`, 크기 = `pixelSize`(0 = natural) — `TextRenderer.screenSpace` 와 같은 규칙, pivot 은 world-space 에서만. `fill` 은 왼쪽부터 남기는 가로 비율(HP bar). 창 크기가 바뀌면 anchor 가 따라간다.
   4. **하나의 rect 정의**: `akeir/ecs/Screen.h` — `primaryCamera`, `worldToScreen/screenToWorld`, `spriteScreenRect`, `hitTest(world, viewport, px)`. Renderer2D 가 이 함수로 그리므로 게임의 "버튼 위인가" 판정과 그려진 것이 어긋날 수 없다. viewport 는 `InputFrame.pointer.viewportW/H` 로 system 에 온다.
   5. **pause**: `PlayWorld::setPaused(bool)` — paused 면 physics step 과 일반 system 을 건너뛰고 `addSystem(..., runWhilePaused=true)` 인 system 만 돈다. tick 번호는 계속 올라가(replay 1:1, `hash()` 는 tick 을 포함하므로 pause 중에도 변함 — state 는 그대로), contactEvents 는 비워진다. pause 여부는 sim 상태가 아니다 — 게임 system 이 input 으로 토글한다(샘플 `PauseToggle`, P 키).
-- **hash 이동**: SpriteRenderer 에 reflected 멤버가 늘어 world hash 가 모든 샘플에서 바뀐다(기준값 `0x3879c0f0d675ebc8`, 샘플에 HUD bar entity 2개 추가 포함). 결정론 회귀가 아니라 schema 변화.
+- **hash 이동**: SpriteRenderer 에 reflected 멤버가 늘어 world hash 가 모든 샘플에서 바뀐다(샘플에 HUD bar entity 2개 추가 포함; ADR-0046 의 TextRenderer 멤버 추가로 한 번 더 — 현재 기준값 `0xf9a1151e01338658`). 결정론 회귀가 아니라 schema 변화.
 - **샘플**: `Game/` 에 `HudHpBarBack/HudHpBar`(screenSpace, `#hpbar` 의 fill 을 `HudHpBar` system 이 갱신), `Pause` action(P) + `PauseToggle`(runWhilePaused) + HUD 의 "PAUSED". golden 재생성.
 - **안 한 것**: gamepad, 터치 멀티포인트, sprite pivot 의 screen-space 적용, 9-slice/UI 레이아웃. 게임이 요구하면.
 - **참조**: §88.3, §23, §27, ADR-0040
+
+## ADR-0046 Font asset: `importer: Font` (TTF/OTF) + `TextRenderer.font/size`, stb_truetype glyph atlas — 한글 포함
+- **상태**: 확정 (2026-08-22, CatSurvivor v0.1.2 피드백 P1 "한글/진짜 폰트" — 5x7 bitmap 은 대문자 ASCII 만).
+- **결정**: ① `Assets/Fonts/<file>.ttf.meta.json` sidecar, `importer: "Font"`, sub-asset 없음 (`akeir asset import Assets/Fonts/X.ttf` 가 만든다; `.ttf/.otf/.ttc` 확장자로 분기). 검증: signature(0x00010000/'true'/'OTTO'/'ttcf') 아니면 `ASSET_SOURCE_INVALID`, Font 에 subAssets 있으면 `ASSET_META_INVALID`, `TextRenderer.font` 가 Font 가 아닌 asset 이면 `ASSET_KIND_MISMATCH`. ② `TextRenderer.font`(Ref, `asset:font`) + `size`(px 높이, 4..256). 비어 있으면 기존 5x7 bitmap(골든 불변); 해석 실패면 경고 1회 + bitmap fallback. ③ 렌더러: `stb_truetype`(v1.26, CPM 으로 commit 고정, `akeir::stb`) 로 CPU 래스터 → (asset, size) 별 `GlyphAtlas`(shelf-pack, 페이지 = clamp(size×16, 256..2048)², RGBA 흰색+alpha, color mod 로 색) — 글리프는 처음 쓸 때 한 번. 정수 pen/baseline, kerning 포함, align 은 측정 폭으로. screen-space: position 이 글자 상자의 좌상단(ascent 기준), world-space: 세로 중앙. ④ 결정론: 같은 텍스트·폰트·사이즈 → 같은 픽셀(소프트웨어 렌더러; 테스트가 두 renderer 의 바이트 동일을 확인). sim 은 폰트를 모른다.
+- **폰트 파일**: 저장소는 폰트를 싣지 않는다(라이선스·크기). 테스트는 시스템 폰트(`C:/Windows/Fonts/malgun.ttf` → 한글, 없으면 arial/DejaVu, 둘 다 없으면 skip). 게임은 OFL 폰트(예: Noto Sans KR)를 `Assets/Fonts/` 에 넣고 import 한다.
+- **안 한 것**: SDF/회전/outline, 줄바꿈·멀티라인, fallback 폰트 체인, 글리프 페이지 회수. 수치가 요구하면.
+- **참조**: §27, §37, ADR-0037, ADR-0040

@@ -14,12 +14,19 @@ $deps = @(
   @{ dir = "flecs";   url = "https://github.com/SanderMertens/flecs.git";   tag = "v4.1.6" },
   @{ dir = "box2d";   url = "https://github.com/erincatto/box2d.git";       tag = "v3.1.1" },
   @{ dir = "doctest"; url = "https://github.com/doctest/doctest.git";       tag = "v2.5.3" },
-  @{ dir = "sdl";     url = "https://github.com/libsdl-org/SDL.git";        tag = "release-3.4.14" }
+  @{ dir = "sdl";     url = "https://github.com/libsdl-org/SDL.git";        tag = "release-3.4.14" },
+  @{ dir = "stb";     url = "https://github.com/nothings/stb.git";          tag = "2c980bb59875b0d32144a71867fbdebb2f77cd20"; sha = $true }   # stb_truetype.h v1.26 (ADR-0046)
 )
 foreach ($d in $deps) {
   $target = Join-Path $cache $d.dir
   if (Test-Path $target) { Write-Host "exists: $($d.dir)"; continue }
   Write-Host "clone: $($d.dir) @ $($d.tag)"
-  git clone --quiet --depth 1 --branch $d.tag $d.url $target
+  if ($d.sha) {   # a commit, not a tag: shallow-fetch exactly that commit
+    git init --quiet $target
+    git -C $target fetch --quiet --depth 1 $d.url $d.tag
+    git -C $target checkout --quiet FETCH_HEAD
+  } else {
+    git clone --quiet --depth 1 --branch $d.tag $d.url $target
+  }
 }
 Write-Host "done. cmake/CPM.cmake is vendored from .cpm-cache/cpm/cmake/CPM.cmake"

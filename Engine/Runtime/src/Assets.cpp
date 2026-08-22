@@ -35,6 +35,27 @@ const AssetMeta* AssetTable::find(std::string_view id) const {
     return it == byId_.end() ? nullptr : &it->second;
 }
 
+bool fontFileSignature(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    unsigned char h[4];
+    if (!in.read(reinterpret_cast<char*>(h), sizeof h)) return false;
+    const bool ttf = h[0] == 0 && h[1] == 1 && h[2] == 0 && h[3] == 0;
+    const bool mac = h[0] == 't' && h[1] == 'r' && h[2] == 'u' && h[3] == 'e';
+    const bool otf = h[0] == 'O' && h[1] == 'T' && h[2] == 'T' && h[3] == 'O';
+    const bool ttc = h[0] == 't' && h[1] == 't' && h[2] == 'c' && h[3] == 'f';
+    return ttf || mac || otf || ttc;
+}
+
+const AssetMeta* AssetTable::resolveFont(const Ref& ref, std::string* why) const {
+    if (ref.empty()) { if (why) *why = "empty reference"; return nullptr; }
+    const AssetMeta* a = find(ref.idPart());
+    if (!a) { if (why) *why = "no asset sidecar declares id " + std::string(ref.idPart()); return nullptr; }
+    if (a->importer != "Font") { if (why) *why = "asset " + a->id + " is a " + a->importer + " asset, not a Font"; return nullptr; }
+    if (!ref.subPart().empty()) { if (why) *why = "a font is referenced whole (no '#sub-asset')"; return nullptr; }
+    if (why) why->clear();
+    return a;
+}
+
 const SpriteRegion* AssetTable::resolveSprite(const Ref& ref, const AssetMeta** assetOut, std::string* why) const {
     if (assetOut) *assetOut = nullptr;
     if (ref.empty()) { if (why) *why = "empty reference"; return nullptr; }

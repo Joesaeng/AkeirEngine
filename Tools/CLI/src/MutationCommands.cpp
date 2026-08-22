@@ -238,7 +238,7 @@ Envelope cmdPrefabInstantiate(Context& ctx) {
 
 Envelope cmdAssetImport(Context& ctx) {
     const std::string source = ctx.args.positional(2);
-    if (source.empty()) return usage("asset.import", "akeir asset import <Assets/…/file.png> [--grid WxH --names a,b,c] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]");
+    if (source.empty()) return usage("asset.import", "akeir asset import <Assets/…/file.png | Assets/…/font.ttf> [--grid WxH --names a,b,c] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]");
     Json a = Json{{"source", source}};
     if (auto g = ctx.args.get("grid")) {
         auto x = g->find('x');
@@ -377,7 +377,7 @@ void registerMutationCommands(std::vector<CommandSpec>& t) {
     t.push_back({"prefab.create", {"prefab", "create"}, "Mutation", "Create a prefab", "Writes Prefabs/<Name>.prefab.json.", "akeir prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]", false, false, false, cmdPrefabCreate});
     t.push_back({"prefab.instantiate", {"prefab", "instantiate"}, "Mutation", "Instantiate a prefab", "Creates an instance entity referencing the prefab.", "akeir prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]", false, false, false, cmdPrefabInstantiate});
     t.push_back({"world.create", {"world", "create"}, "Mutation", "Create a world", "Writes Worlds/<Name>.world.json with no entities.", "akeir world create <name>", false, false, false, cmdWorldCreate});
-    t.push_back({"asset.import", {"asset", "import"}, "Mutation", "Import a PNG as a texture asset (§37)", "Creates Assets/<png>.meta.json with a generated asset_ id and sprite sub-assets (--grid WxH --names a,b,c slices a sheet row-major; without --grid the whole image is one sprite). Then set SpriteRenderer.sprite to \"<id>#sprites/<name>\". Undoable like every command.", "akeir asset import <Assets/…/file.png> [--grid 16x16 --names player,goblin] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]", false, false, false, cmdAssetImport});
+    t.push_back({"asset.import", {"asset", "import"}, "Mutation", "Import a PNG (texture) or TTF/OTF (font) as an asset (§37, ADR-0046)", "Creates Assets/<png>.meta.json with a generated asset_ id and sprite sub-assets (--grid WxH --names a,b,c slices a sheet row-major; without --grid the whole image is one sprite). Then set SpriteRenderer.sprite to \"<id>#sprites/<name>\". Undoable like every command.", "akeir asset import <Assets/…/file.png | Assets/Fonts/x.ttf> [--grid 16x16 --names player,goblin] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]", false, false, false, cmdAssetImport});
     t.push_back({"apply", {"apply"}, "Mutation", "Apply a batch of commands (§49)", "Atomic batch: all commands commit as one ChangeSet or none. '$name' refers to an earlier change's result (as: name). --idempotency-key replays the stored response.",
                  "akeir apply <batch.json|-> [--dry-run] [--idempotency-key K]", false, false, false, cmdApply});
     t.push_back({"history.undo", {"undo"}, "Mutation", "Undo last change(s)", "Applies inverse(ops) of the newest history entry (§10.1). --actor X only undoes X's entries; conflicts if files changed underneath.",

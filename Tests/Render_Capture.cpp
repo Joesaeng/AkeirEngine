@@ -190,3 +190,58 @@ TEST_CASE("Renderer2D: TextRenderer draws the 5x7 bitmap font in screen space, d
     fs::remove_all(dir, ec);
 }
 
+
+TEST_CASE("Renderer2D: TextRenderer.font draws a TTF through the glyph atlas (Korean included), falls back to the bitmap font when unresolvable (ADR-0046)") {
+    sdl();
+    registerBuiltinComponents();
+    // a system font: the repo ships none (licenses); CI's windows runner and any Windows box have these. Skip otherwise.
+    fs::path fontFile;
+    for (const char* cand : {"C:/Windows/Fonts/malgun.ttf", "C:/Windows/Fonts/arial.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"}) if (fs::exists(cand)) { fontFile = cand; break; }
+    if (fontFile.empty()) { MESSAGE("no system TTF found; skipping"); return; }
+    const bool korean = fontFile.filename() == "malgun.ttf";
+    fs::path dir = fs::temp_directory_path() / "akeir_font_render_test";
+    std::error_code ec; fs::remove_all(dir, ec);
+    fs::create_directories(dir / "Worlds"); fs::create_directories(dir / "Assets" / "Fonts");
+    fs::copy_file(fontFile, dir / "Assets" / "Fonts" / "ui.ttf", fs::copy_options::overwrite_existing);
+    std::ofstream(dir / "Assets" / "Fonts" / "ui.ttf.meta.json") << Json{{"$schema", "game://schema/asset-meta/1"}, {"schemaVersion", 1}, {"id", "asset_01j5xq8z3mf0n9k2c7p4rtvw90"}, {"source", "Assets/Fonts/ui.ttf"}, {"importer", "Font"}, {"importerVersion", 1}, {"settings", Json::object()}}.dump();
+    std::ofstream(dir / "project.json") << Json{{"$schema", "game://schema/project/1"}, {"schemaVersion", 1}, {"name", "F"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}}.dump();
+    const std::string text = korean ? "\xED\x95\x9C\xEA\xB8\x80 HP" : "Hello HP";   // "한글 HP"
+    std::ofstream(dir / "Worlds" / "W.world.json") << Json{{"$schema", "game://schema/world/1"}, {"schemaVersion", 1}, {"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"name", "W"}, {"entities", Json{
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw70", Json{{"name", "Cam"}, {"components", Json{{"Transform", Json::object()}, {"Camera2D", Json{{"background", Json::array({0, 0, 0, 1})}}}}}}},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw71", Json{{"name", "Hud"}, {"components", Json{{"Transform", Json{{"position", Json::array({4, 4, 0})}}},
+            {"TextRenderer", Json{{"text", text}, {"screenSpace", true}, {"font", "asset_01j5xq8z3mf0n9k2c7p4rtvw90"}, {"size", 24}, {"color", Json::array({1, 1, 1, 1})}}}}}}},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw72", Json{{"name", "Bad"}, {"components", Json{{"Transform", Json{{"position", Json::array({4, 60, 0})}}},
+            {"TextRenderer", Json{{"text", "X"}, {"screenSpace", true}, {"scale", 1}, {"font", "asset_01j5xq8z3mf0n9k2c7p4rtvw91"}, {"color", Json::array({1, 1, 1, 1})}}}}}}}}}}.dump();
+    std::vector<Diagnostic> d;
+    auto prj = Project::load(dir.string(), d);
+    REQUIRE(prj);
+    CHECK(prj->assets().resolveFont(Ref{"asset_01j5xq8z3mf0n9k2c7p4rtvw90"}) != nullptr);
+    std::string why;
+    CHECK(prj->assets().resolveFont(Ref{"asset_01j5xq8z3mf0n9k2c7p4rtvw90#sprites/x"}, &why) == nullptr);
+    CHECK(why.find("whole") != std::string::npos);
+    auto v = prj->validate();
+    bool dangling = false;
+    for (const auto& x : v) if (x.ruleId == "REF_DANGLING") dangling = true;
+    CHECK(dangling);   // the Bad entity's font id has no sidecar
+    PlayWorldConfig cfg; cfg.seed = 1; cfg.tickRate = 60;
+    auto world = PlayWorld::build(*prj, *prj->defaultWorld(), cfg, d);
+    REQUIRE(world);
+    std::string err;
+    auto r = Renderer2D::createSoftware(160, 80, &err);
+    REQUIRE_MESSAGE(r, err);
+    RenderStats s = r->render(*world);
+    CHECK(s.texts == 2);
+    CHECK(s.glyphs >= (korean ? 4 : 6));   // spaces draw nothing
+    int w = 0, h = 0;
+    auto px = r->readPixels(&w, &h);
+    auto lit = [&](int x0, int y0, int x1, int y1) { int n = 0; for (int y = y0; y < y1; ++y) for (int x = x0; x < x1; ++x) { std::size_t i = (static_cast<std::size_t>(y) * 160 + x) * 4; if (px[i] > 64) ++n; } return n; };
+    CHECK(lit(4, 4, 120, 34) > 40);        // glyph pixels inside the text box (24 px line at y 4..~32)
+    CHECK(lit(0, 0, 4, 80) == 0);          // nothing left of the pen
+    CHECK(lit(4, 60, 10, 67) > 3);         // 'X' from the bitmap fallback at (4,60)
+    auto r2 = Renderer2D::createSoftware(160, 80, &err); r2->render(*world);
+    CHECK(r2->readPixels(&w, &h) == px);   // deterministic across renderers (fresh atlases)
+    RenderStats s2 = r->render(*world);     // same renderer: atlas reused, same pixels
+    CHECK(s2.glyphs == s.glyphs);
+    CHECK(r->readPixels(&w, &h) == px);
+    fs::remove_all(dir, ec);
+}

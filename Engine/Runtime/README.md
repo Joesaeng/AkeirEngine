@@ -11,7 +11,7 @@ The authoring document model, the built-in components, and the fixed-tick loop.
 | `akeir/runtime/DemoSimulation.h` | — | Placeholder sim for exercising the loop (`akeir run --demo`) |
 | `akeir/runtime/Input.h` | §88.3, ADR-0045 | `InputFrame` = tick + actions + edges (`justPressed/justReleased`) + `PointerState` (window px, viewport, buttons, wheel, inside) + commands; `InputFrame::withEdges` is the only edge computation |
 | `akeir/runtime/PhysicsLayers.h` | ADR-0043 | `PhysicsLayers::fromProjectJson` — `physics.layers` collision matrix → category/mask bits (symmetric), `collides(a, b)` |
-| `akeir/runtime/Assets.h` | §37, §88.7, ADR-0037 | `AssetMeta` / `SpriteRegion` / `AssetTable` (parsed from `Assets/**/*.meta.json` documents; `resolveSprite("asset_…#sprites/x")`), `pngDimensions` |
+| `akeir/runtime/Assets.h` | §37, §88.7, ADR-0037, ADR-0046 | `AssetMeta.importer` Texture2D or Font; `resolveSprite`, `resolveFont`, `pngDimensions`, `fontFileSignature` | `AssetMeta` / `SpriteRegion` / `AssetTable` (parsed from `Assets/**/*.meta.json` documents; `resolveSprite("asset_…#sprites/x")`), `pngDimensions` |
 
 ## Document format (§6)
 
@@ -25,7 +25,7 @@ Override paths are JSON Pointers into the resolved base (`/components/Health/max
 
 ## ruleIds emitted by validate()
 
-REFLECT_MEMBER_UNLISTED (from the reflection registry, ADR-0035 — a component member that is neither AKEIR_PROP nor AKEIR_SKIP), JSON_PARSE_ERROR, DOCUMENT_NOT_OBJECT, SCHEMA_VERSION_NEWER_THAN_ENGINE, DOCUMENT_SCHEMA_MISMATCH, ID_FORMAT_INVALID, ID_PREFIX_MISMATCH, DUPLICATE_PERSISTENT_ID, WORLD_ENTITIES_MISSING, ENTITY_NOT_OBJECT, PARENT_NOT_FOUND, HIERARCHY_CYCLE, ENTITY_EMPTY (note), PREFAB_COMPONENTS_MISSING, PREFAB_NOT_FOUND, PREFAB_CHAIN_CYCLE, PREFAB_CHAIN_TOO_DEEP, PREFAB_OVERRIDE_INVALID, PREFAB_OVERRIDE_TARGET_MISSING, PREFAB_OVERRIDE_TARGET_EXISTS, COMPONENTS_NOT_OBJECT, COMPONENT_UNKNOWN, COMPONENT_DEPENDENCY_MISSING (fix: component.add), REF_DANGLING, JSON_NOT_CANONICAL (warning, fix: project.fmt), the asset sidecar rules ASSET_META_INVALID / ASSET_SOURCE_MISSING / ASSET_SOURCE_INVALID / ASSET_SUBASSET_RECT_INVALID / ASSET_SUBASSET_MISSING (ADR-0037), PHYSICS_LAYERS_INVALID / PHYSICS_LAYER_UNKNOWN (ADR-0043), plus the codes from Serialization/ComponentJson.
+REFLECT_MEMBER_UNLISTED (from the reflection registry, ADR-0035 — a component member that is neither AKEIR_PROP nor AKEIR_SKIP), JSON_PARSE_ERROR, DOCUMENT_NOT_OBJECT, SCHEMA_VERSION_NEWER_THAN_ENGINE, DOCUMENT_SCHEMA_MISMATCH, ID_FORMAT_INVALID, ID_PREFIX_MISMATCH, DUPLICATE_PERSISTENT_ID, WORLD_ENTITIES_MISSING, ENTITY_NOT_OBJECT, PARENT_NOT_FOUND, HIERARCHY_CYCLE, ENTITY_EMPTY (note), PREFAB_COMPONENTS_MISSING, PREFAB_NOT_FOUND, PREFAB_CHAIN_CYCLE, PREFAB_CHAIN_TOO_DEEP, PREFAB_OVERRIDE_INVALID, PREFAB_OVERRIDE_TARGET_MISSING, PREFAB_OVERRIDE_TARGET_EXISTS, COMPONENTS_NOT_OBJECT, COMPONENT_UNKNOWN, COMPONENT_DEPENDENCY_MISSING (fix: component.add), REF_DANGLING, JSON_NOT_CANONICAL (warning, fix: project.fmt), the asset sidecar rules ASSET_META_INVALID / ASSET_SOURCE_MISSING / ASSET_SOURCE_INVALID / ASSET_SUBASSET_RECT_INVALID / ASSET_SUBASSET_MISSING (ADR-0037), PHYSICS_LAYERS_INVALID / PHYSICS_LAYER_UNKNOWN (ADR-0043), ASSET_KIND_MISMATCH (TextRenderer.font must be a Font asset, ADR-0046), plus the codes from Serialization/ComponentJson.
 
 ## Not implemented
 - Loading Data/ and Config/ as documents (Phase 3+), splitting file granularity (§88.9), `akeir id fix`. Asset sidecars are loaded (ADR-0037) but only the Texture2D importer exists.

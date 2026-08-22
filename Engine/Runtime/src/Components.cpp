@@ -66,6 +66,8 @@ AKEIR_REFLECT_BEGIN(TextRenderer, "Text drawn with the built-in 5x7 bitmap font 
     AKEIR_PROP(scale, "Pixels per font pixel (a glyph is 5x7)").min(0.25).ui(1, 8, 0.5);
     AKEIR_PROP(align, "Horizontal alignment around the position");
     AKEIR_PROP(screenSpace, "true: Transform.position.x/y are pixels from the top-left of the screen (HUD); false: world space");
+    AKEIR_PROP(font, "Font asset (asset_… whose sidecar has importer Font, ADR-0046); empty = built-in 5x7 bitmap font").refType("asset:font");
+    AKEIR_PROP(size, "font only: pixel height glyphs are rasterized at (4..256)").range(4, 256);
     AKEIR_PROP(sortingOrder, "Draw order (higher = on top)");
 AKEIR_REFLECT_END(TextRenderer)
 

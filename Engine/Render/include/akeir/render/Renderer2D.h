@@ -18,6 +18,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 
 struct SDL_Window;
 struct SDL_Renderer;
@@ -26,11 +27,15 @@ struct SDL_Texture;
 
 namespace akeir {
 
+struct FontFace;
+class GlyphAtlas;
+
 struct RenderStats {
     int sprites = 0;
     int texts = 0;      // TextRenderer entities drawn (ADR-0040)
     int culled = 0;     // sprites/texts skipped because their screen rect is outside the viewport (ADR-0044)
     double renderMs = 0;   // wall-clock of render() (profiling only — never feeds the simulation)
+    int glyphs = 0;        // TTF glyphs drawn this frame (ADR-0046)
     int width = 0, height = 0;
     std::string backend;           // SDL renderer 이름 ("software", "direct3d11", …)
     Json camera;                   // {entity, position, orthoSize}
@@ -63,6 +68,10 @@ private:
     // texture cache per asset id (ADR-0037). nullptr = load failed (warned once); textures are owned by this renderer
     std::map<std::string, SDL_Texture*> textures_;
     std::set<std::string> warnedAssets_;
+    // ADR-0046: TTF faces per asset id and glyph atlases per (asset id, pixel height); owned here, built on first use
+    std::map<std::string, std::unique_ptr<FontFace>> fonts_;
+    std::map<std::pair<std::string, int>, std::unique_ptr<GlyphAtlas>> atlases_;
+    GlyphAtlas* atlasFor(const AssetMeta& asset, int pixelHeight);
     SDL_Texture* textureFor(const AssetMeta& asset);   // software 타깃일 때 소유
     int width_ = 0, height_ = 0;
 };

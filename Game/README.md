@@ -20,7 +20,7 @@ Game/
 ```
 
 - Every file must be in §5.3 canonical form — `akeir validate` warns with `JSON_NOT_CANONICAL`, `akeir fmt` fixes it.
-- Reference values: `akeir run --headless --ticks 600` → finalHash `0x3879c0f0d675ebc8` (moved from `0xbc23e49a65efb2e8` when the prefabs got sprite refs and the HUD entity was added, 2026-08-22); the run-twice check of GoblinBasicCombat in `akeir test` yields the same value. If this value changes, either the data or determinism changed (`Docs/STATUS.md`).
+- Reference values: `akeir run --headless --ticks 600` → finalHash `0xf9a1151e01338658` (moved from `0xbc23e49a65efb2e8` when the prefabs got sprite refs and the HUD entity was added, 2026-08-22); the run-twice check of GoblinBasicCombat in `akeir test` yields the same value. If this value changes, either the data or determinism changed (`Docs/STATUS.md`).
 - The scenario (§71): a player (WASD = MoveX/MoveY) and three goblins that chase (`chase`) inside `detectionRange` and deal `damage` every `attackCooldown` inside `attackRange` (`attack`). After 600 ticks the player has 10 HP.
 - `Game/` is **yours to replace**: the engine unit tests use the frozen copy in `Tests/Fixtures/TestArena` (ADR-0036), so swapping this directory for your own game (as CatSurvivor did) breaks nothing. The game executable `build/<preset>/bin/<name>.exe` is named after `project.json` → `name`.
 - Do not hand-write JSON for new entities/prefabs/worlds; use `akeir entity create` / `akeir prefab create` / `akeir world create` (or `akeir apply batch.json`) — ids (UUIDv7), defaults, canonical form and history are handled automatically.

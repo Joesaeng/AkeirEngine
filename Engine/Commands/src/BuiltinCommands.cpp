@@ -566,14 +566,26 @@ bool assetImport(CommandContext& ctx) {
     const std::string doc = source + ".meta.json";
     if (ctx.project.document(doc)) return ctx.fail(ErrorCategory::Conflict, "DOCUMENT_EXISTS", doc + " already exists (edit it with document.patch).", Json{{"doc", doc}});
     const std::string abs = ctx.project.rootDir() + "/" + source;
-    int imgW = 0, imgH = 0;
-    if (!pngDimensions(abs, imgW, imgH)) return ctx.fail(ErrorCategory::NotFound, "ASSET_SOURCE_MISSING", source + " is not a readable PNG in this project.", Json{{"source", source}});
     Json m = Json::object();
     m["$schema"] = "game://schema/asset-meta/1";
     m["schemaVersion"] = 1;
     m["id"] = (a.contains("id") && a["id"].is_string() && !a["id"].get<std::string>().empty()) ? a["id"].get<std::string>() : Id::generate("asset").str();
     if (!Id::validate(m["id"].get<std::string>()).empty() || Id::parse(m["id"].get<std::string>())->prefix() != "asset") return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'id' must be a valid asset_ id.");
     m["source"] = source;
+    // ADR-0046: .ttf/.otf → Font sidecar (no sub-assets; TextRenderer.font references the asset whole, size per component)
+    std::string ext = source.substr(source.find_last_of('.') == std::string::npos ? source.size() : source.find_last_of('.'));
+    for (auto& c : ext) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (ext == ".ttf" || ext == ".otf" || ext == ".ttc") {
+        if (!fontFileSignature(abs)) return ctx.fail(ErrorCategory::NotFound, "ASSET_SOURCE_MISSING", source + " is not a readable TrueType/OpenType font in this project.", Json{{"source", source}});
+        m["importer"] = "Font";
+        m["importerVersion"] = 1;
+        m["settings"] = Json::object();
+        if (!ctx.changes.addDocument(doc, m)) return setBuilderError(ctx);
+        ctx.result = Json{{"id", m["id"]}, {"doc", doc}, {"source", source}, {"importer", "Font"}, {"hint", "TextRenderer.font = \"" + m["id"].get<std::string>() + "\", TextRenderer.size = pixel height"}};
+        return true;
+    }
+    int imgW = 0, imgH = 0;
+    if (!pngDimensions(abs, imgW, imgH)) return ctx.fail(ErrorCategory::NotFound, "ASSET_SOURCE_MISSING", source + " is not a readable PNG in this project.", Json{{"source", source}});
     m["importer"] = "Texture2D";
     m["importerVersion"] = 1;
     Json settings = Json::object();
@@ -693,8 +705,8 @@ void registerBuiltinCommands(CommandBus& bus) {
     bus.registerCommand({"document.patch", K::Mutation, "Apply raw RFC 6902 ops to one document (escape hatch; used by validate --fix for artifactChanges). 'before' is recorded automatically.",
                          schema({{"doc", str("project-relative document path")}, {"ops", Json{{"type", "array"}, {"items", Json{{"type", "object"}}}}}}, {"doc", "ops"}), {}, documentPatch});
     bus.registerCommand({"world.create", K::Mutation, "Create Worlds/<Name>.world.json with no entities.", schema({{"name", str("world name (also file name)")}}, {"name"}), {}, worldCreate});
-    bus.registerCommand({"asset.import", K::Mutation, "Create the Assets/<png>.meta.json sidecar for a PNG already under Assets/ (§37): a fresh asset_ id plus sprite sub-assets — a grid with one name per cell (row-major) or one whole-image sprite. Entities reference sprites as \"<id>#sprites/<name>\" in SpriteRenderer.sprite.",
-                         schema({{"source", str("project-relative PNG path under Assets/ (e.g. Assets/Textures/arena.png)")},
+    bus.registerCommand({"asset.import", K::Mutation, "Create the Assets/<file>.meta.json sidecar for a PNG or a TTF/OTF font already under Assets/ (§37, ADR-0046). PNG: a fresh asset_ id plus sprite sub-assets — a grid with one name per cell (row-major) or one whole-image sprite; entities reference sprites as \"<id>#sprites/<name>\" in SpriteRenderer.sprite. Font: importer Font, referenced whole by TextRenderer.font (size per component; any Unicode the font covers, e.g. Korean).",
+                         schema({{"source", str("project-relative path under Assets/: a PNG (Assets/Textures/arena.png) or a .ttf/.otf font (Assets/Fonts/NotoSansKR.ttf)")},
                                  {"grid", Json{{"type", "object"}, {"description", "{cellWidth, cellHeight} in pixels — slices the sheet row-major; requires names"}}},
                                  {"names", Json{{"type", "array"}, {"items", str("sprite name")}, {"description", "one per grid cell (row-major); without a grid, the single sprite's name (default: file stem)"}}},
                                  {"pixelsPerUnit", Json{{"type", "number"}, {"description", "world units = pixels / pixelsPerUnit (default 16)"}}},

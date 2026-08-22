@@ -92,12 +92,19 @@ void Project::parseAssetDocs() {
         a.id = m.value("id", "");
         if (a.id.empty() || !Id::validate(a.id).empty() || Id::parse(a.id)->prefix() != "asset") { bad(rel, "/id", "ASSET_META_INVALID", rel + ": 'id' must be a persistent id with prefix asset_ — create sidecars with `akeir asset import <png>` (§37)."); continue; }
         a.importer = m.value("importer", "Texture2D");
-        if (a.importer != "Texture2D") { bad(rel, "/importer", "ASSET_META_INVALID", rel + ": importer '" + a.importer + "' is not supported (Texture2D only)."); continue; }
+        if (a.importer != "Texture2D" && a.importer != "Font") { bad(rel, "/importer", "ASSET_META_INVALID", rel + ": importer '" + a.importer + "' is not supported (Texture2D, Font)."); continue; }
         a.sourceRel = m.value("source", "");
         if (a.sourceRel.empty()) a.sourceRel = rel.substr(0, rel.size() - 10);   // default: the sidecar's own file name without .meta.json
         a.sourceAbs = (fs::path(rootDir_) / a.sourceRel).generic_string();
         int imgW = 0, imgH = 0;
-        if (!fs::is_regular_file(a.sourceAbs, ec)) bad(rel, "/source", "ASSET_SOURCE_MISSING", rel + ": source image '" + a.sourceRel + "' does not exist.");
+        if (!fs::is_regular_file(a.sourceAbs, ec)) bad(rel, "/source", "ASSET_SOURCE_MISSING", rel + ": source file '" + a.sourceRel + "' does not exist.");
+        else if (a.importer == "Font") {   // ADR-0046: TTF/OTF, no sub-assets; rasterized by the renderer at TextRenderer.size
+            if (!fontFileSignature(a.sourceAbs)) bad(rel, "/source", "ASSET_SOURCE_INVALID", rel + ": source '" + a.sourceRel + "' is not a TrueType/OpenType font (Font importer reads .ttf/.otf).");
+            if (m.contains("subAssets") && m["subAssets"].is_array() && !m["subAssets"].empty()) bad(rel, "/subAssets", "ASSET_META_INVALID", rel + ": a Font asset has no sub-assets (TextRenderer.font references it whole).");
+            if (const AssetMeta* dup = assets_.find(a.id)) { bad(rel, "/id", "DUPLICATE_PERSISTENT_ID", "Asset id " + a.id + " is declared by more than one sidecar (" + dup->metaPath + ", " + rel + ")."); continue; }
+            assets_.add(std::move(a));
+            continue;
+        }
         else if (!pngDimensions(a.sourceAbs, imgW, imgH)) bad(rel, "/source", "ASSET_SOURCE_INVALID", rel + ": source '" + a.sourceRel + "' is not a PNG (Texture2D importer reads PNG only).");
         if (m.contains("settings") && m["settings"].is_object()) {
             const Json& st = m["settings"];
@@ -588,6 +595,12 @@ std::vector<Diagnostic> Project::validate() const {
                     if (prefix == "asset") {                     // ADR-0037: the sidecar and the sub-asset must exist
                         const AssetMeta* am = nullptr;
                         std::string why;
+                        if (p.refType == "asset:font") {         // ADR-0046: whole Font asset
+                            am = assets_.find(target);
+                            if (!am) out.push_back(docError("REF_DANGLING", "Property '" + p.name + "' references " + target + " but no Assets/**/*.meta.json sidecar declares that id.", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));
+                            else if (!assets_.resolveFont(r, &why)) out.push_back(docError("ASSET_KIND_MISMATCH", "Property '" + p.name + "': " + why + " (sidecar " + am->metaPath + ").", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));
+                            continue;
+                        }
                         const SpriteRegion* sr = assets_.resolveSprite(r, &am, &why);
                         if (!am) out.push_back(docError("REF_DANGLING", "Property '" + p.name + "' references " + target + " but no Assets/**/*.meta.json sidecar declares that id.", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));
                         else if (!sr) out.push_back(docError("ASSET_SUBASSET_MISSING", "Property '" + p.name + "': " + why + " (sidecar " + am->metaPath + ").", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));

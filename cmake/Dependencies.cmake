@@ -32,6 +32,7 @@ set(AKEIR_DEP_BOX2D_TAG    v3.1.1)         # MIT, C17                    (2025-0
 set(AKEIR_DEP_JSON_TAG     v3.12.0)        # MIT, nlohmann/json          (2025-04-11)
 set(AKEIR_DEP_DOCTEST_TAG  v2.5.3)         # MIT                         (2026-07-06)
 set(AKEIR_DEP_SDL_TAG      release-3.4.14) # zlib                        (2026-08-03)
+set(AKEIR_DEP_STB_TAG      2c980bb59875b0d32144a71867fbdebb2f77cd20) # public domain / MIT, stb_truetype.h v1.26 (2026-08-01), ADR-0046
 
 # ---- nlohmann/json ----
 akeir_add_dep(NAME nlohmann_json DIR json REPO nlohmann/json TAG ${AKEIR_DEP_JSON_TAG}
@@ -56,6 +57,21 @@ option(AKEIR_WITH_SDL "Build with SDL3 (window/input). OFF = headless-only build
 if(AKEIR_WITH_SDL)
   akeir_add_dep(NAME SDL3 DIR sdl REPO libsdl-org/SDL TAG ${AKEIR_DEP_SDL_TAG}
     OPTIONS "SDL_STATIC ON" "SDL_SHARED OFF" "SDL_TEST_LIBRARY OFF" "SDL_TESTS OFF" "SDL_EXAMPLES OFF" "SDL_INSTALL OFF")
+endif()
+
+# ---- stb (stb_truetype.h: TTF/OTF rasterization for the Font importer, ADR-0046) ----
+# header-only, no CMakeLists → DOWNLOAD_ONLY; exposed as the INTERFACE target akeir::stb (include dir = repo root)
+if(AKEIR_WITH_SDL)
+  if(EXISTS "${AKEIR_DEP_CACHE}/stb/stb_truetype.h")
+    message(STATUS "deps: stb ${AKEIR_DEP_STB_TAG} <- .cpm-cache/stb")
+    set(stb_SOURCE_DIR "${AKEIR_DEP_CACHE}/stb")
+  else()
+    message(STATUS "deps: stb ${AKEIR_DEP_STB_TAG} <- github.com/nothings/stb")
+    CPMAddPackage(NAME stb GITHUB_REPOSITORY nothings/stb GIT_TAG ${AKEIR_DEP_STB_TAG} GIT_SHALLOW TRUE DOWNLOAD_ONLY YES)
+  endif()
+  add_library(akeir_stb INTERFACE)
+  add_library(akeir::stb ALIAS akeir_stb)
+  target_include_directories(akeir_stb INTERFACE "${stb_SOURCE_DIR}")
 endif()
 
 # 서드파티 physics 에도 결정론 플래그를 건다 (§41). Box2D 자체 CMake 는 GCC/Clang 에 -ffp-contract=off 를 이미 넣지만

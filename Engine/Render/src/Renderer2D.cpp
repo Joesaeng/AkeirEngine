@@ -2,6 +2,7 @@
 #include "akeir/render/Renderer2D.h"
 
 #include "Font5x7.h"
+#include "FontCache.h"
 #include "akeir/core/Log.h"
 #include "akeir/ecs/Screen.h"
 #include "akeir/runtime/Components.h"
@@ -36,6 +37,8 @@ std::unique_ptr<Renderer2D> Renderer2D::createSoftware(int width, int height, st
 }
 
 Renderer2D::~Renderer2D() {
+    atlases_.clear();   // atlases own SDL textures → before the renderer
+    fonts_.clear();
     for (auto& [id, tex] : textures_) if (tex) SDL_DestroyTexture(tex);
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (surface_) SDL_DestroySurface(surface_);
@@ -142,18 +145,43 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     }
     std::stable_sort(texts.begin(), texts.end(), [](const TextItem& a, const TextItem& b) { return a.order != b.order ? a.order < b.order : a.id < b.id; });
     for (const auto& it : texts) {
+        // ADR-0046: TextRenderer.font → TTF glyph atlas; empty/unresolvable → built-in 5x7 bitmap font
+        GlyphAtlas* atlas = nullptr;
+        if (!it.tr->font.empty()) {
+            std::string why;
+            if (const AssetMeta* fa = world.assets().resolveFont(it.tr->font, &why)) atlas = atlasFor(*fa, static_cast<int>(std::lround(std::clamp(it.tr->size, 4.f, 256.f))));
+            else if (warnedAssets_.insert(it.tr->font.value).second) AKEIR_LOG(Warn, "render", "font_unresolved", "Font reference does not resolve; using the bitmap font.", Json{{"game.entity", it.id}, {"font", it.tr->font.value}, {"why", why}});
+        }
+        if (atlas) {
+            TextLayout layout = layoutText(*atlas, it.tr->text);
+            float x0, baseline;
+            if (it.tr->screenSpace) { x0 = it.t->position.x; baseline = it.t->position.y + atlas->ascent(); }
+            else {
+                const float boxH = atlas->ascent() - atlas->descent();
+                x0 = cx + (it.t->position.x - camPos.x) * ppu;
+                baseline = cy - (it.t->position.y - camPos.y) * ppu - boxH * 0.5f + atlas->ascent();
+            }
+            if (it.tr->align == TextAlign::Center) x0 -= layout.width * 0.5f; else if (it.tr->align == TextAlign::Right) x0 -= layout.width;
+            x0 = std::floor(x0); baseline = std::floor(baseline);
+            float pen = x0;
+            for (std::size_t ci = 0; ci < layout.codepoints.size(); ++ci) {
+                const Glyph& g = atlas->glyph(layout.codepoints[ci]);
+                if (g.page >= 0) {
+                    SDL_Texture* pageTex = atlas->page(g.page);
+                    SDL_SetTextureColorMod(pageTex, toByte(it.tr->color.r), toByte(it.tr->color.g), toByte(it.tr->color.b));
+                    SDL_SetTextureAlphaMod(pageTex, toByte(it.tr->color.a));
+                    SDL_FRect dst{pen + g.xoff, baseline + g.yoff, g.src.w, g.src.h};
+                    if (!(dst.x + dst.w < 0.f || dst.y + dst.h < 0.f || dst.x > static_cast<float>(width_) || dst.y > static_cast<float>(height_))) { SDL_RenderTexture(renderer_, pageTex, &g.src, &dst); ++stats.glyphs; }
+                }
+                pen += g.advance;
+                if (ci + 1 < layout.codepoints.size()) pen += atlas->kerning(layout.codepoints[ci], layout.codepoints[ci + 1]);
+            }
+            ++stats.texts;
+            continue;
+        }
         const float px = std::max(0.25f, it.tr->scale);
         const float advance = font5x7::kAdvance * px, glyphH = font5x7::kHeight * px;
-        // decode UTF-8 into code points; unsupported ones draw as the box glyph
-        std::vector<unsigned int> cps;
-        for (std::size_t i = 0; i < it.tr->text.size();) {
-            unsigned char c = static_cast<unsigned char>(it.tr->text[i]);
-            unsigned int cp = c; std::size_t n = 1;
-            if (c >= 0xF0) { cp = c & 0x07; n = 4; } else if (c >= 0xE0) { cp = c & 0x0F; n = 3; } else if (c >= 0xC0) { cp = c & 0x1F; n = 2; }
-            for (std::size_t k = 1; k < n && i + k < it.tr->text.size(); ++k) cp = (cp << 6) | (static_cast<unsigned char>(it.tr->text[i + k]) & 0x3F);
-            cps.push_back(cp);
-            i += n;
-        }
+        const std::vector<unsigned int> cps = decodeUtf8(it.tr->text);   // unsupported code points draw as the box glyph
         const float totalW = cps.empty() ? 0.f : advance * cps.size() - px;
         float x0, y0;
         if (it.tr->screenSpace) { x0 = it.t->position.x; y0 = it.t->position.y; }
@@ -175,6 +203,25 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     SDL_FlushRenderer(renderer_);   // software renderer 는 배치를 flush 해야 surface 에 픽셀이 있다 (readPixels/savePng 전에 필수)
     stats.renderMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - renderStart).count();
     return stats;
+}
+
+GlyphAtlas* Renderer2D::atlasFor(const AssetMeta& asset, int pixelHeight) {
+    const auto key = std::make_pair(asset.id, pixelHeight);
+    auto it = atlases_.find(key);
+    if (it != atlases_.end()) return it->second.get();
+    FontFace* face = nullptr;
+    auto f = fonts_.find(asset.id);
+    if (f == fonts_.end()) {
+        auto loaded = FontFace::load(asset.sourceAbs);
+        if (!loaded->ok && warnedAssets_.insert(asset.id).second) AKEIR_LOG(Warn, "render", "font_load_failed", "Font could not be loaded; using the bitmap font.", Json{{"asset", asset.id}, {"source", asset.sourceRel}, {"error", loaded->error}});
+        f = fonts_.emplace(asset.id, std::move(loaded)).first;
+    }
+    face = f->second.get();
+    if (!face->ok) { atlases_[key] = nullptr; return nullptr; }
+    auto atlas = std::make_unique<GlyphAtlas>(renderer_, *face, pixelHeight);
+    GlyphAtlas* raw = atlas.get();
+    atlases_[key] = std::move(atlas);
+    return raw;
 }
 
 SDL_Texture* Renderer2D::textureFor(const AssetMeta& asset) {

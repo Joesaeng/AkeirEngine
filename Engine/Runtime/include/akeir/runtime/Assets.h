@@ -39,7 +39,7 @@ struct AssetMeta {
     std::string metaPath;             // project-relative sidecar path ("Assets/Textures/arena.png.meta.json")
     std::string sourceRel;            // project-relative source ("Assets/Textures/arena.png")
     std::string sourceAbs;            // absolute path for loaders
-    std::string importer = "Texture2D";
+    std::string importer = "Texture2D";   // Texture2D | Font (ADR-0046: TTF/OTF, referenced whole by TextRenderer.font)
     std::string filter = "nearest";   // nearest | linear
     float pixelsPerUnit = 16.f;       // world units = pixels / pixelsPerUnit
     std::vector<SpriteRegion> sprites;
@@ -49,6 +49,8 @@ struct AssetMeta {
 
 /// Width/height from a PNG's IHDR (no decoding). false when the file is not a readable PNG.
 bool pngDimensions(const std::string& path, int& width, int& height);
+/// true when the file starts with a TrueType/OpenType/TTC signature (0x00010000, 'true', 'OTTO', 'ttcf') — no parsing (ADR-0046).
+bool fontFileSignature(const std::string& path);
 
 /// id → AssetMeta. Deterministic order (std::map).
 class AssetTable {
@@ -57,6 +59,8 @@ public:
     const AssetMeta* find(std::string_view id) const;
     /// "asset_…#sprites/<name>" → (asset, sprite). Either may be null; `why` explains (empty when found).
     const SpriteRegion* resolveSprite(const Ref& ref, const AssetMeta** assetOut = nullptr, std::string* why = nullptr) const;
+    /// "asset_…" (no sub-asset) → Font asset. null + `why` otherwise (ADR-0046).
+    const AssetMeta* resolveFont(const Ref& ref, std::string* why = nullptr) const;
     const std::map<std::string, AssetMeta, std::less<>>& all() const { return byId_; }
     std::size_t size() const { return byId_.size(); }
     bool empty() const { return byId_.empty(); }

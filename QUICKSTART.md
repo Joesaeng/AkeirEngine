@@ -28,7 +28,7 @@ cd Game
 %G% version --json
 %G% capabilities --json                         # 16 tools, busCommands (14 write commands + argument schemas), exit/error code tables
 %G% project info --json
-%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0x3879c0f0d675ebc8
+%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0xf9a1151e01338658
 %G% test --json                                 # 3 data-driven tests (Combat / Movement / Visual golden)
 %G% capture --ticks 300 --out Cache\capture\f.png --json   # CPU-rendered PNG
 %G% run --ticks 120                             # the same windowed run from the CLI (closes itself after 2 s). To just play, double-click bin\TestArena.exe
@@ -61,6 +61,7 @@ What you can do with data alone (no C++):
 - Create/modify/delete entities, prefabs and worlds; set properties; tags; prefab inheritance (`--base`) and overrides. One command = one undo step (`akeir undo`; `validate --fix` is one step per fix, `apply`/`tx` make the whole batch one step).
 - Physics (Box2D): `Collider2D` (box/circle/capsule) + `RigidBody2D` (static/kinematic/dynamic). Collision layers: declare `"physics": {"layers": {"Player": ["Enemy","Pickup"], "Enemy": ["Enemy"], "Pickup": [], "Effect": []}}` in `project.json` and set `Collider2D.layer` — listing a partner on one side is enough; sensors follow the same matrix; `validate` flags undeclared layer names.
 - Input: `Config/input.json` actions (keys + `{"mouse": "left"}`); systems read `in.axis("MoveX")`, `in.held("Attack")`, `in.justPressed("Attack")` (edges are in the frame), `in.pointer` (window px, `viewportW/H`, buttons, wheel). Hit-test a sprite with `hitTest(world, Viewport{in.pointer.viewportW, in.pointer.viewportH}, {in.pointer.x, in.pointer.y})` from `akeir/ecs/Screen.h`. Tests: `inputs[].pointer`; MCP `play step {input: {pointer: {...}}}`.
+- Fonts (ADR-0046): put a TTF/OTF under `Assets/Fonts/` (e.g. Noto Sans KR from Google Fonts, OFL), run `akeir asset import Assets/Fonts/NotoSansKR.ttf` and set `TextRenderer.font = "<asset id>"`, `size = 24` — any Unicode the font covers (Korean works). Without a font, `TextRenderer` uses the built-in 5x7 bitmap font (uppercase ASCII).
 - HUD: `SpriteRenderer.screenSpace = true` + `anchor` (viewport fraction) + `pixelSize` + `fill` (HP bar), `TextRenderer.screenSpace`. Pause: `world.setPaused(!world.paused())` from a system registered with `runWhilePaused = true` (sample: P key).
 - Measuring: `run --headless --profile` (per-system / physics / query ms), `play step {profile: true}`, the `player.stop` line in `Cache/player.log` (frame avg/p95/max). `Worlds/Stress.world.json` + `scripts/test_perf.py` are the sample's stress benchmark. **A `Collider2D` on its own has no body and blocks nothing** — give walls a `RigidBody2D {type: static}` too (`validate` warns with `COLLIDER_WITHOUT_BODY` and `--fix` adds it).
 - Player movement: `Collider2D` + `RigidBody2D` (dynamic, gravityScale 0) + `Movement` + `PlayerController` (MoveX/MoveY from input.json). The dependency chain (`Movement` → `RigidBody2D` → `Collider2D`) is listed under `x-requires` in `schema --all`; a missing link is rejected with `COMPONENT_DEPENDENCY_MISSING` (the whole creation is rolled back).
