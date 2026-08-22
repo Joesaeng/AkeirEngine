@@ -252,23 +252,12 @@ SimSetup prepare(const Project& project, const WorldFactory& factory, const Test
         std::vector<std::string> ps;
         for (const auto& id : project.resolveSelector(st.spawn)) if (auto l = project.locate(id); l && l->kind == "prefab") ps.push_back(id);
         if (ps.size() != 1) { out.error = "setup '" + st.as + "': prefab '" + st.spawn + "' does not match exactly one prefab"; return out; }
-        auto comps = project.resolvePrefab(ps[0], &diags);
-        if (!comps) { out.error = "setup '" + st.as + "': prefab resolve failed"; return out; }
-        Json root = Json::object();
-        root["components"] = *comps;
-        if (st.position) {
-            if (!root["components"].contains("Transform")) root["components"]["Transform"] = Json::object();
-            root["components"]["Transform"]["position"] = *st.position;
-        }
-        for (const auto& [ptr, v] : st.set.items()) {
-            try { root[Json::json_pointer(ptr)] = v; } catch (const std::exception& e) { out.error = "setup '" + st.as + "': bad set pointer " + ptr + ": " + e.what(); return out; }
-        }
-        const Json* pdoc = project.document(project.locate(ps[0])->doc);
-        std::vector<std::string> tags = st.tags;
-        if (pdoc && pdoc->contains("tags") && (*pdoc)["tags"].is_array()) for (const auto& t : (*pdoc)["tags"]) if (t.is_string()) tags.push_back(t.get<std::string>());
-        std::string name = !st.name.empty() ? st.name : (!st.as.empty() ? st.as : pdoc ? pdoc->value("name", "spawned") : "spawned");
-        std::string id = out.world->spawn(name, root["components"], tags);
-        if (id.empty()) { out.error = "setup '" + st.as + "': spawn failed"; return out; }
+        Json overrides = st.set.is_object() ? st.set : Json::object();
+        if (st.position) overrides["/components/Transform/position"] = *st.position;
+        std::string name = !st.name.empty() ? st.name : (!st.as.empty() ? st.as : "");
+        std::string err;
+        std::string id = out.world->spawnPrefab(ps[0], overrides, st.tags, std::nullopt, name, &err);   // ADR-0038: same path as game code
+        if (id.empty()) { out.error = "setup '" + st.as + "': spawn failed: " + err; return out; }
         out.bindings[st.as] = id;
     }
 

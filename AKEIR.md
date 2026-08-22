@@ -1509,6 +1509,8 @@ Flecs를 채택하면 `akeir explain`은 `GET /entity/<path>?values=true&inherit
 
 ---
 
+▶ v3 (ADR-0038, PlayWorld 런타임 API): system 은 `PrePhysics`(기본) / `PostPhysics` 두 단계 — PostPhysics 는 같은 tick 의 contact 이벤트를 본다. `spawnPrefab(idOrName, overrides, tags)` 가 authoring prefab 을 런타임에 인스턴스화하고(테스트 setup `spawn` 과 같은 경로), `addComponent/removeComponent/addTag/removeTag` 가 살아 있는 entity 를 즉시 바꾼다. `spawn` 은 모르는 component 를 거부한다.
+
 # 19. Reference Graph
 
 Project 전체를 그래프로 관리한다.

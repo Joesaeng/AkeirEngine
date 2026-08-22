@@ -10,6 +10,12 @@ Data: `Game/project.json`, `Game/Prefabs/*.prefab.json`, `Game/Worlds/TestArena.
 
 Executables and tests link this library with `$<LINK_LIBRARY:WHOLE_ARCHIVE,akeir_game>` (keeps the component registrations).
 
+## Runtime primitives (ADR-0038)
+- `w.addSystem("Damage", fn, PlayWorld::SystemPhase::PostPhysics)` — runs after the physics step and sees this tick's `w.contactEvents()`; use it for contact damage / pickups instead of distance checks.
+- `w.spawnPrefab("Goblin", {{"/components/Health/max", 5}}, {"wave1"})` — instantiate an authoring prefab at runtime (base chain + overrides resolved; tags merged).
+- `w.addComponent(id, "Burning", {{"seconds", 3}})` / `w.removeComponent(id, "Burning")` / `w.addTag(id, "stunned")` — status effects without despawning.
+- `w.spawn(name, components, tags, parent, &err)` fails with `err` naming the unknown component instead of skipping it.
+
 ## Adding a component / system
 1. Add an aggregate struct to `GameComponents.h`, an `AKEIR_REFLECT_BEGIN … END` block to `GameComponents.cpp`, and one anchor line in `registerGameComponents()`.
 2. Write the system as a function in `GameSystems.cpp` and `addSystem` it in order inside `registerGameSystems`.

@@ -243,3 +243,14 @@
 - **효과**: 샘플 `Game/Assets/Textures/arena.png`(48×16, player/goblin/goblin_elite) 를 `akeir asset import … --grid 16x16 --names …` 로 등록하고 prefab 3개의 `SpriteRenderer.sprite` 를 `set` 으로 연결 — 데이터만으로 끝난다. reflected 문자열이 바뀌어 샘플 기준 finalHash 가 `0x4ac7b45c37618374` 로 이동(불변 fixture 는 `0xbc23…` 유지).
 - **만들지 않은 것**: 텍스처 atlas 생성, `Cache/texture/<key>.bin` 파생 캐시(§37 — PNG 직접 로드로 충분), 애니메이션 프레임, `file.*` op(PNG 자체를 command 로 추가), 이미지 크기 외의 PNG 검증(loader 가 실패하면 경고).
 - **참조**: §37, §88.7, §27, ADR-0026
+
+## ADR-0038 PlayWorld 런타임 primitive 셋: system phase(Pre/PostPhysics), `spawnPrefab`, 런타임 component/tag 추가·제거, unknown component 거부
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P0/P1 셋을 한 묶음으로 — 전부 `PlayWorld` 안 수십 줄이고 같은 결정론 규칙을 공유한다).
+- **문제**: ① `tick` = systems → physics → contact drain 이라 게임 system 은 이번 tick 의 접촉을 볼 수 없었다(코덱스는 접촉 피해·pickup 을 거리 검사로 우회). ② 살아 있는 entity 에 component/tag 를 붙이거나 뗄 API 가 없었다. ③ 웨이브 스포너가 prefab 의 component JSON 을 system 안에 다시 적어야 했다. ④ `spawn` 의 모르는 component 이름이 조용히 무시됐다.
+- **결정**:
+  1. `addSystem(name, fn, SystemPhase::PrePhysics|PostPhysics)` — 기본 PrePhysics(속도 결정). PostPhysics 는 physics step·contact drain 뒤 같은 tick 안에서 돌며 `contactEvents()` 가 이번 tick 것이다. 단계 안에서는 등록 순, `systemNames()` 는 실행 순. 피드백의 `LateUpdate/RenderPrep` 은 실제 요구 전엔 만들지 않는다(PRINCIPLES §9).
+  2. `spawnPrefab(selector, overrides, tags, parent, name)` — `PlayWorld::build` 가 모든 prefab 을 resolve(`Project::resolvePrefab`, base chain + set/add/remove)해 `prefabs()` 에 들고 있다. selector = id 또는 이름(`name:` 접두 허용; 이름 중복이면 실패). overrides 는 테스트 시나리오 `set` 과 같은 JSON Pointer 맵(`{"/components/Health/max": 5}`), tags 는 prefab tags 와 합집합, 이름 기본값 = prefab 이름. **TestRunner 의 setup `spawn` 도 이 경로를 쓴다** — 코드 경로 하나(finalHash 불변으로 확인).
+  3. `addComponent(id, name, value)` / `removeComponent(id, name)` / `addTag` / `removeTag` — 즉시 적용(단일 스레드, system 은 `query()` 의 id 사본을 순회하므로 안전). RigidBody2D·Collider2D 추가 시 셋이 갖춰지면 body 생성(`ensureBody`), 제거 시 body 파괴. Transform 은 제거 불가. 값 오류(reflection 검증)면 추가하지 않는다. hash/snapshot 은 registry×entity 순회라 자동 반영. 피드백의 "tick 경계 mutation queue" 는 필요가 증명되지 않아 만들지 않는다 — 두 월드에서 같은 호출 = 같은 hash 를 테스트가 보장한다.
+  4. `spawn(...)` 에 `std::string* error` — 모르는 component 면 "" 를 돌려주고 등록된 이름 목록을 error 에 적는다(로그 `ecs.spawn_unknown_component`).
+- **검증**: `Tests/ECS_PlayWorld.cpp` 4 케이스(phase 관찰 순서, prefab spawn + override/tag/body, unknown component, 런타임 add/remove 결정론). 샘플·fixture finalHash 불변.
+- **참조**: §18 lifecycle, §7.1, §16, PRINCIPLES §9/§22

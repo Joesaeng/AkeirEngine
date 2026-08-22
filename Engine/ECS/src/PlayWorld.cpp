@@ -109,6 +109,18 @@ std::unique_ptr<PlayWorld> PlayWorld::build(const Project& project, std::string_
     pw->cfg_ = cfg;
     pw->worldId_ = std::string(worldId);
     pw->assets_ = project.assets();
+    for (const auto& path : project.prefabPaths()) {   // ADR-0038: prefabs resolved once, spawnable at runtime
+        const Json* pd = project.document(path);
+        if (!pd || !pd->contains("id") || !(*pd)["id"].is_string()) continue;
+        PrefabInfo info;
+        info.id = (*pd)["id"].get<std::string>();
+        info.name = pd->value("name", "");
+        if (pd->contains("tags") && (*pd)["tags"].is_array()) for (const auto& t : (*pd)["tags"]) if (t.is_string()) info.tags.push_back(t.get<std::string>());
+        std::vector<Diagnostic> pdiags;
+        if (auto comps = project.resolvePrefab(info.id, &pdiags)) info.components = *comps;
+        else { for (auto& d : pdiags) diagnostics.push_back(d); continue; }
+        pw->prefabs_[info.id] = std::move(info);
+    }
     pw->world_ = ecs_init();
     pw->physics_ = createBox2DWorld(cfg.physics);
 
@@ -220,20 +232,26 @@ void PlayWorld::syncFromPhysics() {
 
 void PlayWorld::tick(const InputFrame& input, const SimTime& simTime) {
     tick_ = simTime.tick;
-    for (auto& [name, fn] : systems_) fn(*this, input, simTime);   // 등록 순서 (결정적)
+    for (auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) s.fn(*this, input, simTime);   // 등록 순서 (결정적)
     syncToPhysics();
     physics_->step(simTime.dt(), cfg_.physics.subSteps);
     syncFromPhysics();
     events_ = physics_->drainContactEvents();
+    for (auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) s.fn(*this, input, simTime);  // 이번 tick 의 contactEvents() 를 본다 (ADR-0038)
     tick_ = simTime.tick + 1;   // "지금까지 시뮬레이션한 tick 수". snapshot.tick / dump.tick 이 이 값 (N tick 돌리면 N)
 }
 
-void PlayWorld::addSystem(std::string name, SystemFn fn) { systems_.emplace_back(std::move(name), std::move(fn)); }
+void PlayWorld::addSystem(std::string name, SystemFn fn, SystemPhase phase) { systems_.push_back({std::move(name), std::move(fn), phase}); }
 void PlayWorld::addSpawnHook(std::string name, SpawnHook fn) {
     for (const auto& id : ids_) fn(*this, id);   // 기존 entity 에 즉시 적용 (id 순)
     spawnHooks_.emplace_back(std::move(name), std::move(fn));
 }
-std::vector<std::string> PlayWorld::systemNames() const { std::vector<std::string> out; for (const auto& s : systems_) out.push_back(s.first); return out; }
+std::vector<std::string> PlayWorld::systemNames() const {
+    std::vector<std::string> out;
+    for (const auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) out.push_back(s.name);
+    for (const auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) out.push_back(s.name);
+    return out;
+}
 
 // ---------------------------------------------------------------- access
 
@@ -278,7 +296,16 @@ std::optional<std::string> PlayWorld::parent(std::string_view id) const {
     return it == impl_->entities.end() ? std::nullopt : it->second.parent;
 }
 
-std::string PlayWorld::spawn(const std::string& name_, const Json& components, const std::vector<std::string>& tags_, std::optional<std::string> parent_) {
+std::string PlayWorld::spawn(const std::string& name_, const Json& components, const std::vector<std::string>& tags_, std::optional<std::string> parent_, std::string* error) {
+    if (!components.is_object()) { if (error) *error = "components must be an object {Name: {...}}"; return ""; }
+    for (auto it = components.begin(); it != components.end(); ++it) {   // ADR-0038: no silent skipping
+        if (!Registry::global().find(it.key())) {
+            std::string known; for (const auto* m : Registry::global().all()) known += (known.empty() ? "" : ", ") + m->name;
+            if (error) *error = "unknown component '" + it.key() + "' (registered: " + known + ")";
+            AKEIR_LOG(Error, "ecs", "spawn_unknown_component", "spawn refused: unknown component.", Json{{"name", name_}, {"component", it.key()}});
+            return "";
+        }
+    }
     // §7.1: runtime-spawned id 는 결정적 (seed, tick, ordinal)
     Id id = Id::deterministic("entity", cfg_.seed, static_cast<std::uint64_t>(tick_), spawnOrdinal_++);
     const std::string sid = id.str();
@@ -297,7 +324,6 @@ std::string PlayWorld::spawn(const std::string& name_, const Json& components, c
     std::sort(names.begin(), names.end());
     for (const auto& cname : names) {
         const ComponentMeta* meta = Registry::global().find(cname);
-        if (!meta) continue;
         ecs_entity_t comp = impl_->componentId(world_, *meta);
         void* ptr = ecs_ensure_id(world_, impl_->entities[sid].e, comp, meta->size);
         componentFromJson(*meta, ptr, components[cname], Visibility::Snapshot);   // runtime 값도 허용
@@ -305,7 +331,88 @@ std::string PlayWorld::spawn(const std::string& name_, const Json& components, c
     }
     ensureBody(sid);
     for (auto& [hn, hook] : spawnHooks_) hook(*this, sid);
+    if (error) error->clear();
     return sid;
+}
+
+std::string PlayWorld::spawnPrefab(std::string_view selector, const Json& overrides, const std::vector<std::string>& tags_, std::optional<std::string> parent_, std::string name_, std::string* error) {
+    const PrefabInfo* info = nullptr;
+    if (auto it = prefabs_.find(std::string(selector)); it != prefabs_.end()) info = &it->second;
+    else {
+        std::string_view want = selector.rfind("name:", 0) == 0 ? selector.substr(5) : selector;
+        int matches = 0;
+        for (const auto& [pid, p] : prefabs_) if (p.name == want) { info = &p; ++matches; }
+        if (matches > 1) { if (error) *error = "prefab name '" + std::string(want) + "' is ambiguous; use the id"; return ""; }
+    }
+    if (!info) {
+        std::string names; for (const auto& [pid, p] : prefabs_) names += (names.empty() ? "" : ", ") + p.name;
+        if (error) *error = "no prefab '" + std::string(selector) + "' (prefabs: " + names + ")";
+        return "";
+    }
+    Json root = Json::object();
+    root["components"] = info->components;
+    if (overrides.is_object()) {
+        for (const auto& [ptr, v] : overrides.items()) {
+            try { root[Json::json_pointer(ptr)] = v; }
+            catch (const std::exception& e) { if (error) *error = "bad override pointer '" + ptr + "': " + e.what(); return ""; }
+        }
+    }
+    std::vector<std::string> tags = info->tags;
+    for (const auto& t : tags_) if (std::find(tags.begin(), tags.end(), t) == tags.end()) tags.push_back(t);
+    return spawn(name_.empty() ? info->name : name_, root["components"], tags, std::move(parent_), error);
+}
+
+bool PlayWorld::addComponent(std::string_view id, std::string_view component, const Json& value, std::string* error) {
+    auto it = impl_->entities.find(std::string(id));
+    if (it == impl_->entities.end()) { if (error) *error = "no entity " + std::string(id); return false; }
+    const ComponentMeta* meta = Registry::global().find(component);
+    if (!meta) { if (error) *error = "unknown component '" + std::string(component) + "'"; return false; }
+    ecs_entity_t comp = impl_->componentId(world_, *meta);
+    if (ecs_has_id(world_, it->second.e, comp)) { if (error) *error = std::string(component) + " is already on " + std::string(id); return false; }
+    void* ptr = ecs_ensure_id(world_, it->second.e, comp, meta->size);
+    if (value.is_object() && !value.empty()) {
+        ApplyResult applied = componentFromJson(*meta, ptr, value, Visibility::Snapshot);
+        if (!applied.ok) {
+            ecs_remove_id(world_, it->second.e, comp);
+            if (error) { error->clear(); for (const auto& d : applied.diagnostics) if (d.level == Severity::Error) *error += (error->empty() ? "" : "; ") + d.ruleId + ": " + d.message.text; }
+            return false;
+        }
+    }
+    ecs_modified_id(world_, it->second.e, comp);
+    ensureBody(std::string(id));
+    if (error) error->clear();
+    return true;
+}
+
+bool PlayWorld::removeComponent(std::string_view id, std::string_view component, std::string* error) {
+    auto it = impl_->entities.find(std::string(id));
+    if (it == impl_->entities.end()) { if (error) *error = "no entity " + std::string(id); return false; }
+    if (component == "Transform") { if (error) *error = "Transform cannot be removed"; return false; }
+    auto c = impl_->components.find(std::string(component));
+    if (c == impl_->components.end() || !ecs_has_id(world_, it->second.e, c->second)) { if (error) *error = std::string(component) + " is not on " + std::string(id); return false; }
+    ecs_remove_id(world_, it->second.e, c->second);
+    if ((component == "RigidBody2D" || component == "Collider2D") && it->second.body) { physics_->destroyBody(it->second.body); it->second.body = 0; }
+    if (error) error->clear();
+    return true;
+}
+
+bool PlayWorld::addTag(std::string_view id, std::string_view tag) {
+    auto it = impl_->entities.find(std::string(id));
+    if (it == impl_->entities.end() || tag.empty()) return false;
+    auto& t = it->second.tags;
+    if (std::find(t.begin(), t.end(), tag) != t.end()) return false;
+    t.emplace_back(tag);
+    return true;
+}
+
+bool PlayWorld::removeTag(std::string_view id, std::string_view tag) {
+    auto it = impl_->entities.find(std::string(id));
+    if (it == impl_->entities.end()) return false;
+    auto& t = it->second.tags;
+    auto pos = std::find(t.begin(), t.end(), tag);
+    if (pos == t.end()) return false;
+    t.erase(pos);
+    return true;
 }
 
 void PlayWorld::despawn(std::string_view id) {

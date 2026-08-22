@@ -134,3 +134,103 @@ TEST_CASE("PlayWorld: runtime spawn gets deterministic v8 ids and joins physics 
     CHECK_FALSE(a->hasEntity(ia));
     CHECK(a->physics().bodyCount() == 4);
 }
+
+// ---- ADR-0038: system phases, prefab spawn, runtime component/tag mutation, unknown-component spawn ----
+TEST_CASE("PlayWorld: PostPhysics systems see this tick's contact events, PrePhysics ones see last tick's (ADR-0038)") {
+    Fixture f;
+    auto w = f.world();
+    std::vector<std::size_t> pre, post;
+    w->addSystem("Probe.Post", [&](PlayWorld& pw, const InputFrame&, const SimTime&) { post.push_back(pw.contactEvents().size()); }, PlayWorld::SystemPhase::PostPhysics);
+    w->addSystem("Probe.Pre", [&](PlayWorld& pw, const InputFrame&, const SimTime&) { pre.push_back(pw.contactEvents().size()); });
+    auto names = w->systemNames();
+    CHECK(names.back() == "Probe.Post");                         // execution order: every PrePhysics system first
+    CHECK(std::find(names.begin(), names.end(), "Probe.Pre") < std::find(names.begin(), names.end(), "Probe.Post"));
+    SimTime st; st.tickRate = 60;
+    for (int i = 0; i < 240; ++i) { InputFrame fr; fr.tick = st.tick; w->tick(fr, st); st.advance(); }
+    REQUIRE(pre.size() == 240); REQUIRE(post.size() == 240);
+    std::size_t first = 0; while (first < post.size() && post[first] == 0) ++first;
+    REQUIRE_MESSAGE(first < post.size(), "goblins never touched the player in 240 ticks");
+    CHECK(pre[first] == 0);                                      // the PrePhysics system ran before the physics step of that tick
+    CHECK(pre[first + 1] == post[first]);                        // …and only sees those contacts one tick later
+}
+
+TEST_CASE("PlayWorld: spawnPrefab instantiates an authoring prefab with overrides, merged tags and a physics body (ADR-0038)") {
+    Fixture f;
+    auto w = f.world();
+    REQUIRE(w->prefabs().size() == 3);
+    const std::size_t bodies = w->physics().bodyCount();
+    std::string err;
+    std::string g = w->spawnPrefab("Goblin", Json{{"/components/Health/max", 5}, {"/components/Transform/position", Json::array({9, 9, 0})}}, {"wave1"}, std::nullopt, "", &err);
+    REQUIRE_MESSAGE(!g.empty(), err);
+    CHECK(w->name(g) == "Goblin");
+    CHECK(w->get<game::Health>(g)->max == 5.f);
+    CHECK(w->get<game::Health>(g)->current == 5.f);              // spawn hooks ran (HealthInit)
+    CHECK(w->get<Transform>(g)->position.x == 9.f);
+    CHECK(w->hasTag(g, "enemy"));                                // from the prefab
+    CHECK(w->hasTag(g, "wave1"));                                // merged
+    CHECK(w->physics().bodyCount() == bodies + 1);
+    std::string e = w->spawnPrefab("name:GoblinElite", Json::object(), {}, std::nullopt, "Boss", &err);
+    REQUIRE_MESSAGE(!e.empty(), err);
+    CHECK(w->name(e) == "Boss");
+    CHECK(w->get<game::Health>(e)->max == 80.f);                 // base chain + set override resolved
+    CHECK(w->hasTag(e, "elite"));
+    const std::string pid = w->prefabs().begin()->first;
+    CHECK_FALSE(w->spawnPrefab(pid, Json::object(), {}, std::nullopt, "", &err).empty());   // by id
+    CHECK(w->spawnPrefab("Dragon", Json::object(), {}, std::nullopt, "", &err).empty());
+    CHECK(err.find("no prefab 'Dragon'") != std::string::npos);
+    CHECK(w->spawnPrefab("Goblin", Json{{"components/Health/max", 1}}, {}, std::nullopt, "", &err).empty());   // pointers start with /
+    CHECK(err.find("override pointer") != std::string::npos);
+}
+
+TEST_CASE("PlayWorld: spawn refuses unknown components instead of skipping them (ADR-0038)") {
+    Fixture f;
+    auto w = f.world();
+    std::string err;
+    CHECK(w->spawn("X", Json{{"Transform", Json::object()}, {"Teleporter", Json::object()}}, {}, std::nullopt, &err).empty());
+    CHECK(err.find("unknown component 'Teleporter'") != std::string::npos);
+    CHECK(err.find("registered:") != std::string::npos);
+    CHECK_FALSE(w->spawn("Y", Json{{"Transform", Json::object()}}, {}, std::nullopt, &err).empty());
+    CHECK(err.empty());
+}
+
+TEST_CASE("PlayWorld: runtime add/remove of components and tags is immediate, affects hash and physics, and is deterministic (ADR-0038)") {
+    Fixture f;
+    auto run = [&](bool mutate) {
+        auto w = f.world();
+        std::string id = w->spawn("Crate", Json{{"Transform", Json{{"position", Json::array({3, 3, 0})}}}});
+        const std::size_t bodies = w->physics().bodyCount();
+        std::uint64_t h0 = w->hash();
+        std::string err;
+        if (mutate) {
+            REQUIRE(w->addComponent(id, "Collider2D", Json{{"shape", "circle"}, {"radius", 0.3}}, &err));
+            CHECK(w->physics().bodyCount() == bodies);                 // no body without RigidBody2D
+            REQUIRE(w->addComponent(id, "RigidBody2D", Json::object(), &err));
+            CHECK(w->physics().bodyCount() == bodies + 1);             // created once all three are present
+            CHECK(w->hasComponent(id, "Collider2D"));
+            CHECK(w->get<Collider2D>(id)->radius == 0.3f);
+            CHECK_FALSE(w->addComponent(id, "Collider2D", Json::object(), &err));
+            CHECK(err.find("already") != std::string::npos);
+            CHECK_FALSE(w->addComponent(id, "Nope", Json::object(), &err));
+            CHECK_FALSE(w->addComponent(id, "Health", Json{{"max", "many"}}, &err));   // type error → not added
+            CHECK_FALSE(w->hasComponent(id, "Health"));
+            CHECK_FALSE(w->removeComponent(id, "Transform", &err));
+            CHECK(w->addTag(id, "loot"));
+            CHECK_FALSE(w->addTag(id, "loot"));
+            CHECK(w->hasTag(id, "loot"));
+            CHECK(w->query({"#loot"}) == std::vector<std::string>{id});
+            CHECK(w->removeTag(id, "loot"));
+            CHECK_FALSE(w->hasTag(id, "loot"));
+            CHECK(w->hash() != h0);
+            REQUIRE(w->removeComponent(id, "RigidBody2D", &err));
+            CHECK(w->physics().bodyCount() == bodies);                 // body destroyed with it
+            CHECK_FALSE(w->hasComponent(id, "RigidBody2D"));
+            CHECK(w->hasComponent(id, "Collider2D"));
+        }
+        SimTime st; st.tickRate = 60;
+        for (int i = 0; i < 30; ++i) { InputFrame fr; fr.tick = st.tick; w->tick(fr, st); st.advance(); }
+        return w->hash();
+    };
+    std::uint64_t a = run(true), b = run(true), c = run(false);
+    CHECK(a == b);
+    CHECK(a != c);
+}

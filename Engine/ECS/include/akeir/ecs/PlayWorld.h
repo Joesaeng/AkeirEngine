@@ -58,8 +58,12 @@ public:
     Json systemHashes() const override;
 
     // ---- systems (Game/ 가 등록) ----
-    void addSystem(std::string name, SystemFn fn);
-    std::vector<std::string> systemNames() const;
+    /// Phase (ADR-0038): PrePhysics systems run before the physics step (default; they set velocities),
+    /// PostPhysics systems run after it and see THIS tick's contactEvents() (contact damage, pickups …).
+    /// Within a phase, registration order. Names must be unique across phases (systemHashes/firstDivergentSystem).
+    enum class SystemPhase { PrePhysics, PostPhysics };
+    void addSystem(std::string name, SystemFn fn, SystemPhase phase = SystemPhase::PrePhysics);
+    std::vector<std::string> systemNames() const;   // execution order
     /// OnSpawn 훅 (§18 lifecycle "init"): 등록 즉시 기존 entity 전부에 적용되고, 이후 spawn() 마다 호출된다.
     /// 예: Health.current = Health.max 초기화 (runtimeOnly 값은 authoring 파일에 없으므로 여기서 채운다)
     using SpawnHook = std::function<void(PlayWorld&, const std::string& entityId)>;
@@ -83,9 +87,29 @@ public:
     bool hasTag(std::string_view id, std::string_view tag) const;
     std::string name(std::string_view id) const;
     std::optional<std::string> parent(std::string_view id) const;
-    /// runtime 에 entity 추가 (§7.1: 결정적 id = Id::deterministic(seed, tick, ordinal)). components = {Name: json}
-    std::string spawn(const std::string& name, const Json& components, const std::vector<std::string>& tags = {}, std::optional<std::string> parent = std::nullopt);
+    /// runtime 에 entity 추가 (§7.1: 결정적 id = Id::deterministic(seed, tick, ordinal)). components = {Name: json}.
+    /// An unknown component name fails the whole spawn ("" + error) instead of being skipped (ADR-0038).
+    std::string spawn(const std::string& name, const Json& components, const std::vector<std::string>& tags = {}, std::optional<std::string> parent = std::nullopt, std::string* error = nullptr);
     void despawn(std::string_view id);
+
+    // ---- authoring prefabs at runtime (ADR-0038) ----
+    struct PrefabInfo { std::string id, name; Json components = Json::object(); std::vector<std::string> tags; };
+    /// Every prefab of the project, resolved (base chain + overrides) at build time. id → info; deterministic order.
+    const std::map<std::string, PrefabInfo>& prefabs() const { return prefabs_; }
+    /// spawn an instance of an authoring prefab. selector = prefab id or its name (must be unique).
+    /// overrides: JSON Pointer map into the resolved document, like a test scenario's `set` ({"/components/Health/max": 5}).
+    /// tags are merged with the prefab's; name defaults to the prefab name. Returns "" + error on failure.
+    std::string spawnPrefab(std::string_view selector, const Json& overrides = Json::object(), const std::vector<std::string>& tags = {},
+                            std::optional<std::string> parent = std::nullopt, std::string name = "", std::string* error = nullptr);
+
+    // ---- runtime component / tag mutation (ADR-0038) ----
+    /// Immediate, deterministic (single-threaded; call from systems). value = {prop: json} over the defaults (Snapshot visibility).
+    /// Adding RigidBody2D/Collider2D creates the physics body once Transform+RigidBody2D+Collider2D are all present.
+    bool addComponent(std::string_view id, std::string_view component, const Json& value = Json::object(), std::string* error = nullptr);
+    /// Transform cannot be removed. Removing RigidBody2D or Collider2D destroys the physics body.
+    bool removeComponent(std::string_view id, std::string_view component, std::string* error = nullptr);
+    bool addTag(std::string_view id, std::string_view tag);
+    bool removeTag(std::string_view id, std::string_view tag);
 
     // ---- query (§16) ----
     std::vector<std::string> query(const std::vector<std::string>& with, const std::vector<std::string>& without = {}) const;
@@ -114,7 +138,9 @@ private:
     std::string worldId_;
     AssetTable assets_;
     std::vector<std::string> ids_;                    // 정렬 유지
-    std::vector<std::pair<std::string, SystemFn>> systems_;
+    struct SystemRec { std::string name; SystemFn fn; SystemPhase phase; };
+    std::vector<SystemRec> systems_;
+    std::map<std::string, PrefabInfo> prefabs_;
     std::vector<std::pair<std::string, SpawnHook>> spawnHooks_;
     std::vector<ContactEvent> events_;
     std::map<std::string, RngStream> rngs_;
