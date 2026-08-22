@@ -13,7 +13,8 @@
 ## C++
 
 - C++20. 예외는 I/O 경계(파일 파싱)에서만 잡고, 엔진 API 는 `std::optional` / `Result`-스타일로 실패를 돌려준다.
-- 컴포넌트 struct 는 **aggregate** 로 유지한다 (생성자·virtual·private 멤버 없음, ≤128 멤버) — §42.2. 나중에 glaze 무매크로 reflection 을 열어 두기 위해.
+- 컴포넌트 struct 는 **aggregate** 로 유지한다 (생성자·virtual·private 멤버 없음, ≤128 멤버, C 배열 대신 Vec2/3/4) — §42.2. 나중에 glaze 무매크로 reflection 을 열어 두기 위해.
+- **모든 멤버를 나열한다** (ADR-0035): 반영할 멤버는 `AKEIR_PROP`, 일부러 반영하지 않는 멤버는 `AKEIR_SKIP(member, "reason")`. 빠진 멤버는 `REFLECT_MEMBER_UNLISTED` 로 `akeir validate`·단위 테스트가 잡는다 — 조용히 빠지는 멤버는 없다.
 - property 키는 camelCase, component 타입은 PascalCase, command id 는 `<noun>.<verb>` (§6, §8.1).
 - enum → 문자열 함수는 `severityName()`, `propTypeName()` 처럼 `<thing>Name()` 으로 짓는다. **`toString()` 이라는 이름은 금지** — doctest 가 unqualified `toString(x)` 를 ADL 로 찾아 `const char*` 를 받아 컴파일이 깨진다 (`error C2110: '+': 두 포인터`).
 - vec2/3/4·quat·color 는 고정 길이 배열 leaf 타입. `/position/0` 처럼 index 로 접근 (§14.1).

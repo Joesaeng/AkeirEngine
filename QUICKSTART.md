@@ -64,7 +64,7 @@ What you can do with data alone (no C++):
 - Camera: `Camera2D` (orthoSize, background). Sprites are drawn as shapes in the `SpriteRenderer.tint` color (no texture loading yet).
 - Tests: write `Tests/**/*.test.json` **by hand** (setup / inputs / assert / determinism / capture golden) — format in `Engine/Testing/README.md`.
 
-What needs C++: new components/systems (e.g. projectiles, score, spawn waves). Add them under `Game/Source/` and rebuild per `Docs/BUILD.md` (VS2022 + bundled CMake/Ninja; `scripts\build.cmd msvc-release all`, tests in `build\msvc-release\Tests\akeir_tests.exe`).
+What needs C++: new components/systems (e.g. projectiles, score, spawn waves). Add them under `Game/Source/` and rebuild per `Docs/BUILD.md` (VS2022 + bundled CMake/Ninja; `scripts\build.cmd msvc-release all`, tests in `build\msvc-release\Tests\akeir_tests.exe`). A `msvc-release` build also refreshes this zip's `bin\akeir.exe`, and you can rebuild while Claude Code's MCP server is running: the locked file is moved aside and the server switches to the new build on its next tool call (the response carries a `MCP_WORKER_RESTARTED` note). Every struct member must be `AKEIR_PROP`'d or `AKEIR_SKIP`'d — `akeir validate` reports `REFLECT_MEMBER_UNLISTED` otherwise.
 
 ## 3. Use it from an AI client (MCP)
 

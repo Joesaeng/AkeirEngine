@@ -14,8 +14,10 @@
 #pragma comment(lib, "ws2_32.lib")
 #endif
 
+#include "ExeInfo.h"
 #include "Serve.h"
 #include "GameSystems.h"
+#include "akeir/core/Diagnostic.h"
 #include "akeir/core/ExitCodes.h"
 #include "akeir/core/Id.h"
 #include "akeir/core/Log.h"
@@ -36,7 +38,7 @@ namespace akeir::cli {
 // ---------------------------------------------------------------- ServeInfo
 
 Json ServeInfo::toJson() const {
-    return Json{{"pid", pid}, {"port", port}, {"token", token}, {"startedAt", startedAt}, {"projectDir", projectDir}, {"transport", "tcp-ndjson-jsonrpc"}};
+    return Json{{"pid", pid}, {"port", port}, {"token", token}, {"startedAt", startedAt}, {"projectDir", projectDir}, {"transport", "tcp-ndjson-jsonrpc"}, {"exeSha256", exeSha256}};
 }
 
 std::string ServeInfo::path(const std::string& projectDir) { return (fs::path(projectDir) / "Cache" / "serve.json").string(); }
@@ -51,6 +53,7 @@ std::optional<ServeInfo> ServeInfo::load(const std::string& projectDir) {
     s.token = j->value("token", "");
     s.startedAt = j->value("startedAt", "");
     s.projectDir = j->value("projectDir", "");
+    s.exeSha256 = j->value("exeSha256", "");
     if (s.port <= 0 || s.token.empty()) return std::nullopt;
     return s;
 }
@@ -132,6 +135,7 @@ bool ServeHost::init(const std::string& projectDir, const std::string& actor, En
     info_.token = randomToken();
     info_.startedAt = WallTime::now().iso8601();
     info_.projectDir = projectDir;
+    info_.exeSha256 = ownExeInfoJson().value("sha256", "");
     for (auto& d : diags) fail.withWarning(d);   // 호출자가 hello envelope 에 복사할 수 있게
     return true;
 }
@@ -275,7 +279,7 @@ int runServe(Context& ctx) {
 #endif
         std::string line;
         while (!host.stopRequested() && std::getline(std::cin, line)) {
-            if (!line.empty() && line.back() == '') line.pop_back();
+            if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.size() >= 3 && static_cast<unsigned char>(line[0]) == 0xEF && static_cast<unsigned char>(line[1]) == 0xBB && static_cast<unsigned char>(line[2]) == 0xBF) line.erase(0, 3);
             if (line.empty()) continue;
             Json req = parseJson(line).value_or(Json());
@@ -350,6 +354,14 @@ bool tryRemote(const Args& args, const std::string& projectDir, const std::strin
                     envelopeOut = (*resp)["result"].value("envelope", Json::object());
                     exitCodeOut = (*resp)["result"].value("exitCode", 1);
                     ok = true;
+                    // ADR-0034: the daemon keeps running the build it was started from even after akeir.exe was rebuilt
+                    // (the build moves the locked file aside). Say so instead of silently answering with old code.
+                    const std::string mine = ownExeInfoJson().value("sha256", "");
+                    if (!info->exeSha256.empty() && !mine.empty() && info->exeSha256 != mine && envelopeOut.is_object()) {
+                        if (!envelopeOut.contains("warnings") || !envelopeOut["warnings"].is_array()) envelopeOut["warnings"] = Json::array();
+                        envelopeOut["warnings"].push_back(Diagnostic::warning("SERVE_STALE_EXE",
+                            "`akeir serve` (pid " + std::to_string(info->pid) + ") runs an older build of akeir.exe than this command; its results reflect the old code. Restart it: `akeir serve stop` then `akeir serve`, or bypass it with --local.").toJson());
+                    }
                 } else if (resp->contains("error")) {
                     Envelope env = Envelope::failure(commandId, CommandError::make(ErrorCategory::Internal, "RPC_ERROR", (*resp)["error"].value("message", "rpc error"), (*resp)["error"]));
                     envelopeOut = env.toJson();

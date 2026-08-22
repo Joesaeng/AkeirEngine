@@ -203,6 +203,10 @@ git clone --depth 1 --branch release-3.4.14 https://github.com/libsdl-org/SDL.gi
 모든 엔진 타깃이 link 하고, Box2D 에는 `AKEIR_FP_FLAGS_OPTIONS` 를 직접 건다 (export set 때문).
 `akeir version --json` 의 `fpFlagsHash` 가 적용된 플래그의 해시다 — replay header(§22.3)와 비교한다.
 
+## 상주 프로세스가 떠 있는 동안의 재빌드 (ADR-0034)
+
+`akeir serve` 나 Claude Code 의 `akeir mcp` 가 돌고 있어도 `scriptsuild.cmd … build` 는 성공한다 — 링크 직전에 `cmake/UnlockExe.cmake` 가 잠긴 `binkeir.exe` 를 `akeir.exe.stale-<stamp>` 로 옮기고 새 파일을 쓴다 (상주 프로세스는 옮겨진 파일에서 계속 돈다; stale 파일은 다음 링크 때 정리). MCP 는 다음 tool 호출부터 새 빌드의 worker 가 답하고 응답에 `MCP_WORKER_RESTARTED` note 가 붙는다. `akeir serve` 는 이전 빌드로 계속 답하며 포워딩된 envelope 에 `SERVE_STALE_EXE` 경고가 붙는다 → `akeir serve stop` 후 다시 띄운다. 어느 빌드가 돌고 있는지는 `akeir version --json` 의 `result.exe.sha256`. end-to-end 검사: `python scripts	est_resident_rebuild.py --preset msvc-headless`.
+
 ## 알려진 빌드 이슈
 
 - **doctest + MSVC 14.44**: `<string_view>` 와 doctest 의 `std::basic_ostream` 전방 선언이 충돌 → `Tests/CMakeLists.txt` 에 `DOCTEST_CONFIG_USE_STD_HEADERS`. 제거하면 `error C2027: 정의되지 않은 형식 'std::basic_ostream'` 이 난다.

@@ -17,7 +17,9 @@ Two execution models (ADR-0011, 0029): **one-shot** (the project is opened and c
 | `src/TestCommands.cpp` | `test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--update-golden] [--list]` — the `Engine/Testing` runner, exit 3 on failure. SDL builds inject the capture hook |
 | `src/SdlCommands.cpp` | `capture`, `input map`, windowed `run` (without `--headless`), `installCaptureHooks`. Without `AKEIR_HAS_SDL` everything returns `FEATURE_UNAVAILABLE` |
 | `src/Serve.h/.cpp` | `ServeHost` (resident Project + single CommandBus + run registry, JSON-RPC dispatch), `akeir serve` (Winsock loopback NDJSON + token / `--stdio`), `tryRemote` (thin client), `serve status\|stop` |
-| `src/Mcp.cpp` | `akeir mcp` — a stdio MCP server on top of ServeHost (server/discover, initialize, tools/list, tools/call) |
+| `src/Mcp.cpp` | the MCP **worker** (`akeir mcp --worker`) — a stdio MCP server on top of ServeHost (server/discover, initialize, tools/list, tools/call) |
+| `src/McpAdapter.cpp` | `akeir mcp` — the relay the client actually starts: spawns the worker from `akeir.exe`, forwards NDJSON both ways, and replaces the worker with the rebuilt `akeir.exe` between requests (`MCP_WORKER_RESTARTED` note). ADR-0034 |
+| `src/ExeInfo.h/.cpp` | `ownExePath`, `exeStamp`, `fileSha256`, `ownExeInfoJson` — which build is running (`version`, `capabilities.info.exe`, `serve.json.exeSha256` → `SERVE_STALE_EXE`) |
 | `src/MutationCommands.cpp` (tx) | `tx begin\|commit\|rollback\|list` — only on serve's bus (`TX_REQUIRES_SERVE`) |
 
 ## Rules
@@ -28,6 +30,7 @@ Two execution models (ADR-0011, 0029): **one-shot** (the project is opened and c
 - Write commands recover `Cache/journal` before running (§9.2). If something was recovered, `warnings[]` carries a `JOURNAL_RECOVERED` note. serve does this once at startup.
 - With a daemon running, `meta.via = "serve"`. `--local` ignores the daemon. `serve`, `mcp`, `capabilities`, `version` and `serve status|stop` are never forwarded.
 - Under `akeir mcp` / `akeir serve --stdio`, stdout is the protocol channel — logs only ever go to stderr.
+- Rebuilding while `akeir mcp`/`serve` runs is fine: the link step moves the locked `akeir.exe` aside (`cmake/UnlockExe.cmake`). The MCP worker is restarted from the new file on the next request; a daemon keeps the old build and warns `SERVE_STALE_EXE` (restart it). `scripts/test_resident_rebuild.py` checks the whole loop.
 - `akeir cmd <id> --args '{json}'` calls any command that has no CLI sugar (e.g. `document.patch`). Ids and argument schemas: `akeir capabilities --json` → `result.busCommands[]`.
 - Value arguments (`akeir set … <value>`) are parsed as JSON first and fall back to a string. `--position x,y,z` and `--tags a,b` are comma lists.
 - In Windows cmd, escape the quotes in JSON arguments like `"{\"a\":1}"`. PowerShell: `'{"a":1}'`.

@@ -81,6 +81,12 @@ struct ComponentMeta {
     std::vector<std::string> requiresComponents; // x-requires (§14, §29 COMPONENT_DEPENDENCY_MISSING). ('requires' 는 C++20 키워드)
     Json lifecycle = Json::object();  // x-lifecycle {init, tick, destroy} (§18)
     std::vector<PropertyMeta> props;
+    /// Reflection completeness (ADR-0035): number of data members the aggregate declares (aggregateArity<T>())
+    /// and the members deliberately left out with AKEIR_SKIP. Registry::add reports REFLECT_MEMBER_UNLISTED
+    /// when props.size() + skipped.size() != memberCount. 0 = unknown (meta built without ComponentBuilder).
+    std::size_t memberCount = 0;
+    struct SkippedMember { std::string name, reason; };
+    std::vector<SkippedMember> skipped;
     std::size_t size = 0, align = 0;
     std::function<void(void*)> construct;   // placement default-construct
     std::function<void(void*)> destroy;

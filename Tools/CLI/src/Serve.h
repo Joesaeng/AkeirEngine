@@ -29,6 +29,7 @@ struct ServeInfo {
     std::string token;
     std::string startedAt;
     std::string projectDir;
+    std::string exeSha256;   // the build the daemon runs (ADR-0034): a client built from a different akeir.exe warns SERVE_STALE_EXE
     Json toJson() const;
     static std::optional<ServeInfo> load(const std::string& projectDir);
     static std::string path(const std::string& projectDir);

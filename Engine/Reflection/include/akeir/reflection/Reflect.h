@@ -17,6 +17,7 @@
 
 #include "akeir/core/Math.h"
 #include "akeir/core/Ref.h"
+#include "akeir/reflection/Aggregate.h"
 #include "akeir/reflection/Registry.h"
 
 #include <cstring>
@@ -138,6 +139,7 @@ public:
         meta_.description = std::move(description);
         meta_.size = sizeof(T);
         meta_.align = alignof(T);
+        meta_.memberCount = aggregateArity<T>();   // ADR-0035: every member must be AKEIR_PROP'd or AKEIR_SKIP'd
         meta_.construct = [](void* p) { new (p) T{}; };
         meta_.destroy = [](void* p) { static_cast<T*>(p)->~T(); };
         meta_.copy = [](void* dst, const void* src) { *static_cast<T*>(dst) = *static_cast<const T*>(src); };
@@ -169,7 +171,14 @@ public:
         return PropBuilder(meta_.props.back());
     }
 
-    bool finish() { return Registry::global().add(std::move(meta_), std::type_index(typeid(T))); }
+    /// A member that is deliberately NOT reflected (e.g. an unsupported type). It still counts toward the
+    /// completeness check, so the exclusion is visible in the schema (x-skipped) instead of silent.
+    ComponentBuilder& skip(std::string member, std::string reason) { meta_.skipped.push_back({std::move(member), std::move(reason)}); return *this; }
+
+    bool finish() { return finishInto(Registry::global()); }
+    bool finishInto(Registry& registry) { return registry.add(std::move(meta_), std::type_index(typeid(T))); }
+    /// Completeness check without registering (tests).
+    std::optional<Diagnostic> check() const { return Registry::completenessDiagnostic(meta_); }
 
 private:
     ComponentMeta meta_;
@@ -190,6 +199,9 @@ private:
 #define AKEIR_VERSION(N) b_.version(N)
 #define AKEIR_LIFECYCLE(Init, Tick, Destroy) b_.lifecycle(Init, Tick, Destroy)
 #define AKEIR_PROP(Member, Description) b_.prop(&AkeirSelf_::Member, #Member, Description)
+// A member that must not be reflected (unsupported type, internal scratch …). Named explicitly so the
+// completeness check (ADR-0035) passes and the exclusion shows up in the schema as x-skipped.
+#define AKEIR_SKIP(Member, Reason) ((void)&AkeirSelf_::Member, b_.skip(#Member, Reason))
 
 #define AKEIR_REFLECT_END(Type)                                                                  \
             b_.finish();                                                                       \

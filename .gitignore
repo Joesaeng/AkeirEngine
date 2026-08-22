@@ -1,6 +1,8 @@
 # build outputs
 /build/
 /out/
+# release-zip layout only (scripts/package.py puts the prebuilt CLI here; a rebuild refreshes it — cmake/InstallToBin.cmake)
+/bin/
 # 의존성 소스 캐시 (scripts/fetch-deps.ps1 로 재생성 가능)
 /.cpm-cache/
 # 파생 캐시 (설계 문서 §5: 삭제해도 재생성 가능해야 한다)

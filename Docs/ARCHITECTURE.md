@@ -92,7 +92,7 @@ akeir test capture : 위 software 경로를 CaptureHook 으로 주입 → Tests/
 상주 경로 (Phase 4/7)
 akeir serve : ServeHost{Project, CommandBus(단일 writer), run registry} ◀── 127.0.0.1 NDJSON JSON-RPC (token) ◀── game <cmd> (얇은 클라이언트: Cache/serve.json 보고 포워딩)
                                                                   ◀── --stdio (Editor)
-akeir mcp   : 같은 ServeHost ◀── stdin/stdout MCP (server/discover | initialize, tools/list, tools/call → structuredContent = envelope)
+akeir mcp   : relay(adapter, McpAdapter.cpp) ◀── stdin/stdout MCP ── 자식 `akeir.exe mcp --worker`(같은 ServeHost, Mcp.cpp: server/discover | initialize, tools/list, tools/call → structuredContent = envelope). akeir.exe 가 재빌드되면 worker 만 교체 (ADR-0034)
 tx: serve 의 bus 가 fork 를 들고 있다 → `--tx` 가 붙은 명령은 fork 에, `tx commit` 이 compose + commit (§9.1/§9.2)
 ```
 

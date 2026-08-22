@@ -32,8 +32,22 @@ Registry& Registry::global() {
     return r;
 }
 
+std::optional<Diagnostic> Registry::completenessDiagnostic(const ComponentMeta& meta) {
+    if (meta.memberCount == 0) return std::nullopt;   // built without ComponentBuilder (tests) — nothing to compare against
+    const std::size_t listed = meta.props.size() + meta.skipped.size();
+    if (listed == meta.memberCount) return std::nullopt;
+    std::string text = "Component '" + meta.name + "' declares " + std::to_string(meta.memberCount) + " data member(s) but " +
+                       std::to_string(meta.props.size()) + " are reflected (AKEIR_PROP) and " + std::to_string(meta.skipped.size()) + " skipped (AKEIR_SKIP). ";
+    if (listed < meta.memberCount)
+        text += "Every member must be listed: reflect it with AKEIR_PROP, or exclude it on purpose with AKEIR_SKIP(member, \"reason\") — an unlisted member is invisible to JSON authoring, validate, set/undo, query, snapshot and finalHash.";
+    else
+        text += "More members are listed than the struct has — a member is probably both reflected and skipped, or AKEIR_PROP names a member of another type.";
+    return Diagnostic::error("REFLECT_MEMBER_UNLISTED", text).at(LogicalLocation{"", meta.name, std::nullopt});
+}
+
 bool Registry::add(ComponentMeta meta, std::type_index type) {
     if (byName_.count(meta.name)) return false;
+    if (auto d = completenessDiagnostic(meta)) diagnostics_.push_back(std::move(*d));
     auto ptr = std::make_unique<ComponentMeta>(std::move(meta));
     ComponentMeta* raw = ptr.get();
     byName_[raw->name] = std::move(ptr);
@@ -58,7 +72,8 @@ std::vector<const ComponentMeta*> Registry::all() const {
     return out;
 }
 
-void Registry::clear() { byType_.clear(); byName_.clear(); }
+void Registry::clear() {
+    diagnostics_.clear(); byType_.clear(); byName_.clear(); }
 
 std::optional<std::pair<std::string, std::optional<std::size_t>>> splitPropertyPointer(std::string_view pointer) {
     if (pointer.empty() || pointer[0] != '/') return std::nullopt;

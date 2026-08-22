@@ -416,6 +416,9 @@ std::vector<std::string> Project::saveAll() const {
 
 std::vector<Diagnostic> Project::validate() const {
     std::vector<Diagnostic> out;
+    // reflection completeness (ADR-0035): a component with an unlisted member is an engine/game code bug, not a data bug,
+    // but it is surfaced here so `akeir validate` (and CI) fail loudly instead of the member silently vanishing.
+    for (const auto& d : Registry::global().diagnostics()) out.push_back(d);
     // 중복 id
     for (const auto& [id, where] : duplicates_) {
         Diagnostic d = Diagnostic::error("DUPLICATE_PERSISTENT_ID", "Persistent id " + id + " appears in more than one place: " + Json(where).dump() + ". Run `akeir id fix --keep <path>` (§7.3).")

@@ -1,6 +1,7 @@
 // Tools/CLI/Commands.cpp — Phase 0 명령: version, capabilities, crash-test, hang-test. 이후 Phase 에서 확장된다.
 // 설계 문서 §8, §13 (exit code 표), §15 (capabilities), §47 (tools[] 15개), §88.4 (크래시/행 테스트)
 #include "Commands.h"
+#include "ExeInfo.h"
 #include "Serve.h"
 #include "akeir/commands/CommandBus.h"
 #include "akeir/core/Crash.h"
@@ -32,6 +33,7 @@ Envelope cmdVersion(Context& ctx) {
 #endif
     r["designDoc"] = "AKEIR.md";
     r["fpEnv"] = fpEnvStatus().toJson();       // §22.2 FPU 환경
+    r["exe"] = ownExeInfoJson();               // which build is running (ADR-0034: MCP worker restart, serve staleness)
     return Envelope::success("project.version", r);
 }
 
@@ -110,7 +112,7 @@ Json envelopeSchema() {
 
 Json capabilitiesJson() {
     Json r = Json::object();
-    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", AKEIR_VERSION_STRING}, {"sdl", sdlAvailable()}};
+    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", AKEIR_VERSION_STRING}, {"sdl", sdlAvailable()}, {"exe", ownExeInfoJson()}};
 
     // §47 tools[] — MCP 에 노출되는 15개 (이름 = command id 의 '.' → '_'). 구현된 것만 enabled:true. tools/list 는 enabled 만 pass-through 한다.
     // inputSchema 는 CLI 인자와 같은 의미의 JSON. apply.changes[].op 의 oneOf 는 busCommands[] 의 args 스키마다.
@@ -177,7 +179,8 @@ Json capabilitiesJson() {
                                 "PROPERTY_TYPE_MISMATCH", "PROPERTY_OUT_OF_RANGE", "ENUM_VALUE_INVALID", "HIERARCHY_CYCLE", "ENTITY_HAS_CHILDREN", "DOCUMENT_EXISTS",
                                 "BASE_MISMATCH", "UNDO_CONFLICT", "REDO_CONFLICT", "UNDO_ACTOR_MISMATCH", "NOTHING_TO_UNDO", "NOTHING_TO_REDO", "TX_UNKNOWN_OR_EXPIRED", "TX_REQUIRES_SERVE",
                                 "RUN_UNKNOWN_OR_EXPIRED", "RUN_STATUS_REQUIRES_SERVE", "SERVE_NOT_RUNNING", "SERVE_ALREADY_RUNNING", "FEATURE_UNAVAILABLE", "TEST_FAILED", "TESTS_NOT_FOUND", "CAPTURE_MISMATCH", "CAPTURE_FAILED",
-                                "APPLY_INVALID", "APPLY_BAD_REFERENCE", "CHANGESET_BEFORE_MISMATCH", "CHANGESET_APPLY_FAILED", "JOURNAL_WRITE_FAILED", "SAVE_FAILED"});
+                                "APPLY_INVALID", "APPLY_BAD_REFERENCE", "CHANGESET_BEFORE_MISMATCH", "CHANGESET_APPLY_FAILED", "JOURNAL_WRITE_FAILED", "SAVE_FAILED",
+                                "REFLECT_MEMBER_UNLISTED", "MCP_WORKER_RESTARTED", "SERVE_STALE_EXE"});
     return r;
 }
 

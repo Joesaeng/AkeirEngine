@@ -93,6 +93,11 @@ Json ComponentMeta::toSchema() const {
     s["x-component-version"] = version;
     if (!requiresComponents.empty()) s["x-requires"] = requiresComponents;
     if (!lifecycle.empty()) s["x-lifecycle"] = lifecycle;
+    if (!skipped.empty()) {   // members deliberately not reflected (AKEIR_SKIP, ADR-0035) — visible, not silent
+        Json sk = Json::array();
+        for (const auto& m : skipped) sk.push_back(Json{{"name", m.name}, {"reason", m.reason}});
+        s["x-skipped"] = sk;
+    }
     Json props_ = Json::object();
     Json required = Json::array();
     for (const auto& p : props) {

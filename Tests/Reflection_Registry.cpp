@@ -172,3 +172,70 @@ TEST_CASE("Reflection: duplicate registration is rejected") {
     ComponentBuilder<TestHealth> b("TestHealth", "dup");
     CHECK_FALSE(b.finish());
 }
+
+// ---- reflection completeness (ADR-0035) ----
+namespace {
+struct ArityPlain { float a; int b; bool c; };
+struct ArityNested { Vec3 pos; Quat rot; Color tint; Ref target; std::string name; TestShape shape; };
+struct ArityOne { Vec2 v; };
+struct ArityEmpty {};
+struct Incomplete { float max = 1.f; float current = 1.f; float regen = 0.f; };
+struct WithSkip { float speed = 1.f; std::vector<int> scratch; };
+} // namespace
+
+TEST_CASE("Reflection: aggregateArity counts data members, nested aggregates count as one (ADR-0035)") {
+    static_assert(aggregateArity<ArityPlain>() == 3);
+    static_assert(aggregateArity<ArityNested>() == 6);   // Vec3/Quat/Color/Ref/std::string/enum are leaves, not elided
+    static_assert(aggregateArity<ArityOne>() == 1);
+    static_assert(aggregateArity<ArityEmpty>() == 0);
+    static_assert(aggregateArity<TestHealth>() == 3);
+    static_assert(aggregateArity<TestCollider>() == 6);
+    CHECK(aggregateArity<Vec3>() == 3);
+    CHECK(aggregateArity<Ref>() == 1);
+}
+
+TEST_CASE("Reflection: every registered component is completely reflected (no silent members)") {
+    // Built-in + sample-game components register at static init; an unlisted member would show up here and in `akeir validate`.
+    for (const auto& d : Registry::global().diagnostics()) MESSAGE(d.toJson().dump());
+    CHECK(Registry::global().diagnostics().empty());
+    for (const auto* m : Registry::global().all()) {
+        INFO(m->name);
+        CHECK(m->memberCount == m->props.size() + m->skipped.size());
+    }
+}
+
+TEST_CASE("Reflection: a member that is neither AKEIR_PROP nor AKEIR_SKIP is reported as REFLECT_MEMBER_UNLISTED") {
+    ComponentBuilder<Incomplete> b("Incomplete", "forgot regen");
+    b.prop(&Incomplete::max, "max", "");
+    b.prop(&Incomplete::current, "current", "");
+    auto d = b.check();
+    REQUIRE(d.has_value());
+    CHECK(d->ruleId == "REFLECT_MEMBER_UNLISTED");
+    CHECK(d->logical->component == "Incomplete");
+    CHECK(d->message.text.find("declares 3") != std::string::npos);
+    // registering anyway keeps the component usable but leaves the diagnostic in the registry (→ validate fails loudly)
+    Registry local;
+    CHECK(b.finishInto(local));
+    REQUIRE(local.diagnostics().size() == 1);
+    CHECK(local.diagnostics()[0].ruleId == "REFLECT_MEMBER_UNLISTED");
+    CHECK(local.find("Incomplete") != nullptr);
+}
+
+TEST_CASE("Reflection: AKEIR_SKIP makes an exclusion explicit and visible in the schema") {
+    ComponentBuilder<WithSkip> b("WithSkip", "has scratch");
+    b.prop(&WithSkip::speed, "speed", "");
+    b.skip("scratch", "runtime scratch list — not authoring data");
+    CHECK_FALSE(b.check().has_value());
+    Registry local;
+    REQUIRE(b.finishInto(local));
+    CHECK(local.diagnostics().empty());
+    Json schema = local.find("WithSkip")->toSchema();
+    REQUIRE(schema.contains("x-skipped"));
+    CHECK(schema["x-skipped"][0]["name"] == "scratch");
+    CHECK_FALSE(schema["properties"].contains("scratch"));
+    // skipping a member that is also reflected over-counts → reported too
+    ComponentBuilder<WithSkip> twice("WithSkip2", "");
+    twice.prop(&WithSkip::speed, "speed", ""); twice.skip("scratch", "x"); twice.skip("speed", "listed twice");
+    REQUIRE(twice.check().has_value());
+    CHECK(twice.check()->message.text.find("More members are listed") != std::string::npos);
+}

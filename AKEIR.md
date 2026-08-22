@@ -2629,6 +2629,8 @@ REFLECT_COMPONENT(Health)
 
 **소비자(Serializer, Inspector, Schema, CLI, MCP, Validation)는 `PropertyMeta` 테이블만 본다. 테이블을 채우는 front-end는 교체 가능하다.** 이것이 매크로 접근을 "버릴 코드"가 아니게 만든다.
 
+▶ v3 (ADR-0035): 테이블은 **완전해야 한다** — `ComponentBuilder` 가 `aggregateArity<T>()`(`akeir/reflection/Aggregate.h`) 로 struct 의 멤버 수를 세고, `AKEIR_PROP` + `AKEIR_SKIP(member, reason)` 의 수와 다르면 `Registry::diagnostics()` 에 `REFLECT_MEMBER_UNLISTED` 를 남긴다. `Project::validate()` 가 이를 포함하므로 빠진 멤버는 조용히 사라지지 않고 `akeir validate`/CI 에서 드러난다. skip 은 schema 의 `x-skipped` 로 보인다.
+
 ```cpp
 enum class PropFlags : uint16_t {
     None = 0, RuntimeOnly = 1<<0, ReadOnly = 1<<1, Hidden = 1<<2,
@@ -2820,6 +2822,8 @@ MCP sidecar (TypeScript 또는 Python 공식 SDK, < 300 lines)
 - §48(CLI/MCP 동등성)이 **구조적으로** 성립한다: sidecar에는 schema도 로직도 없다.
 - in-process C++ MCP는 규격이 안정된 뒤에만 고려한다.
 - Flecs REST를 MCP backend로 직접 쓰지 않는다 (Undo/Transaction 없음). Bevy식 in-engine JSON-RPC는 `akeir serve`가 그 역할이고, MCP는 그 위의 어댑터다.
+
+▶ v3 (ADR-0030, ADR-0034): 구현은 C++ 네이티브(`akeir mcp`, sidecar 없음)이며 **두 프로세스**다 — 클라이언트가 띄우는 `akeir mcp` 는 relay(adapter) 이고, 엔진(ServeHost + MCP 메서드)은 `akeir.exe mcp --worker` 자식에서 돈다. Windows 는 실행 중인 exe 를 잠그므로 빌드(`cmake/UnlockExe.cmake`, PRE_LINK)는 잠긴 `akeir.exe` 를 `akeir.exe.stale-*` 로 옮기고 새 파일을 쓰며, adapter 는 in-flight 요청이 없을 때 기동 경로의 exe 가 바뀐 것(size/mtime → sha256)을 보고 worker 를 새 빌드로 교체한다(`initialize` 재전송, 첫 응답에 `MCP_WORKER_RESTARTED` note). 클라이언트 연결은 끊기지 않고, Game/Source 수정 → 재빌드 → 다음 tool 호출부터 새 코드. `scripts/test_resident_rebuild.py` 가 검증한다.
 
 ## 46.2 ▶ v2: Command API ↔ MCP 2026-07-28 매핑
 

@@ -10,6 +10,8 @@
 //   tool → 실행 매핑 (§46.2 표): query/inspect/explain/validate/run/run_status/test/capture/project_info/schema_describe/capabilities/history/tx 는 CLI argv 로,
 //                               apply 는 bus.apply 로 (changes[].op = busCommands[].id).
 //   로그는 stderr(JSONL) 로만 — stdout 은 MCP 채널 (§28: MCP Logging 은 쓰지 않는다).
+//   ▶ v3 (ADR-0034): 이 파일은 *worker* 다. 클라이언트가 띄우는 `akeir mcp` 는 McpAdapter.cpp 의 relay 이며, akeir.exe 가 다시 빌드되면 worker 만 새 파일로 교체한다.
+#include "ExeInfo.h"
 #include "Serve.h"
 #include "akeir/core/ExitCodes.h"
 #include "akeir/core/Log.h"
@@ -114,17 +116,9 @@ Json callTool(ServeHost& host, const std::string& name, const Json& a) {
 
 } // namespace
 
-int runMcp(Context& ctx) {
-    if (ctx.args.has("print-config")) {
-        // 절대 경로 .mcp.json 을 stdout 으로 — 상대 경로를 못 푸는 클라이언트용
-        char exe[4096] = {0};
-#ifdef _WIN32
-        GetModuleFileNameA(nullptr, exe, sizeof(exe));
-#endif
-        Json cfg = Json{{"mcpServers", Json{{"akeir", Json{{"command", std::string(exe)}, {"args", Json::array({"mcp", "--project", ctx.projectDir})}}}}}};
-        std::fputs(cfg.dump(2).c_str(), stdout); std::fputc('\n', stdout);
-        return kExitOk;
-    }
+// The in-process server. `akeir mcp` (McpAdapter.cpp) runs this as a child (`--worker`) so that a rebuilt akeir.exe
+// can replace it without dropping the client's connection (ADR-0034).
+int runMcpWorker(Context& ctx) {
     ServeHost host;
     Envelope fail;
     if (!host.init(ctx.projectDir, ctx.args.getOr("actor", "mcp"), fail)) {
@@ -139,7 +133,7 @@ int runMcp(Context& ctx) {
     std::string line;
     while (std::getline(std::cin, line)) {
         // 클라이언트/셸에 따라 CRLF 나 UTF-8 BOM 이 붙어 올 수 있다 (pwsh 파이프 등) — 프레이밍 잡음은 벗기고 JSON 만 본다
-        if (!line.empty() && line.back() == '') line.pop_back();
+        if (!line.empty() && line.back() == '\r') line.pop_back();
         if (line.size() >= 3 && static_cast<unsigned char>(line[0]) == 0xEF && static_cast<unsigned char>(line[1]) == 0xBB && static_cast<unsigned char>(line[2]) == 0xBF) line.erase(0, 3);
         if (line.empty()) continue;
         auto reqOpt = parseJson(line);
@@ -187,8 +181,8 @@ int runMcp(Context& ctx) {
 
 void registerMcpCommands(std::vector<CommandSpec>& t) {
     t.push_back({"mcp", {"mcp"}, "Meta", "MCP server over stdio (§46)",
-                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `akeir serve`). Register in an MCP client as: command=akeir (bin/akeir.exe), args=[\"mcp\",\"--project\",\"<dir>\"], or run `akeir mcp --print-config`.",
-                 "akeir mcp [--project DIR] [--actor A] | akeir mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
+                 "Speaks MCP (newline-delimited JSON-RPC on stdin/stdout): server/discover, initialize, tools/list, tools/call. Tools = capabilities.tools[] (enabled). Single writer in-process (same as `akeir serve`). Register in an MCP client as: command=akeir (bin/akeir.exe), args=[\"mcp\",\"--project\",\"<dir>\"], or run `akeir mcp --print-config`. The process the client starts is a relay; the engine runs in a child worker that is restarted from the new akeir.exe after a rebuild (responses then carry a MCP_WORKER_RESTARTED note). `--worker` runs the in-process server directly.",
+                 "akeir mcp [--project DIR] [--actor A] | akeir mcp --worker … (in-process server) | akeir mcp --print-config [--project DIR]  (prints an absolute-path .mcp.json)", false, false, false, [](Context&) { return Envelope::failure("mcp", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "mcp must be the top-level command.")); }});
 }
 
 } // namespace akeir::cli
