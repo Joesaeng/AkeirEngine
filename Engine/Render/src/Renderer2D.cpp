@@ -8,6 +8,7 @@
 #include <SDL3/SDL.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <vector>
 
@@ -49,6 +50,7 @@ Uint8 toByte(float c) { return static_cast<Uint8>(std::clamp(static_cast<int>(st
 } // namespace
 
 RenderStats Renderer2D::render(const PlayWorld& world) {
+    const auto renderStart = std::chrono::steady_clock::now();
     RenderStats stats;
     stats.width = width_;
     stats.height = height_;
@@ -115,6 +117,7 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
         r.h = std::max(1.f, h * ppu);
         r.x = cx + (t->position.x - camPos.x) * ppu - r.w * pivot.x;
         r.y = cy - (t->position.y - camPos.y) * ppu - r.h * (1.f - pivot.y);
+        if (r.x + r.w < 0.f || r.y + r.h < 0.f || r.x > static_cast<float>(width_) || r.y > static_cast<float>(height_)) { ++stats.culled; continue; }   // ADR-0044 frustum cull
         items.push_back({sp->sortingOrder, id, r, sp->tint, circle, tex, src, sp->flipX, sp->flipY});
     }
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.order != b.order ? a.order < b.order : a.id < b.id; });
@@ -190,6 +193,7 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
         ++stats.texts;
     }
     SDL_FlushRenderer(renderer_);   // software renderer 는 배치를 flush 해야 surface 에 픽셀이 있다 (readPixels/savePng 전에 필수)
+    stats.renderMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - renderStart).count();
     return stats;
 }
 

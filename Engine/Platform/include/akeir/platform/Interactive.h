@@ -28,6 +28,7 @@ struct InteractiveResult {
     double wallMs = 0;
     int frames = 0;
     bool closedByUser = false;
+    double frameMsAvg = 0, frameMsP95 = 0, frameMsMax = 0;   // wall-clock per frame (ADR-0044)
     Json toJson() const;
 };
 

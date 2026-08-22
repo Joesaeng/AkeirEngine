@@ -274,3 +274,21 @@
 - **만들지 않은 것**: TTL/자동 정리(serve 수명과 같다), 한 run 의 authoring 변경 반영(world 는 open 시점 사본 — 바꾸면 새로 open), 창 모드 연동, per-tick hash 이력(`run --headless --hash-out` 이 있다).
 - **검증**: `scripts/test_mcp_play.py`(CI 두 job): open → step(입력) → inspect(이동 확인) → query → step → snapshot → 같은 seed·입력의 두 번째 run 이 같은 hash → close.
 - **참조**: §46.2, §88.1, §88.2, ADR-0031
+
+## ADR-0042 접촉 중 despawn 의 stale Box2D 이벤트 제거, body↔entity 역인덱스, Debug 빌드 표시
+- **상태**: 확정 (2026-08-22, CatSurvivor v0.1.2 피드백 — 코덱스가 엔진을 직접 고친 두 곳을 정식화).
+- **문제**: ① body 를 contact 중에 despawn 하면 Box2D 가 다음 step 에 그 shape 의 End/SensorEnd 를 보고하고 `b2Shape_GetBody` 가 Debug 에선 assert, Release 에선 쓰레기 — survivor 의 "닿으면 pickup 제거" 패턴에서 바로 터진다. ② contact event 에는 body handle 만 있고 entity 로 돌아올 API 가 없어 게임이 전체 entity 를 선형 탐색했다. ③ 코덱스는 `msvc-debug`(자기 README) 로 플레이해 "1분 후 버벅임" 을 보고했다 — 같은 게임이 Release 에선 0.2~0.7 ms/tick(예산의 4%), Debug 는 15배.
+- **결정**: ① `Box2DWorld::handleOf` 가 `b2Shape_IsValid`/`b2Body_IsValid` + 살아 있는 body 집합을 확인하고 stale 이벤트를 버린다(죽은 body 의 End 는 게임에 의미 없음). 회귀 테스트(`ECS_PlayWorld` — 수정 없이는 SEH crash). ② `PlayWorld::bodyHandle(id)` / `entityForBody(handle)` — `Impl::bodyToEntity` 역인덱스를 ensureBody/despawn/removeComponent 가 함께 갱신, O(log n). ③ Debug 빌드의 게임 exe 는 `<Name>-debug.exe`, `akeir version`·`capabilities.info`·player.log 에 `buildConfig`; QUICKSTART 는 `msvc-release` 만 안내.
+- **참조**: §57, §58, ADR-0038
+
+## ADR-0043 collision layers: `project.json physics.layers` → Box2D category/mask (sensor 포함)
+- **상태**: 확정 (2026-08-22, CatSurvivor v0.1.2 피드백 P0; STATUS 의 오랜 부채).
+- **결정**: `project.json` `"physics": {"layers": {"Player": ["Enemy","Pickup"], "Enemy": ["Enemy"], "Pickup": [], "Effect": []}}` — layer i 는 category bit i(최대 64), 한쪽이라도 상대를 적으면 그 쌍은 충돌(대칭은 엔진이 보장 — 사용자가 양쪽에 적을 필요 없음), 빈 배열 = 아무것과도 안 닿음. `Collider2D.layer` 가 선언되지 않은 이름이면 `PHYSICS_LAYER_UNKNOWN`(layers 를 선언한 프로젝트에서만), layers 구조 오류는 `PHYSICS_LAYERS_INVALID`. 선언이 없으면 이전과 같이 모두 충돌. `BodyDesc.layerBits/maskBits` 는 64-bit. Box2D 3.1 은 sensor overlap 에도 같은 filter 를 적용한다 — 테스트가 Pickup sensor ↔ Enemy 이벤트가 안 나는 것을 확인.
+- **샘플**: TestArena 는 Default/Player/Enemy 전부 서로 충돌하는 행렬을 선언(동작·finalHash 불변, 문서화 목적). fixture 는 선언 없음(이전 의미).
+- **참조**: §57, PhysicsLayers.h
+
+## ADR-0044 측정: PlayWorld profiler, render culling, query 1회 해석, Stress world + perf 스크립트
+- **상태**: 확정 (2026-08-22, PRINCIPLES §15/§16 "비용을 측정하고 병목을 좁힌다").
+- **결정**: ① `PlayWorld` 가 항상 켜진 저비용 카운터를 든다(system 별 calls/ms/max, physics ms, contact 수, query 호출·순회·결과 수) — wall-clock 은 보고에만 쓰이고 sim 은 읽지 않는다(결정론 무관). 노출: `run --headless --profile`, `play step {profile:true}`(직전 profile 이후 구간), 게임 exe 의 `player.stop` 로그(+ frame ms avg/p95/max). ② `Renderer2D` 가 viewport 밖 sprite/text 를 sort·draw 전에 버리고 `RenderStats.culled`/`renderMs` 를 `capture` 에 보고. ③ `query()` 는 이름을 호출당 한 번 해석하고 entity map 을 직접 걷는다(등록 안 된 component → 즉시 빈 결과) — 샘플 Stress world(고블린 100, query 107회/tick) 에서 1.40 → 0.33 ms/tick, hash 불변. "compiled query"·spatial query 는 이 수치로 필요가 증명되면. ④ `Game/Worlds/Stress.world.json`(CommandBus 로 생성) + `Tests/Stress/HundredGoblins.test.json`(run-twice) + `scripts/test_perf.py`(18000 tick profile, 두 run hash 동일, avg < 4 ms/tick 는 공용 runner 용 느슨한 상한 — 실제 수치가 산출물) 를 CI 에.
+- **실측(로컬 Release)**: TestArena 0.02 ms/tick, Stress 0.33 ms/tick(physics 0.09), CatSurvivor 5분 replay 0.7 ms/tick. 60 FPS 예산 16.7 ms.
+- **참조**: §27, §16, PRINCIPLES §15/§16/§31

@@ -114,10 +114,28 @@ public:
     // ---- query (§16) ----
     std::vector<std::string> query(const std::vector<std::string>& with, const std::vector<std::string>& without = {}) const;
 
+    // ---- profiling (ADR-0044) — wall-clock counters kept beside the simulation; never read by it ----
+    struct SystemProfile { std::string name; SystemPhase phase; std::uint64_t calls = 0; double ms = 0, maxMs = 0; };
+    struct TickProfile {
+        std::uint64_t ticks = 0;
+        double tickMs = 0, maxTickMs = 0;                 // whole tick (systems + physics)
+        double physicsMs = 0, maxPhysicsMs = 0;           // step + sync + contact drain
+        std::uint64_t queries = 0, queryVisits = 0, queryResults = 0;   // query() calls / entities scanned / ids returned
+        std::uint64_t contactEvents = 0;
+        std::vector<SystemProfile> systems;
+    };
+    const TickProfile& profile() const { return profile_; }
+    void resetProfile();
+    /// {ticks, avgTickMs, maxTickMs, physics{…}, queries{…}, entities{total, bodies, perComponent}, systems[{name, phase, calls, avgMs, maxMs}]}
+    Json profileJson() const;
+
     // ---- inspection ----
     Json dumpEntity(std::string_view id, Visibility v = Visibility::Snapshot) const;   // §25
     Json snapshot() const;                                                             // §26.1
     const std::vector<ContactEvent>& contactEvents() const { return events_; }        // 이번 tick
+    /// Contact events carry body handles; these map them to entities in O(log n) (ADR-0042). 0 / "" when none.
+    BodyHandle bodyHandle(std::string_view id) const;
+    std::string entityForBody(BodyHandle body) const;
     PhysicsWorld& physics() { return *physics_; }
     RngStream& rng(const std::string& streamName);                                     // (seed, name) 스트림, 상태는 snapshot 에
     std::int64_t currentTick() const { return tick_; }
@@ -126,6 +144,8 @@ public:
     const std::string& worldId() const { return worldId_; }
     /// Assets/**/*.meta.json of the project this world was built from (ADR-0037) — renderers resolve "asset_…#sprites/x" here
     const AssetTable& assets() const { return assets_; }
+    /// project.json physics.layers as applied to bodies (ADR-0043)
+    const PhysicsLayers& physicsLayers() const { return layers_; }
 
 private:
     PlayWorld();
@@ -137,6 +157,7 @@ private:
     PlayWorldConfig cfg_;
     std::string worldId_;
     AssetTable assets_;
+    PhysicsLayers layers_;
     std::vector<std::string> ids_;                    // 정렬 유지
     struct SystemRec { std::string name; SystemFn fn; SystemPhase phase; };
     std::vector<SystemRec> systems_;
@@ -146,6 +167,7 @@ private:
     std::map<std::string, RngStream> rngs_;
     std::int64_t tick_ = 0;
     std::uint64_t spawnOrdinal_ = 0;
+    mutable TickProfile profile_;
 
     void syncToPhysics();
     void syncFromPhysics();

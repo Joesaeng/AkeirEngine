@@ -1,0 +1,934 @@
+{
+  "$schema": "game://schema/world/1",
+  "schemaVersion": 1,
+  "id": "world_01m0mqsak1esvv30tttpbrbe0j",
+  "name": "Stress",
+  "entities": {
+    "entity_01m0mqsakxetdbr98hv29yn3wd": {
+      "name": "MainCamera",
+      "parent": null,
+      "order": "a0",
+      "components": {
+        "Camera2D": {
+          "orthoSize": 14,
+          "primary": true,
+          "background": [0.1, 0.1, 0.12, 1]
+        },
+        "Transform": {
+          "position": [0, 0, -10],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
+    },
+    "entity_01m0mqsakxetdr891atdqeqzx2": {
+      "name": "Player",
+      "prefab": "prefab_01m0j3qp6de00t7ar0k009fhd3",
+      "parent": null,
+      "order": "a1",
+      "set": {
+        "/components/Transform/position": [0, 0, 0]
+      }
+    },
+    "entity_01m0mqsakxeteb4fgb7ahfbeac": {
+      "name": "Goblin_000",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a2",
+      "set": {
+        "/components/Transform/position": [10, 0, 0]
+      }
+    },
+    "entity_01m0mqsakxetesdbmt9tycasx3": {
+      "name": "Goblin_001",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a3",
+      "set": {
+        "/components/Transform/position": [10.779, 0.678, 0]
+      }
+    },
+    "entity_01m0mqsakxetfa0g9ce4j2gm44": {
+      "name": "Goblin_002",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a4",
+      "set": {
+        "/components/Transform/position": [11.509, 1.454, 0]
+      }
+    },
+    "entity_01m0mqsakxetft4nag61zb6eef": {
+      "name": "Goblin_003",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a5",
+      "set": {
+        "/components/Transform/position": [12.18, 2.324, 0]
+      }
+    },
+    "entity_01m0mqsakyezms9pdd4xyxf4gm": {
+      "name": "Goblin_004",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a6",
+      "set": {
+        "/components/Transform/position": [12.785, 3.283, 0]
+      }
+    },
+    "entity_01m0mqsakyeznbme7whfh9f9ns": {
+      "name": "Goblin_005",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a7",
+      "set": {
+        "/components/Transform/position": [9.511, 3.09, 0]
+      }
+    },
+    "entity_01m0mqsakyeznstz0bt6mce7ty": {
+      "name": "Goblin_006",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a8",
+      "set": {
+        "/components/Transform/position": [10.042, 3.976, 0]
+      }
+    },
+    "entity_01m0mqsakyezpaj355fsv6526a": {
+      "name": "Goblin_007",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "a9",
+      "set": {
+        "/components/Transform/position": [10.496, 4.939, 0]
+      }
+    },
+    "entity_01m0mqsakyezptpn34eakt79eh": {
+      "name": "Goblin_008",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "aa",
+      "set": {
+        "/components/Transform/position": [10.866, 5.974, 0]
+      }
+    },
+    "entity_01m0mqsakyezqa6n138tb8ddhf": {
+      "name": "Goblin_009",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ab",
+      "set": {
+        "/components/Transform/position": [11.145, 7.073, 0]
+      }
+    },
+    "entity_01m0mqsakyezqtrbdpxmctcnn1": {
+      "name": "Goblin_010",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ac",
+      "set": {
+        "/components/Transform/position": [8.09, 5.878, 0]
+      }
+    },
+    "entity_01m0mqsakyezr8h2sdffcdsj30": {
+      "name": "Goblin_011",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ad",
+      "set": {
+        "/components/Transform/position": [8.322, 6.884, 0]
+      }
+    },
+    "entity_01m0mqsakyezrr05yc6d0tq129": {
+      "name": "Goblin_012",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ae",
+      "set": {
+        "/components/Transform/position": [8.456, 7.941, 0]
+      }
+    },
+    "entity_01m0mqsakyezs8bg3gnxqggr7s": {
+      "name": "Goblin_013",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "af",
+      "set": {
+        "/components/Transform/position": [8.488, 9.039, 0]
+      }
+    },
+    "entity_01m0mqsakzeezs34ht9rqgd8xr": {
+      "name": "Goblin_014",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ag",
+      "set": {
+        "/components/Transform/position": [8.414, 10.171, 0]
+      }
+    },
+    "entity_01m0mqsakzef0ad871pj6gm2sr": {
+      "name": "Goblin_015",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ah",
+      "set": {
+        "/components/Transform/position": [5.878, 8.09, 0]
+      }
+    },
+    "entity_01m0mqsakzef0vn7cq33c6b5ks": {
+      "name": "Goblin_016",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ai",
+      "set": {
+        "/components/Transform/position": [5.787, 9.119, 0]
+      }
+    },
+    "entity_01m0mqsakzef194kmfd126tjwf": {
+      "name": "Goblin_017",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "aj",
+      "set": {
+        "/components/Transform/position": [5.588, 10.165, 0]
+      }
+    },
+    "entity_01m0mqsakzef1v9hq94yd6g4tk": {
+      "name": "Goblin_018",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ak",
+      "set": {
+        "/components/Transform/position": [5.28, 11.22, 0]
+      }
+    },
+    "entity_01m0mqsakzef2bchtee1m112gb": {
+      "name": "Goblin_019",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "al",
+      "set": {
+        "/components/Transform/position": [4.859, 12.273, 0]
+      }
+    },
+    "entity_01m0mqsakzef2tmvq6hvg98qm6": {
+      "name": "Goblin_020",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "am",
+      "set": {
+        "/components/Transform/position": [3.09, 9.511, 0]
+      }
+    },
+    "entity_01m0mqsakzef38z1jsh9f8b4yd": {
+      "name": "Goblin_021",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "an",
+      "set": {
+        "/components/Transform/position": [2.686, 10.461, 0]
+      }
+    },
+    "entity_01m0mqsakzef3rf54916kdxmg5": {
+      "name": "Goblin_022",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ao",
+      "set": {
+        "/components/Transform/position": [2.174, 11.395, 0]
+      }
+    },
+    "entity_01m0mqsam0ecrbfsby765akxgs": {
+      "name": "Goblin_023",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ap",
+      "set": {
+        "/components/Transform/position": [1.554, 12.302, 0]
+      }
+    },
+    "entity_01m0mqsam0ecrsv5hsssr0mm4j": {
+      "name": "Goblin_024",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "aq",
+      "set": {
+        "/components/Transform/position": [0.829, 13.174, 0]
+      }
+    },
+    "entity_01m0mqsam0ecsahebm1a5cpjgn": {
+      "name": "Goblin_025",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ar",
+      "set": {
+        "/components/Transform/position": [0, 10, 0]
+      }
+    },
+    "entity_01m0mqsam0ecsvnpnyjcx1hg07": {
+      "name": "Goblin_026",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "as",
+      "set": {
+        "/components/Transform/position": [-0.678, 10.779, 0]
+      }
+    },
+    "entity_01m0mqsam0ect9cj6kc05g64zz": {
+      "name": "Goblin_027",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "at",
+      "set": {
+        "/components/Transform/position": [-1.454, 11.509, 0]
+      }
+    },
+    "entity_01m0mqsam0ectvan4g65zmn21r": {
+      "name": "Goblin_028",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "au",
+      "set": {
+        "/components/Transform/position": [-2.324, 12.18, 0]
+      }
+    },
+    "entity_01m0mqsam0ecv8rwwrfwdmph99": {
+      "name": "Goblin_029",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "av",
+      "set": {
+        "/components/Transform/position": [-3.283, 12.785, 0]
+      }
+    },
+    "entity_01m0mqsam0ecvtexme2sft3zt9": {
+      "name": "Goblin_030",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "aw",
+      "set": {
+        "/components/Transform/position": [-3.09, 9.511, 0]
+      }
+    },
+    "entity_01m0mqsam1ec2a1w8xvcjbxbdj": {
+      "name": "Goblin_031",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ax",
+      "set": {
+        "/components/Transform/position": [-3.976, 10.042, 0]
+      }
+    },
+    "entity_01m0mqsam1ec2r69vr8bw3eb3a": {
+      "name": "Goblin_032",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "ay",
+      "set": {
+        "/components/Transform/position": [-4.939, 10.496, 0]
+      }
+    },
+    "entity_01m0mqsam1ec38fgm1pgsc68rq": {
+      "name": "Goblin_033",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "az",
+      "set": {
+        "/components/Transform/position": [-5.974, 10.866, 0]
+      }
+    },
+    "entity_01m0mqsam1ec3rxgde0xpy24cn": {
+      "name": "Goblin_034",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b00",
+      "set": {
+        "/components/Transform/position": [-7.073, 11.145, 0]
+      }
+    },
+    "entity_01m0mqsam1ec49rw776ds9qcrb": {
+      "name": "Goblin_035",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b01",
+      "set": {
+        "/components/Transform/position": [-5.878, 8.09, 0]
+      }
+    },
+    "entity_01m0mqsam1ec4rdng8ra7ww2fp": {
+      "name": "Goblin_036",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b02",
+      "set": {
+        "/components/Transform/position": [-6.884, 8.322, 0]
+      }
+    },
+    "entity_01m0mqsam1ec5914prkz0tbnnz": {
+      "name": "Goblin_037",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b03",
+      "set": {
+        "/components/Transform/position": [-7.941, 8.456, 0]
+      }
+    },
+    "entity_01m0mqsam1ec5twx4vebc2tdc7": {
+      "name": "Goblin_038",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b04",
+      "set": {
+        "/components/Transform/position": [-9.039, 8.488, 0]
+      }
+    },
+    "entity_01m0mqsam1ec6atk7hpyv0qjva": {
+      "name": "Goblin_039",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b05",
+      "set": {
+        "/components/Transform/position": [-10.171, 8.414, 0]
+      }
+    },
+    "entity_01m0mqsam2ea4v4713mz4dv8sf": {
+      "name": "Goblin_040",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b06",
+      "set": {
+        "/components/Transform/position": [-8.09, 5.878, 0]
+      }
+    },
+    "entity_01m0mqsam2ea59veazftmsnzx5": {
+      "name": "Goblin_041",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b07",
+      "set": {
+        "/components/Transform/position": [-9.119, 5.787, 0]
+      }
+    },
+    "entity_01m0mqsam2ea5vaxgc0e0vdstt": {
+      "name": "Goblin_042",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b08",
+      "set": {
+        "/components/Transform/position": [-10.165, 5.588, 0]
+      }
+    },
+    "entity_01m0mqsam2ea6bbwc64qfneqew": {
+      "name": "Goblin_043",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b09",
+      "set": {
+        "/components/Transform/position": [-11.22, 5.28, 0]
+      }
+    },
+    "entity_01m0mqsam2ea6v8byrt66p7r1v": {
+      "name": "Goblin_044",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0a",
+      "set": {
+        "/components/Transform/position": [-12.273, 4.859, 0]
+      }
+    },
+    "entity_01m0mqsam2ea787cjp7q306afq": {
+      "name": "Goblin_045",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0b",
+      "set": {
+        "/components/Transform/position": [-9.511, 3.09, 0]
+      }
+    },
+    "entity_01m0mqsam2ea7s6ywaj66ke7pz": {
+      "name": "Goblin_046",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0c",
+      "set": {
+        "/components/Transform/position": [-10.461, 2.686, 0]
+      }
+    },
+    "entity_01m0mqsam2ea88gatgs67m38n4": {
+      "name": "Goblin_047",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0d",
+      "set": {
+        "/components/Transform/position": [-11.395, 2.174, 0]
+      }
+    },
+    "entity_01m0mqsam3egq9m5mnvmx4nrax": {
+      "name": "Goblin_048",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0e",
+      "set": {
+        "/components/Transform/position": [-12.302, 1.554, 0]
+      }
+    },
+    "entity_01m0mqsam3egqrd02vnmzjse8f": {
+      "name": "Goblin_049",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0f",
+      "set": {
+        "/components/Transform/position": [-13.174, 0.829, 0]
+      }
+    },
+    "entity_01m0mqsam3egr8tr427p2mvzhv": {
+      "name": "Goblin_050",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0g",
+      "set": {
+        "/components/Transform/position": [-10, 0, 0]
+      }
+    },
+    "entity_01m0mqsam3egrs4d0sqmt6m5zc": {
+      "name": "Goblin_051",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0h",
+      "set": {
+        "/components/Transform/position": [-10.779, -0.678, 0]
+      }
+    },
+    "entity_01m0mqsam3egs8h55ak2amj6gn": {
+      "name": "Goblin_052",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0i",
+      "set": {
+        "/components/Transform/position": [-11.509, -1.454, 0]
+      }
+    },
+    "entity_01m0mqsam3egsrq9jt9cc3db4g": {
+      "name": "Goblin_053",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0j",
+      "set": {
+        "/components/Transform/position": [-12.18, -2.324, 0]
+      }
+    },
+    "entity_01m0mqsam3egtb4wxd8fcxpjep": {
+      "name": "Goblin_054",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0k",
+      "set": {
+        "/components/Transform/position": [-12.785, -3.283, 0]
+      }
+    },
+    "entity_01m0mqsam3egtvnzkmsq8d47ws": {
+      "name": "Goblin_055",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0l",
+      "set": {
+        "/components/Transform/position": [-9.511, -3.09, 0]
+      }
+    },
+    "entity_01m0mqsam3egvanq3fx34mdyvw": {
+      "name": "Goblin_056",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0m",
+      "set": {
+        "/components/Transform/position": [-10.042, -3.976, 0]
+      }
+    },
+    "entity_01m0mqsam4eh7rmcsefcgfc2qv": {
+      "name": "Goblin_057",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0n",
+      "set": {
+        "/components/Transform/position": [-10.496, -4.939, 0]
+      }
+    },
+    "entity_01m0mqsam4eh8b3xfa25v6fxg9": {
+      "name": "Goblin_058",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0o",
+      "set": {
+        "/components/Transform/position": [-10.866, -5.974, 0]
+      }
+    },
+    "entity_01m0mqsam4eh8vwb7c1eaht2p5": {
+      "name": "Goblin_059",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0p",
+      "set": {
+        "/components/Transform/position": [-11.145, -7.073, 0]
+      }
+    },
+    "entity_01m0mqsam4eh98m17eqyq13fqm": {
+      "name": "Goblin_060",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0q",
+      "set": {
+        "/components/Transform/position": [-8.09, -5.878, 0]
+      }
+    },
+    "entity_01m0mqsam4eh9skpfpmpm7mtar": {
+      "name": "Goblin_061",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0r",
+      "set": {
+        "/components/Transform/position": [-8.322, -6.884, 0]
+      }
+    },
+    "entity_01m0mqsam4eha8ppmba2yyejk5": {
+      "name": "Goblin_062",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0s",
+      "set": {
+        "/components/Transform/position": [-8.456, -7.941, 0]
+      }
+    },
+    "entity_01m0mqsam4ehavbvdwyngsfgem": {
+      "name": "Goblin_063",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0t",
+      "set": {
+        "/components/Transform/position": [-8.488, -9.039, 0]
+      }
+    },
+    "entity_01m0mqsam5e928096s6y0zg8md": {
+      "name": "Goblin_064",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0u",
+      "set": {
+        "/components/Transform/position": [-8.414, -10.171, 0]
+      }
+    },
+    "entity_01m0mqsam5e92r0pbr3j1gazr0": {
+      "name": "Goblin_065",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0v",
+      "set": {
+        "/components/Transform/position": [-5.878, -8.09, 0]
+      }
+    },
+    "entity_01m0mqsam5e938qybt6zcrdgqa": {
+      "name": "Goblin_066",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0w",
+      "set": {
+        "/components/Transform/position": [-5.787, -9.119, 0]
+      }
+    },
+    "entity_01m0mqsam5e93v8asc6cg2enx7": {
+      "name": "Goblin_067",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0x",
+      "set": {
+        "/components/Transform/position": [-5.588, -10.165, 0]
+      }
+    },
+    "entity_01m0mqsam5e9490a3kn9qjh67p": {
+      "name": "Goblin_068",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0y",
+      "set": {
+        "/components/Transform/position": [-5.28, -11.22, 0]
+      }
+    },
+    "entity_01m0mqsam5e94rtj4c1qqjkxen": {
+      "name": "Goblin_069",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "b0z",
+      "set": {
+        "/components/Transform/position": [-4.859, -12.273, 0]
+      }
+    },
+    "entity_01m0mqsam5e958r6nsrqm99jbg": {
+      "name": "Goblin_070",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c00",
+      "set": {
+        "/components/Transform/position": [-3.09, -9.511, 0]
+      }
+    },
+    "entity_01m0mqsam6egpvzkhs6kvwgz95": {
+      "name": "Goblin_071",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c01",
+      "set": {
+        "/components/Transform/position": [-2.686, -10.461, 0]
+      }
+    },
+    "entity_01m0mqsam6egqae46fcg00706k": {
+      "name": "Goblin_072",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c02",
+      "set": {
+        "/components/Transform/position": [-2.174, -11.395, 0]
+      }
+    },
+    "entity_01m0mqsam6egqt6qy0q3r6f8xk": {
+      "name": "Goblin_073",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c03",
+      "set": {
+        "/components/Transform/position": [-1.554, -12.302, 0]
+      }
+    },
+    "entity_01m0mqsam6egr8hxgf3n7j5zt1": {
+      "name": "Goblin_074",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c04",
+      "set": {
+        "/components/Transform/position": [-0.829, -13.174, 0]
+      }
+    },
+    "entity_01m0mqsam6egrt8r255h28f28w": {
+      "name": "Goblin_075",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c05",
+      "set": {
+        "/components/Transform/position": [0, -10, 0]
+      }
+    },
+    "entity_01m0mqsam6egsazxk8px787hcq": {
+      "name": "Goblin_076",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c06",
+      "set": {
+        "/components/Transform/position": [0.678, -10.779, 0]
+      }
+    },
+    "entity_01m0mqsam7ev59v99br1cmcwws": {
+      "name": "Goblin_077",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c07",
+      "set": {
+        "/components/Transform/position": [1.454, -11.509, 0]
+      }
+    },
+    "entity_01m0mqsam7ev5s38pvatsm92ap": {
+      "name": "Goblin_078",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c08",
+      "set": {
+        "/components/Transform/position": [2.324, -12.18, 0]
+      }
+    },
+    "entity_01m0mqsam7ev681wdv9cptxt8p": {
+      "name": "Goblin_079",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c09",
+      "set": {
+        "/components/Transform/position": [3.283, -12.785, 0]
+      }
+    },
+    "entity_01m0mqsam7ev6tkvp58g53gjk8": {
+      "name": "Goblin_080",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0a",
+      "set": {
+        "/components/Transform/position": [3.09, -9.511, 0]
+      }
+    },
+    "entity_01m0mqsam7ev79cw9dg2kfqmdh": {
+      "name": "Goblin_081",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0b",
+      "set": {
+        "/components/Transform/position": [3.976, -10.042, 0]
+      }
+    },
+    "entity_01m0mqsam7ev7r007de67m0t6k": {
+      "name": "Goblin_082",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0c",
+      "set": {
+        "/components/Transform/position": [4.939, -10.496, 0]
+      }
+    },
+    "entity_01m0mqsam8eppbtahxy2vza2v9": {
+      "name": "Goblin_083",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0d",
+      "set": {
+        "/components/Transform/position": [5.974, -10.866, 0]
+      }
+    },
+    "entity_01m0mqsam8epprmrt0bz3dhx3e": {
+      "name": "Goblin_084",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0e",
+      "set": {
+        "/components/Transform/position": [7.073, -11.145, 0]
+      }
+    },
+    "entity_01m0mqsam8epq87n358a20z70k": {
+      "name": "Goblin_085",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0f",
+      "set": {
+        "/components/Transform/position": [5.878, -8.09, 0]
+      }
+    },
+    "entity_01m0mqsam8epqr3te56etgzhrp": {
+      "name": "Goblin_086",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0g",
+      "set": {
+        "/components/Transform/position": [6.884, -8.322, 0]
+      }
+    },
+    "entity_01m0mqsam8epr8wc7e292r507q": {
+      "name": "Goblin_087",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0h",
+      "set": {
+        "/components/Transform/position": [7.941, -8.456, 0]
+      }
+    },
+    "entity_01m0mqsam8eprvkzb3faq8atn4": {
+      "name": "Goblin_088",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0i",
+      "set": {
+        "/components/Transform/position": [9.039, -8.488, 0]
+      }
+    },
+    "entity_01m0mqsam9emzvhsdxewv8w5a6": {
+      "name": "Goblin_089",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0j",
+      "set": {
+        "/components/Transform/position": [10.171, -8.414, 0]
+      }
+    },
+    "entity_01m0mqsam9en08dw0dbct2qfb7": {
+      "name": "Goblin_090",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0k",
+      "set": {
+        "/components/Transform/position": [8.09, -5.878, 0]
+      }
+    },
+    "entity_01m0mqsam9en0tc7kkymram1b2": {
+      "name": "Goblin_091",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0l",
+      "set": {
+        "/components/Transform/position": [9.119, -5.787, 0]
+      }
+    },
+    "entity_01m0mqsam9en1bcm2hmb44j6cq": {
+      "name": "Goblin_092",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0m",
+      "set": {
+        "/components/Transform/position": [10.165, -5.588, 0]
+      }
+    },
+    "entity_01m0mqsam9en1rk7h7qevk69y9": {
+      "name": "Goblin_093",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0n",
+      "set": {
+        "/components/Transform/position": [11.22, -5.28, 0]
+      }
+    },
+    "entity_01m0mqsam9en28rm2hgyskcnjx": {
+      "name": "Goblin_094",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0o",
+      "set": {
+        "/components/Transform/position": [12.273, -4.859, 0]
+      }
+    },
+    "entity_01m0mqsamaeg2bharmx60dan8v": {
+      "name": "Goblin_095",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0p",
+      "set": {
+        "/components/Transform/position": [9.511, -3.09, 0]
+      }
+    },
+    "entity_01m0mqsamaeg2taqmp3fnzc2q2": {
+      "name": "Goblin_096",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0q",
+      "set": {
+        "/components/Transform/position": [10.461, -2.686, 0]
+      }
+    },
+    "entity_01m0mqsamaeg38jp1wvx4za7es": {
+      "name": "Goblin_097",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0r",
+      "set": {
+        "/components/Transform/position": [11.395, -2.174, 0]
+      }
+    },
+    "entity_01m0mqsamaeg3t3a297m9d475q": {
+      "name": "Goblin_098",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0s",
+      "set": {
+        "/components/Transform/position": [12.302, -1.554, 0]
+      }
+    },
+    "entity_01m0mqsamaeg4b8yd28351esjv": {
+      "name": "Goblin_099",
+      "prefab": "prefab_01m0j3qp6ee01bt149gfx3f3qy",
+      "parent": null,
+      "order": "c0t",
+      "set": {
+        "/components/Transform/position": [13.174, -0.829, 0]
+      }
+    }
+  }
+}

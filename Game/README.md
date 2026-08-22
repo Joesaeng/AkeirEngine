@@ -4,11 +4,12 @@ Design doc §5 (project layout), §6 (document model), §71 (PoC scenario), ADR-
 
 ```
 Game/
-├── project.json                 { name, tickRate: 60, seed, defaultWorld: "world_…" }
+├── project.json                 { name, tickRate: 60, seed, defaultWorld: "world_…", physics.layers (collision matrix, ADR-0043) }
+├── Worlds/Stress.world.json     100 goblins on a ring + player — `akeir run --headless --world name:Stress --profile`, `scripts/test_perf.py` (ADR-0044)
 ├── Worlds/TestArena.world.json  entities (id-keyed): Arena, MainCamera, Hud (TextRenderer, screen space — `HudText` system writes "HP … GOBLINS …"), Player (instance of the Player prefab), Encounter_01 ┬ Goblin_01..03 (instances of the Goblin prefab)
 ├── Prefabs/                     Player / Goblin / GoblinElite (base: Goblin + set)  — one *.prefab.json each
 ├── Config/input.json            action map: MoveX/MoveY (axis), Attack (button)  (§88.3)
-├── Tests/                       data-driven tests (§23): Combat/GoblinBasicCombat, Movement/PlayerMovement, Visual/CombatCapture (requires renderer)  → `akeir test`
+├── Tests/                       data-driven tests (§23): Combat/GoblinBasicCombat, Movement/PlayerMovement, Visual/CombatCapture (requires renderer), Stress/HundredGoblins (run-twice on the Stress world)  → `akeir test`
 │   ├── Golden/<test>/           golden PNGs (produced only by the software renderer: `akeir test Visual --update-golden`)
 │   └── .results/                `akeir test` output (gitignored)
 ├── Assets/Textures/arena.png    the sprite sheet (player / goblin / goblin_elite, 16×16) + arena.png.meta.json (the §37 sidecar made by `akeir asset import … --grid 16x16 --names …`)

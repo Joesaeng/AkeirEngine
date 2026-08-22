@@ -168,6 +168,7 @@ std::optional<Project> Project::load(const std::string& rootDir, std::vector<Dia
     p.loadDirectory("Assets", ".meta.json", "asset", diagnostics, /*recursive*/ true);
     p.reindex();
     for (const auto& d : p.assetDiags_) diagnostics.push_back(d);
+    for (const auto& d : p.layerDiags_) diagnostics.push_back(d);
     return p;
 }
 
@@ -226,6 +227,12 @@ void Project::reindex() {
     index_.clear();
     duplicates_.clear();
     parseAssetDocs();
+    {   // ADR-0043 collision layers
+        std::vector<std::pair<std::string, std::string>> problems;
+        physicsLayers_ = PhysicsLayers::fromProjectJson(projectJson_, &problems);
+        layerDiags_.clear();
+        for (const auto& [ptr, text] : problems) layerDiags_.push_back(docError("PHYSICS_LAYERS_INVALID", "project.json: " + text, "project.json", ptr));
+    }
     auto put = [&](const std::string& id, DocLocation loc) {
         auto it = index_.find(id);
         if (it != index_.end()) { duplicates_[id].push_back(it->second.doc + "#" + it->second.pointer); duplicates_[id].push_back(loc.doc + "#" + loc.pointer); return; }
@@ -492,6 +499,7 @@ std::vector<Diagnostic> Project::validate() const {
     // but it is surfaced here so `akeir validate` (and CI) fail loudly instead of the member silently vanishing.
     for (const auto& d : Registry::global().diagnostics()) out.push_back(d);
     for (const auto& d : assetDiags_) out.push_back(d);   // sidecar 구조 오류 (ADR-0037)
+    for (const auto& d : layerDiags_) out.push_back(d);   // physics.layers 구조 오류 (ADR-0043)
     // 중복 id
     for (const auto& [id, where] : duplicates_) {
         Diagnostic d = Diagnostic::error("DUPLICATE_PERSISTENT_ID", "Persistent id " + id + " appears in more than one place: " + Json(where).dump() + ". Run `akeir id fix --keep <path>` (§7.3).")
@@ -559,6 +567,14 @@ std::vector<Diagnostic> Project::validate() const {
                     Diagnostic d = Diagnostic::warning("COLLIDER_WITHOUT_BODY", "Collider2D without RigidBody2D creates no physics body; nothing collides with it. Add RigidBody2D (type static for walls).")
                                        .in(PhysicalLocation{path, pointer + "/" + escapePointerToken(it.key()), std::nullopt}).at(LogicalLocation{objectId, it.key(), std::nullopt}).withFix(f);
                     out.push_back(std::move(d));
+                }
+                // ADR-0043: Collider2D.layer must be a declared physics layer when project.json declares any
+                if (it.key() == "Collider2D" && physicsLayers_.declared() && it.value().is_object()) {
+                    std::string layer = it.value().value("layer", "Default");
+                    if (!physicsLayers_.has(layer)) {
+                        std::string known; for (const auto& n : physicsLayers_.names()) known += (known.empty() ? "" : ", ") + n;
+                        out.push_back(docError("PHYSICS_LAYER_UNKNOWN", "Collider2D.layer '" + layer + "' is not declared in project.json physics.layers (declared: " + known + ").", path, pointer + "/" + escapePointerToken(it.key()) + "/layer", objectId));
+                    }
                 }
                 // Ref 속성의 dangling 검사 (§19)
                 for (const auto& p : meta->props) {

@@ -132,12 +132,19 @@ public:
     }
 
 private:
-    static BodyHandle handleOf(b2ShapeId shape) {
+    // Box2D reports End/SensorEnd events on the step AFTER gameplay destroyed a body (despawn on contact is the
+    // normal survivor pattern). Those shape ids are stale: querying them trips Box2D's debug assert and reads
+    // garbage in release. A handle whose body is gone is meaningless to gameplay, so the event is dropped. (ADR-0042)
+    BodyHandle handleOf(b2ShapeId shape) const {
+        if (!b2Shape_IsValid(shape)) return 0;
         b2BodyId body = b2Shape_GetBody(shape);
-        return static_cast<BodyHandle>(reinterpret_cast<std::uintptr_t>(b2Body_GetUserData(body)));
+        if (!b2Body_IsValid(body)) return 0;
+        auto h = static_cast<BodyHandle>(reinterpret_cast<std::uintptr_t>(b2Body_GetUserData(body)));
+        return bodies_.count(h) ? h : 0;
     }
     void push(ContactEvent::Kind kind, b2ShapeId a, b2ShapeId b) {
         BodyHandle ha = handleOf(a), hb = handleOf(b);
+        if (!ha || !hb) { ++droppedStale_; return; }
         if (ha > hb) std::swap(ha, hb);
         events_.push_back(ContactEvent{kind, ha, hb});
     }
@@ -146,6 +153,7 @@ private:
     int subSteps_ = 4;
     std::map<BodyHandle, b2BodyId> bodies_;
     std::vector<ContactEvent> events_;
+    std::uint64_t droppedStale_ = 0;
 };
 
 } // namespace

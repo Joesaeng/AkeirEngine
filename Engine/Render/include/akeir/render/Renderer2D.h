@@ -29,6 +29,8 @@ namespace akeir {
 struct RenderStats {
     int sprites = 0;
     int texts = 0;      // TextRenderer entities drawn (ADR-0040)
+    int culled = 0;     // sprites/texts skipped because their screen rect is outside the viewport (ADR-0044)
+    double renderMs = 0;   // wall-clock of render() (profiling only — never feeds the simulation)
     int width = 0, height = 0;
     std::string backend;           // SDL renderer 이름 ("software", "direct3d11", …)
     Json camera;                   // {entity, position, orthoSize}

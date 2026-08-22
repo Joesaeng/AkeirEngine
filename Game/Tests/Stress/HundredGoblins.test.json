@@ -1,0 +1,12 @@
+{
+  "$schema": "game://schema/test/1",
+  "name": "HundredGoblins",
+  "world": "name:Stress",
+  "setup": [{ "entity": "name:Player", "as": "player" }],
+  "run": { "ticks": 1800 },
+  "determinism": { "runs": 2, "hashEvery": 300 },
+  "assert": [
+    { "id": "crowd", "expr": "size(world.entities) >= 100", "at": "end" },
+    { "id": "engaged", "expr": "world.entities.exists(e, has(e.components.EnemyAI) && e.components.EnemyAI.state != \"idle\")", "at": 60 }
+  ]
+}

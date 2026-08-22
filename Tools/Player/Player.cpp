@@ -170,9 +170,11 @@ int main(int argc, char** argv) {
     ic.maxTicks = args.getInt("ticks", 0);
     ic.tickRate = prj->tickRate();
     ic.recordInputsPath = args.get("record", "");
-    AKEIR_LOG(Info, "player", "start", "Playing.", Json{{"project", projectDir}, {"world", worldId}, {"seed", cfg.seed}, {"videoDriver", platform->currentVideoDriver()}, {"renderer", renderer->backendName()}});
+    AKEIR_LOG(Info, "player", "start", "Playing.", Json{{"project", projectDir}, {"world", worldId}, {"seed", cfg.seed}, {"videoDriver", platform->currentVideoDriver()}, {"renderer", renderer->backendName()}, {"buildConfig", AKEIR_BUILD_CONFIG}});
     InteractiveResult ir = runInteractive(*platform, *renderer, *world, input, ic);
-    AKEIR_LOG(Info, "player", "stop", "Stopped.", ir.toJson());
+    Json stop = ir.toJson();
+    stop["profile"] = world->profileJson();   // ADR-0044: where the time went (systems / physics / queries) — read Cache/player.log after a slow session
+    AKEIR_LOG(Info, "player", "stop", "Stopped.", stop);
     Logger::global().flush();
     return kExitOk;
 }

@@ -19,6 +19,7 @@
 #include "akeir/core/Id.h"
 #include "akeir/core/Json.h"
 #include "akeir/runtime/Assets.h"
+#include "akeir/runtime/PhysicsLayers.h"
 
 #include <map>
 #include <optional>
@@ -51,6 +52,8 @@ public:
     int tickRate() const { return projectJson_.value("tickRate", 60); }
     std::uint64_t seed() const { return projectJson_.value("seed", 0ULL); }
     std::optional<std::string> defaultWorld() const;   // world id
+    /// project.json "physics.layers" (ADR-0043). Not declared → one layer, everything collides.
+    const PhysicsLayers& physicsLayers() const { return physicsLayers_; }
 
     // ---- 문서 ----
     const std::map<std::string, Json>& documents() const { return docs_; }
@@ -113,6 +116,8 @@ private:
     std::map<std::string, DocLocation, std::less<>> index_;  // id → location
     std::map<std::string, std::vector<std::string>> duplicates_; // id → 중복 위치들 (reindex 가 채움)
     AssetTable assets_;                                // Assets/**/*.meta.json (ADR-0037)
+    PhysicsLayers physicsLayers_;                      // project.json physics.layers (ADR-0043)
+    std::vector<Diagnostic> layerDiags_;
     std::vector<Diagnostic> assetDiags_;               // sidecar 구조 오류 (validate() 가 포함)
 
     Json resolvePrefabRec(std::string_view prefabId, std::vector<std::string>& chain, std::vector<Diagnostic>* diags, bool& ok) const;

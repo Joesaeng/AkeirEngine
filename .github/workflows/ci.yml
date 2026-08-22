@@ -177,6 +177,8 @@ jobs:
         run: python scripts/test_resident_rebuild.py --preset msvc-release
       - name: MCP play tool (ADR-0041, release build)
         run: python scripts/test_mcp_play.py --preset msvc-release
+      - name: Stress world perf + determinism (ADR-0044)
+        run: python scripts/test_perf.py --preset msvc-release
       - name: Package release zip
         run: python scripts/package.py --preset msvc-release
       - uses: actions/upload-artifact@v4

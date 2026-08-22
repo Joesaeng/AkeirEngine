@@ -12,6 +12,7 @@
 #include <flecs.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 namespace akeir {
@@ -64,6 +65,7 @@ struct PlayWorld::EntityRec {
 struct PlayWorld::Impl {
     std::map<std::string, EntityRec> entities;              // id → rec (정렬된 맵)
     std::map<std::string, ecs_entity_t> components;         // component name → flecs id
+    std::map<BodyHandle, std::string> bodyToEntity;         // reverse index for contact events (ADR-0042)
     BodyHandle nextHandle = 1;
     std::vector<std::string> emptyTags;
 
@@ -109,6 +111,7 @@ std::unique_ptr<PlayWorld> PlayWorld::build(const Project& project, std::string_
     pw->cfg_ = cfg;
     pw->worldId_ = std::string(worldId);
     pw->assets_ = project.assets();
+    pw->layers_ = project.physicsLayers();
     for (const auto& path : project.prefabPaths()) {   // ADR-0038: prefabs resolved once, spawnable at runtime
         const Json* pd = project.document(path);
         if (!pd || !pd->contains("id") || !(*pd)["id"].is_string()) continue;
@@ -207,7 +210,20 @@ void PlayWorld::ensureBody(const std::string& id) {
     d.radius = col->radius;
     d.offset = col->offset;
     d.isSensor = col->isSensor;
-    if (physics_->createBody(d)) it->second.body = d.handle;
+    LayerBits lb = layers_.bits(col->layer);   // ADR-0043 (undeclared / no matrix → collide with everything)
+    d.layerBits = lb.category;
+    d.maskBits = lb.mask;
+    if (physics_->createBody(d)) { it->second.body = d.handle; impl_->bodyToEntity[d.handle] = id; }
+}
+
+BodyHandle PlayWorld::bodyHandle(std::string_view id) const {
+    auto it = impl_->entities.find(std::string(id));
+    return it == impl_->entities.end() ? 0 : it->second.body;
+}
+
+std::string PlayWorld::entityForBody(BodyHandle body) const {
+    auto it = impl_->bodyToEntity.find(body);
+    return it == impl_->bodyToEntity.end() ? std::string() : it->second;
 }
 
 void PlayWorld::syncToPhysics() {
@@ -230,15 +246,56 @@ void PlayWorld::syncFromPhysics() {
 
 // ---------------------------------------------------------------- tick
 
+namespace {
+using ProfClock = std::chrono::steady_clock;
+double msSince(ProfClock::time_point t0) { return std::chrono::duration<double, std::milli>(ProfClock::now() - t0).count(); }
+} // namespace
+
 void PlayWorld::tick(const InputFrame& input, const SimTime& simTime) {
+    const auto tickStart = ProfClock::now();
     tick_ = simTime.tick;
-    for (auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) s.fn(*this, input, simTime);   // 등록 순서 (결정적)
+    if (profile_.systems.size() != systems_.size()) {   // (re)build the per-system slots in execution order
+        profile_.systems.clear();
+        for (const auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) profile_.systems.push_back({s.name, s.phase});
+        for (const auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) profile_.systems.push_back({s.name, s.phase});
+    }
+    std::size_t slot = 0;
+    auto runSystem = [&](SystemRec& s) {
+        const auto t0 = ProfClock::now();
+        s.fn(*this, input, simTime);
+        const double ms = msSince(t0);
+        SystemProfile& p = profile_.systems[slot++];
+        ++p.calls; p.ms += ms; if (ms > p.maxMs) p.maxMs = ms;
+    };
+    for (auto& s : systems_) if (s.phase == SystemPhase::PrePhysics) runSystem(s);   // 등록 순서 (결정적)
+    const auto physStart = ProfClock::now();
     syncToPhysics();
     physics_->step(simTime.dt(), cfg_.physics.subSteps);
     syncFromPhysics();
     events_ = physics_->drainContactEvents();
-    for (auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) s.fn(*this, input, simTime);  // 이번 tick 의 contactEvents() 를 본다 (ADR-0038)
+    const double physMs = msSince(physStart);
+    profile_.physicsMs += physMs; if (physMs > profile_.maxPhysicsMs) profile_.maxPhysicsMs = physMs;
+    profile_.contactEvents += events_.size();
+    for (auto& s : systems_) if (s.phase == SystemPhase::PostPhysics) runSystem(s);  // 이번 tick 의 contactEvents() 를 본다 (ADR-0038)
     tick_ = simTime.tick + 1;   // "지금까지 시뮬레이션한 tick 수". snapshot.tick / dump.tick 이 이 값 (N tick 돌리면 N)
+    const double tickMs = msSince(tickStart);
+    ++profile_.ticks; profile_.tickMs += tickMs; if (tickMs > profile_.maxTickMs) profile_.maxTickMs = tickMs;
+}
+
+void PlayWorld::resetProfile() { profile_ = TickProfile{}; }
+
+Json PlayWorld::profileJson() const {
+    const TickProfile& p = profile_;
+    const double n = p.ticks ? static_cast<double>(p.ticks) : 1.0;
+    Json systems = Json::array();
+    for (const auto& s : p.systems) systems.push_back(Json{{"name", s.name}, {"phase", s.phase == SystemPhase::PrePhysics ? "PrePhysics" : "PostPhysics"}, {"calls", s.calls}, {"avgMs", s.calls ? s.ms / static_cast<double>(s.calls) : 0.0}, {"totalMs", s.ms}, {"maxMs", s.maxMs}});
+    Json perComponent = Json::object();
+    for (const auto* m : Registry::global().all()) { std::size_t c = 0; for (const auto& id : ids_) if (hasComponent(id, m->name)) ++c; if (c) perComponent[m->name] = c; }
+    return Json{{"ticks", p.ticks}, {"avgTickMs", p.tickMs / n}, {"maxTickMs", p.maxTickMs},
+                {"physics", Json{{"avgMs", p.physicsMs / n}, {"maxMs", p.maxPhysicsMs}, {"bodies", physics_->bodyCount()}, {"contactEvents", p.contactEvents}}},
+                {"queries", Json{{"calls", p.queries}, {"perTick", static_cast<double>(p.queries) / n}, {"entitiesScanned", p.queryVisits}, {"results", p.queryResults}}},
+                {"entities", Json{{"total", ids_.size()}, {"perComponent", perComponent}}},
+                {"systems", systems}};
 }
 
 void PlayWorld::addSystem(std::string name, SystemFn fn, SystemPhase phase) { systems_.push_back({std::move(name), std::move(fn), phase}); }
@@ -391,7 +448,7 @@ bool PlayWorld::removeComponent(std::string_view id, std::string_view component,
     auto c = impl_->components.find(std::string(component));
     if (c == impl_->components.end() || !ecs_has_id(world_, it->second.e, c->second)) { if (error) *error = std::string(component) + " is not on " + std::string(id); return false; }
     ecs_remove_id(world_, it->second.e, c->second);
-    if ((component == "RigidBody2D" || component == "Collider2D") && it->second.body) { physics_->destroyBody(it->second.body); it->second.body = 0; }
+    if ((component == "RigidBody2D" || component == "Collider2D") && it->second.body) { physics_->destroyBody(it->second.body); impl_->bodyToEntity.erase(it->second.body); it->second.body = 0; }
     if (error) error->clear();
     return true;
 }
@@ -418,7 +475,7 @@ bool PlayWorld::removeTag(std::string_view id, std::string_view tag) {
 void PlayWorld::despawn(std::string_view id) {
     auto it = impl_->entities.find(std::string(id));
     if (it == impl_->entities.end()) return;
-    if (it->second.body) physics_->destroyBody(it->second.body);
+    if (it->second.body) { physics_->destroyBody(it->second.body); impl_->bodyToEntity.erase(it->second.body); }
     ecs_delete(world_, it->second.e);
     impl_->entities.erase(it);
     ids_.erase(std::remove(ids_.begin(), ids_.end(), std::string(id)), ids_.end());
@@ -428,19 +485,31 @@ void PlayWorld::despawn(std::string_view id) {
 
 std::vector<std::string> PlayWorld::query(const std::vector<std::string>& with, const std::vector<std::string>& without) const {
     std::vector<std::string> out;
-    for (const auto& id : ids_) {
+    ++profile_.queries; profile_.queryVisits += ids_.size();
+    // ADR-0044: resolve names once per call (not once per entity) and walk the id-ordered entity map directly.
+    // A component that is not registered can match nothing → empty result without scanning.
+    struct Term { ecs_entity_t comp = 0; std::string tag; };
+    std::vector<Term> need, avoid;
+    for (const auto& w : with) {
+        if (!w.empty() && w[0] == '#') need.push_back({0, w.substr(1)});
+        else { auto c = impl_->components.find(w); if (c == impl_->components.end()) return out; need.push_back({c->second, {}}); }
+    }
+    for (const auto& w : without) {
+        if (!w.empty() && w[0] == '#') avoid.push_back({0, w.substr(1)});
+        else { auto c = impl_->components.find(w); if (c == impl_->components.end()) continue; avoid.push_back({c->second, {}}); }
+    }
+    auto hasTerm = [&](const EntityRec& rec, const Term& t) {
+        if (t.comp) return ecs_has_id(world_, rec.e, t.comp);
+        return std::find(rec.tags.begin(), rec.tags.end(), t.tag) != rec.tags.end();
+    };
+    for (const auto& [id, rec] : impl_->entities) {   // std::map → id order (same as ids_)
         bool ok = true;
-        for (const auto& w : with) {
-            bool isTag = !w.empty() && w[0] == '#';
-            if (isTag ? !hasTag(id, w.substr(1)) : !hasComponent(id, w)) { ok = false; break; }
-        }
+        for (const auto& t : need) if (!hasTerm(rec, t)) { ok = false; break; }
         if (!ok) continue;
-        for (const auto& w : without) {
-            bool isTag = !w.empty() && w[0] == '#';
-            if (isTag ? hasTag(id, w.substr(1)) : hasComponent(id, w)) { ok = false; break; }
-        }
+        for (const auto& t : avoid) if (hasTerm(rec, t)) { ok = false; break; }
         if (ok) out.push_back(id);
     }
+    profile_.queryResults += out.size();
     return out;
 }
 

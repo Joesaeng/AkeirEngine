@@ -7,6 +7,8 @@
 #include "akeir/runtime/Project.h"
 
 #include <filesystem>
+#include <fstream>
+#include <set>
 
 using namespace akeir;
 namespace fs = std::filesystem;
@@ -233,4 +235,72 @@ TEST_CASE("PlayWorld: runtime add/remove of components and tags is immediate, af
     std::uint64_t a = run(true), b = run(true), c = run(false);
     CHECK(a == b);
     CHECK(a != c);
+}
+
+// ---- ADR-0042: despawn on contact must not trip Box2D's stale end-event; body ↔ entity index ----
+TEST_CASE("PlayWorld: despawning a body on its contact event does not crash the next step — stale end events are dropped (ADR-0042)") {
+    Fixture f;
+    auto w = f.world();
+    // two overlapping dynamic bodies spawned at runtime → Begin event on the first step
+    Json body = Json{{"Transform", Json{{"position", Json::array({20, 20, 0})}}}, {"Collider2D", Json{{"shape", "circle"}, {"radius", 0.5}}}, {"RigidBody2D", Json{{"type", "dynamic"}}}};
+    std::string a = w->spawn("A", body), b = w->spawn("B", body);
+    REQUIRE(w->bodyHandle(a) != 0);
+    CHECK(w->entityForBody(w->bodyHandle(a)) == a);
+    CHECK(w->entityForBody(w->bodyHandle(b)) == b);
+    CHECK(w->entityForBody(99999) == "");
+    SimTime st; st.tickRate = 60;
+    int seen = 0;
+    w->addSystem("DespawnOnTouch", [&](PlayWorld& pw, const InputFrame&, const SimTime&) {
+        for (const auto& ev : pw.contactEvents()) {
+            std::string ea = pw.entityForBody(ev.a), eb = pw.entityForBody(ev.b);
+            CHECK_FALSE(ea.empty()); CHECK_FALSE(eb.empty());          // every reported handle maps to a live entity
+            if ((ea == a && eb == b) || (ea == b && eb == a)) { ++seen; pw.despawn(a); }
+        }
+    }, PlayWorld::SystemPhase::PostPhysics);
+    for (int i = 0; i < 10; ++i) { InputFrame fr; fr.tick = st.tick; w->tick(fr, st); st.advance(); }   // step after the despawn → Box2D emits End for the dead body
+    CHECK(seen >= 1);
+    CHECK_FALSE(w->hasEntity(a));
+    CHECK(w->entityForBody(w->bodyHandle(b)) == b);
+    for (const auto& ev : w->contactEvents()) { CHECK(ev.a != 0); CHECK(ev.b != 0); }
+}
+
+TEST_CASE("PlayWorld: physics.layers drive Box2D filters — sensors and contacts only between partner layers (ADR-0043)") {
+    registerBuiltinComponents();
+    fs::path dir = fs::temp_directory_path() / "akeir_layers_test";
+    std::error_code ec; fs::remove_all(dir, ec); fs::create_directories(dir / "Worlds");
+    std::ofstream(dir / "project.json") << Json{{"$schema", "game://schema/project/1"}, {"schemaVersion", 1}, {"name", "L"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"},
+        {"physics", Json{{"layers", Json{{"Player", Json::array({"Enemy", "Pickup"})}, {"Enemy", Json::array({"Enemy"})}, {"Pickup", Json::array()}, {"Effect", Json::array()}}}}}}.dump();
+    auto ent = [](const char* name, const char* layer, bool sensor, double x) {
+        return Json{{"name", name}, {"components", Json{{"Transform", Json{{"position", Json::array({x, 0, 0})}}}, {"Collider2D", Json{{"shape", "circle"}, {"radius", 1.0}, {"layer", layer}, {"isSensor", sensor}}}, {"RigidBody2D", Json{{"type", "dynamic"}, {"gravityScale", 0}}}}}};
+    };
+    // all five overlap at the origin
+    std::ofstream(dir / "Worlds" / "W.world.json") << Json{{"$schema", "game://schema/world/1"}, {"schemaVersion", 1}, {"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"name", "W"}, {"entities", Json{
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw70", ent("Player", "Player", false, 0.0)},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw71", ent("Enemy1", "Enemy", false, 0.3)},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw72", ent("Enemy2", "Enemy", false, -0.3)},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw73", ent("Gem", "Pickup", true, 0.1)},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw74", ent("Fx", "Effect", false, 0.2)}}}}.dump();
+    std::vector<Diagnostic> d;
+    auto prj = Project::load(dir.string(), d);
+    REQUIRE(prj);
+    PlayWorldConfig cfg; cfg.seed = 1; cfg.tickRate = 60;
+    auto w = PlayWorld::build(*prj, *prj->defaultWorld(), cfg, d);
+    REQUIRE(w);
+    SimTime st; st.tickRate = 60;
+    InputFrame fr; fr.tick = 0; w->tick(fr, st);
+    std::set<std::string> pairs;
+    for (const auto& ev : w->contactEvents()) {
+        std::string a = w->name(w->entityForBody(ev.a)), b = w->name(w->entityForBody(ev.b));
+        if (a > b) std::swap(a, b);
+        pairs.insert(a + "/" + b + (ev.kind == ContactEvent::SensorBegin ? ":sensor" : ":contact"));
+    }
+    for (const auto& p : pairs) MESSAGE(p);
+    CHECK(pairs.count("Enemy1/Player:contact"));
+    CHECK(pairs.count("Enemy2/Player:contact"));
+    CHECK(pairs.count("Enemy1/Enemy2:contact"));
+    CHECK(pairs.count("Gem/Player:sensor"));          // pickup sensor sees the player
+    CHECK_FALSE(pairs.count("Enemy1/Gem:sensor"));    // …but not enemies (the feedback's wasted events)
+    CHECK_FALSE(pairs.count("Enemy2/Gem:sensor"));
+    for (const auto& p : pairs) CHECK(p.find("Fx") == std::string::npos);   // Effect collides with nothing
+    fs::remove_all(dir, ec);
 }

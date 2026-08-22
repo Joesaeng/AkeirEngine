@@ -11,6 +11,9 @@ if(AKEIR_GAME_EXE STREQUAL "")
   set(AKEIR_GAME_EXE "Game")
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(AKEIR_GAME_EXE "${AKEIR_GAME_EXE}-debug")   # 10-15x slower simulation — never mistake it for the game (ADR-0042)
+endif()
 add_executable(akeir_player Player.cpp)
 target_link_libraries(akeir_player PRIVATE
   akeir::core akeir::runtime akeir::reflection akeir::ecs akeir::physics akeir::platform akeir::render

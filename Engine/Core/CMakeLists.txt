@@ -17,4 +17,4 @@ target_link_libraries(akeir_core
 if(WIN32)
   target_link_libraries(akeir_core PRIVATE dbghelp)
 endif()
-target_compile_definitions(akeir_core PUBLIC AKEIR_VERSION_STRING="${PROJECT_VERSION}")
+target_compile_definitions(akeir_core PUBLIC AKEIR_VERSION_STRING="${PROJECT_VERSION}" AKEIR_BUILD_CONFIG="${CMAKE_BUILD_TYPE}")

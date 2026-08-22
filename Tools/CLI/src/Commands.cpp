@@ -36,6 +36,7 @@ Envelope cmdVersion(Context& ctx) {
     r["designDoc"] = "AKEIR.md";
     r["fpEnv"] = fpEnvStatus().toJson();       // §22.2 FPU 환경
     r["exe"] = ownExeInfoJson();               // which build is running (ADR-0034: MCP worker restart, serve staleness)
+    r["buildConfig"] = AKEIR_BUILD_CONFIG;      // Debug | RelWithDebInfo — Debug simulates 10-15x slower (ADR-0042)
     return Envelope::success("project.version", r);
 }
 
@@ -115,7 +116,7 @@ Json envelopeSchema() {
 
 Json capabilitiesJson() {
     Json r = Json::object();
-    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", AKEIR_VERSION_STRING}, {"sdl", sdlAvailable()}, {"exe", ownExeInfoJson()}};
+    r["info"] = Json{{"title", "AKEIR Engine Command API"}, {"engine", "AKEIR"}, {"version", AKEIR_VERSION_STRING}, {"sdl", sdlAvailable()}, {"exe", ownExeInfoJson()}, {"buildConfig", AKEIR_BUILD_CONFIG}};
 
     // §47 tools[] — MCP 에 노출되는 15개 (이름 = command id 의 '.' → '_'). 구현된 것만 enabled:true. tools/list 는 enabled 만 pass-through 한다.
     // inputSchema 는 CLI 인자와 같은 의미의 JSON. apply.changes[].op 의 oneOf 는 busCommands[] 의 args 스키마다.
@@ -145,7 +146,7 @@ Json capabilitiesJson() {
     tools.push_back(tool("apply", "Apply a batch of commands", "Atomic batch of Mutation commands (§49). changes[].op ∈ busCommands[].id; '$name' refers to an earlier change's result (as: name). dryRun returns the ChangeSet without writing. Response.changes = RFC 6902 superset ops (§78).",
                          props({{"changes", Json{{"type", "array"}, {"description", "each item: {op: <busCommands[].id>, ...args of that command, as?: name}. Call the `capabilities` tool for busCommands[] (ids + arg schemas)."}, {"items", Json{{"type", "object"}, {"required", Json::array({"op"})}}}}}, {"atomic", Json{{"type", "boolean"}, {"description", "default true: all-or-nothing, one undo step"}}}, {"dryRun", Json{{"type", "boolean"}, {"description", "compute the ChangeSet without writing"}}}, {"idempotencyKey", S}, {"tx", Json{{"type", "string"}, {"description", "open tx handle from the tx tool"}}}}), false, false, false, "akeir apply batch.json --json", true));
     tools.push_back(tool("validate", "Validate project data", "All §29 rules; fix:true applies MachineApplicable fixes via CommandBus (undoable).", props({{"fix", B}, {"dryRun", B}}), true, false, true, "akeir validate [--fix] --json", true));
-    tools.push_back(tool("run", "Run headless", "Fixed-tick deterministic run; finalHash, per-N hashes, snapshot (§20, §22).", props({{"ticks", I}, {"seed", I}, {"world", S}, {"hashEvery", I}, {"snapshotOut", S}}), false, false, true, "akeir run --headless --ticks 600 --json", true));
+    tools.push_back(tool("run", "Run headless", "Fixed-tick deterministic run; finalHash, per-N hashes, snapshot (§20, §22). profile:true adds per-system/physics/query timings and entity counts (ADR-0044).", props({{"ticks", I}, {"seed", I}, {"world", S}, {"hashEvery", I}, {"snapshotOut", S}, {"profile", B}}), false, false, true, "akeir run --headless --ticks 600 --profile --json", true));
     tools.push_back(tool("run_status", "Run handle status", "Result of a run started in this `akeir serve` session (run.start returns result.run) (§46.2).", props({{"run", S}}), true, false, true, "akeir run status <run_id> --json", true));
     tools.push_back(tool("test", "Run data-driven tests", "Tests/**/*.test.json scenarios: setup, scripted inputs, snapshot assertions (always/eventually/at), run-twice determinism; results.json + JUnit (§23, §24).", props({{"filter", S}, {"junit", S}, {"resultsDir", S}}), true, false, true, "akeir test [filter] --json", true));
     tools.push_back(tool("capture", "Capture a frame", "Software-rasterized PNG of the world after N ticks (no GPU; deterministic). compare: golden comparison with tolerance (§27, §27.1).", props({{"ticks", I}, {"width", I}, {"height", I}, {"out", S}, {"compare", S}}), true, false, true, "akeir capture --ticks 60 --out Cache/capture/f.png --json", sdlAvailable()));
@@ -155,7 +156,7 @@ Json capabilitiesJson() {
                          props({{"action", Json{{"enum", Json::array({"open", "step", "inspect", "query", "snapshot", "close", "list"})}}}, {"run", Json{{"type", "string"}, {"description", "run id from open"}}}, {"world", S}, {"seed", I},
                                 {"ticks", Json{{"type", "integer"}, {"description", "ticks to simulate on step (default 1)"}}},
                                 {"input", Json{{"type", "object"}, {"description", "{action: value} held on every stepped tick, e.g. {\"MoveX\": 1}; action names from Config/input.json"}}},
-                                {"entity", SEL}, {"with", Json{{"type", "array"}, {"items", S}}}, {"without", Json{{"type", "array"}, {"items", S}}}, {"components", B}, {"limit", I}, {"out", Json{{"type", "string"}, {"description", "write the snapshot to this file instead of returning it"}}}}),
+                                {"entity", SEL}, {"with", Json{{"type", "array"}, {"items", S}}}, {"without", Json{{"type", "array"}, {"items", S}}}, {"components", B}, {"limit", I}, {"out", Json{{"type", "string"}, {"description", "write the snapshot to this file instead of returning it"}}}, {"profile", Json{{"type", "boolean"}, {"description", "step: include per-system/physics/query timings for the stepped ticks (ADR-0044)"}}}}),
                          false, false, false, "akeir run open|step|inspect|query|snapshot|close|list (inside akeir serve)", true));
     tools.push_back(tool("history", "Undo / redo / list", "History of ChangeSets (§10). undo applies inverse(ops); actor filter; conflicts reported.", props({{"action", Json{{"enum", Json::array({"undo", "redo", "list"})}}}, {"steps", I}, {"actor", S}, {"limit", I}}), false, false, false, "akeir undo|redo|history", true));
     r["tools"] = tools;
@@ -192,7 +193,7 @@ Json capabilitiesJson() {
                                 "RUN_UNKNOWN_OR_EXPIRED", "RUN_STATUS_REQUIRES_SERVE", "SERVE_NOT_RUNNING", "SERVE_ALREADY_RUNNING", "FEATURE_UNAVAILABLE", "TEST_FAILED", "TESTS_NOT_FOUND", "CAPTURE_MISMATCH", "CAPTURE_FAILED",
                                 "APPLY_INVALID", "APPLY_BAD_REFERENCE", "CHANGESET_BEFORE_MISMATCH", "CHANGESET_APPLY_FAILED", "JOURNAL_WRITE_FAILED", "SAVE_FAILED",
                                 "REFLECT_MEMBER_UNLISTED", "MCP_WORKER_RESTARTED", "SERVE_STALE_EXE",
-                                "ASSET_META_INVALID", "ASSET_SOURCE_MISSING", "ASSET_SOURCE_INVALID", "ASSET_SUBASSET_RECT_INVALID", "ASSET_SUBASSET_MISSING", "EXPR_PARSE_ERROR"});
+                                "ASSET_META_INVALID", "ASSET_SOURCE_MISSING", "ASSET_SOURCE_INVALID", "ASSET_SUBASSET_RECT_INVALID", "ASSET_SUBASSET_MISSING", "EXPR_PARSE_ERROR", "PHYSICS_LAYERS_INVALID", "PHYSICS_LAYER_UNKNOWN", "RUN_REQUIRES_SERVE"});
     return r;
 }
 

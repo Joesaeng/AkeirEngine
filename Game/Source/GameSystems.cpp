@@ -82,7 +82,8 @@ void enemyAttack(PlayWorld& w, const InputFrame&, const SimTime& t) {
 // Uppercase-only bitmap font: "HP 100  GOBLINS 3".
 void hudText(PlayWorld& w, const InputFrame&, const SimTime&) {
     const Health* hp = nullptr;
-    for (const auto& id : w.query({"#player"})) { hp = w.get<Health>(id); break; }
+    auto players = w.query({"#player"});
+    if (!players.empty()) hp = w.get<Health>(players.front());
     int alive = 0;
     for (const auto& id : w.query({"EnemyAI"})) if (w.get<EnemyAI>(id)->state != AiState::Dead) ++alive;
     std::string text = "HP " + std::to_string(hp ? static_cast<int>(std::lround(hp->current)) : 0) + "  GOBLINS " + std::to_string(alive);

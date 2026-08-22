@@ -117,6 +117,7 @@ Envelope cmdRun(Context& ctx) {
         r["entities"] = o->world->entityIds().size();
         r["systems"] = o->world->systemNames();
         r["contactEventsLastTick"] = o->world->contactEvents().size();
+        if (a.has("profile")) r["profile"] = o->world->profileJson();   // ADR-0044
         if (!snapshotOut.empty()) {
             std::string err;
             if (writeCanonicalFile(snapshotOut, o->world->snapshot(), &err)) r["snapshotFile"] = snapshotOut;
@@ -202,9 +203,9 @@ Envelope cmdQuery(Context& ctx) {
 
 void registerRunCommands(std::vector<CommandSpec>& table) {
     table.push_back({"run.start", {"run"}, "RuntimeControl", "Run the simulation (headless or windowed)",
-        "--headless: builds the project world (or --demo), runs N fixed ticks (§20.1), returns hashes (§22.2); --replay inputs.jsonl plays recorded input; --snapshot-out writes §26.1 snapshot; --hash-out writes hashes.jsonl. "
+        "--headless: builds the project world (or --demo), runs N fixed ticks (§20.1), returns hashes (§22.2); --replay inputs.jsonl plays recorded input; --snapshot-out writes §26.1 snapshot; --hash-out writes hashes.jsonl; --profile adds per-system/physics/query timings and entity counts (ADR-0044). "
         "Without --headless (SDL build): opens a window, keyboard via Config/input.json, fixed tick + accumulator; --record inputs.jsonl saves the InputFrames for headless replay.",
-        "akeir run --headless [--ticks N] [--seed S] [--world ID] [--hash-every K] [--hash-out f] [--snapshot-out f] [--replay f] [--demo] [--json]  |  akeir run [--ticks N] [--record f] [--width W --height H]", false, false, false, cmdRun});
+        "akeir run --headless [--ticks N] [--seed S] [--world ID] [--hash-every K] [--hash-out f] [--snapshot-out f] [--replay f] [--profile] [--demo] [--json]  |  akeir run [--ticks N] [--record f] [--width W --height H]", false, false, false, cmdRun});
     table.push_back({"run.status", {"run", "status"}, "Query", "Status/result of a run handle (§46.2)", "Lists or returns runs started in this `akeir serve` session (run.start returns result.run).", "akeir run status [run_id]", true, false, true, cmdRunStatus});
     table.push_back({"dump", {"dump"}, "RuntimeControl", "Dump an entity's runtime state (§25)",
         "Builds the world, optionally advances --ticks N, and dumps the entity (runtimeOnly values included). `akeir dump world --all` returns the full snapshot.",

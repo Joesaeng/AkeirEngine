@@ -2,7 +2,7 @@
   "$schema": "game://schema/project/1",
   "schemaVersion": 1,
   "name": "TestArena",
-  "description": "PoC sample: 2D top-down arena (design doc \u00a771). Player WASD + melee goblins.",
+  "description": "PoC sample: 2D top-down arena (design doc §71). Player WASD + melee goblins.",
   "tickRate": 60,
   "seed": 381251,
   "defaultWorld": "world_01m0j3qp6ce00agtz4r2hnntzy",
@@ -14,5 +14,23 @@
     "Assets/**",
     "Tests/**",
     "Source/**"
-  ]
+  ],
+  "physics": {
+    "layers": {
+      "Default": [
+        "Default",
+        "Player",
+        "Enemy"
+      ],
+      "Player": [
+        "Enemy",
+        "Default"
+      ],
+      "Enemy": [
+        "Enemy",
+        "Player",
+        "Default"
+      ]
+    }
+  }
 }

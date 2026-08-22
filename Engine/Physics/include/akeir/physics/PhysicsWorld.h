@@ -37,8 +37,8 @@ struct BodyDesc {
     float radius = 0.5f;      // circle / capsule
     Vec2 offset{};
     bool isSensor = false;
-    std::uint16_t layerBits = 0x0001;   // collision category (이후 layer 이름 → bit 매핑)
-    std::uint16_t maskBits = 0xFFFF;
+    std::uint64_t layerBits = 1;        // collision category bit (project.json physics.layers, ADR-0043)
+    std::uint64_t maskBits = ~0ULL;     // partners' bits; Box2D collides when both sides accept
 };
 
 struct BodyState {

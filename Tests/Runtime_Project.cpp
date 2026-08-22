@@ -1,6 +1,7 @@
 // Runtime_Project.cpp — 설계 문서 §6 (문서 모델), §7 (id index, selector), §29 (validate), §34 (prefab resolve), §5.3 (canonical save), §3.1 S-A (round-trip)
 #include <doctest/doctest.h>
 #include "akeir/runtime/Components.h"
+#include "akeir/runtime/PhysicsLayers.h"
 #include "akeir/runtime/Project.h"
 #include "akeir/serialization/Canonical.h"
 #include "TestPng.h"
@@ -308,4 +309,49 @@ TEST_CASE("Assets: validate reports missing source, bad rects, unknown sub-asset
     CHECK(has(r3, "ASSET_SUBASSET_MISSING"));                  // the bad rect was dropped, so the ref no longer resolves
     t.sidecar(Json::array({Json{{"name", "a"}, {"kind", "sprite"}, {"rect", Json::array({0, 0, 2, 2})}}}), "Assets/Textures/missing.png");
     CHECK(has(t.rules(), "ASSET_SOURCE_MISSING"));
+}
+
+// ---- collision layers (ADR-0043) ----
+TEST_CASE("PhysicsLayers: project.json physics.layers → symmetric category/mask bits; undeclared partners are problems") {
+    std::vector<std::pair<std::string, std::string>> problems;
+    Json pj = Json{{"physics", Json{{"layers", Json{{"Player", Json::array({"Enemy", "Pickup"})}, {"Enemy", Json::array({"Enemy"})}, {"Pickup", Json::array()}, {"Effect", Json::array()}, {"Weapon", Json::array({"Enemy", "Ghost"})}}}}}};
+    PhysicsLayers pl = PhysicsLayers::fromProjectJson(pj, &problems);
+    CHECK(pl.declared());
+    CHECK(pl.names().size() == 5);
+    REQUIRE(problems.size() == 1);
+    CHECK(problems[0].second.find("undeclared layer 'Ghost'") != std::string::npos);
+    CHECK(pl.collides("Player", "Enemy"));
+    CHECK(pl.collides("Enemy", "Player"));          // symmetric even though only Player listed Enemy
+    CHECK(pl.collides("Pickup", "Player"));          // Player listed Pickup
+    CHECK(pl.collides("Enemy", "Enemy"));
+    CHECK_FALSE(pl.collides("Pickup", "Enemy"));
+    CHECK_FALSE(pl.collides("Effect", "Player"));
+    CHECK_FALSE(pl.collides("Effect", "Effect"));
+    CHECK(pl.collides("Weapon", "Enemy"));
+    CHECK(pl.bits("Player").category == 1ULL);
+    CHECK(pl.bits("Enemy").category == 2ULL);
+    CHECK(pl.bits("Effect").mask == 0ULL);
+    CHECK(pl.bits("Nope").mask == ~0ULL);            // undeclared → collide with everything (validate reports it)
+    PhysicsLayers none = PhysicsLayers::fromProjectJson(Json::object());
+    CHECK_FALSE(none.declared());
+    CHECK(none.collides("A", "B"));
+    CHECK(pl.toJson()["Enemy"] == Json::array({"Player", "Enemy", "Weapon"}));
+}
+
+TEST_CASE("Project: validate reports Collider2D.layer names that are not declared in physics.layers (ADR-0043)") {
+    AssetProject t;   // a minimal temp project
+    Json prj = Json{{"$schema", "game://schema/project/1"}, {"schemaVersion", 1}, {"name", "L"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"},
+                    {"physics", Json{{"layers", Json{{"Player", Json::array({"Enemy"})}, {"Enemy", Json::array()}}}}}};
+    std::ofstream(t.dir / "project.json") << prj.dump(2);
+    Json w = Json{{"$schema", "game://schema/world/1"}, {"schemaVersion", 1}, {"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"name", "W"},
+                  {"entities", Json{{"entity_01j5xq8z3mf0n9k2c7p4rtvw70", Json{{"name", "P"}, {"components", Json{{"Transform", Json::object()}, {"Collider2D", Json{{"layer", "Player"}}}, {"RigidBody2D", Json::object()}}}}},
+                                    {"entity_01j5xq8z3mf0n9k2c7p4rtvw71", Json{{"name", "X"}, {"components", Json{{"Transform", Json::object()}, {"Collider2D", Json{{"layer", "Lava"}}}, {"RigidBody2D", Json::object()}}}}}}}};
+    std::ofstream(t.dir / "Worlds" / "W.world.json") << w.dump(2);
+    std::vector<Diagnostic> d;
+    auto p = Project::load(t.dir.string(), d);
+    REQUIRE(p);
+    CHECK(p->physicsLayers().declared());
+    int unknown = 0;
+    for (const auto& x : p->validate()) if (x.ruleId == "PHYSICS_LAYER_UNKNOWN") { ++unknown; CHECK(x.message.text.find("'Lava'") != std::string::npos); }
+    CHECK(unknown == 1);
 }

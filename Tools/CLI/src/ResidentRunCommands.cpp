@@ -111,6 +111,7 @@ Envelope cmdRunStep(Context& ctx) {
     r["stepped"] = ticks;
     r["hashBefore"] = toHex64(before);
     r["contactEventsLastTick"] = run->world->contactEvents().size();
+    if (ctx.args.has("profile")) { r["profile"] = run->world->profileJson(); run->world->resetProfile(); }   // ADR-0044: profile of the ticks since the last profiled step
     return Envelope::success("run.step", r);
 }
 
@@ -182,7 +183,7 @@ Envelope cmdRunList(Context& ctx) {
 
 void registerResidentRunCommands(std::vector<CommandSpec>& t) {
     t.push_back({"run.open", {"run", "open"}, "RuntimeControl", "Open a resident play world (ADR-0041)", "Builds the world once inside `akeir serve` / the MCP server and keeps it alive; returns a run id for run step/inspect/query/snapshot/close. Requires the resident process (RUN_REQUIRES_SERVE otherwise).", "akeir run open [--world W] [--seed S] [--json]", false, false, false, cmdRunOpen});
-    t.push_back({"run.step", {"run", "step"}, "RuntimeControl", "Advance a resident run", "Simulates --ticks N (default 1) with the same scripted input on every tick (--input '{\"MoveX\":1,\"Attack\":1}' — action names from Config/input.json). Returns tick, hash, contact event count.", "akeir run step <run> [--ticks N] [--input '{\"MoveX\":1}'] [--json]", false, false, false, cmdRunStep});
+    t.push_back({"run.step", {"run", "step"}, "RuntimeControl", "Advance a resident run", "Simulates --ticks N (default 1) with the same scripted input on every tick (--input '{\"MoveX\":1,\"Attack\":1}' — action names from Config/input.json). Returns tick, hash, contact event count.", "akeir run step <run> [--ticks N] [--input '{\"MoveX\":1}'] [--profile] [--json]", false, false, false, cmdRunStep});
     t.push_back({"run.inspect", {"run", "inspect"}, "Query", "Dump a live entity of a resident run", "Runtime state (runtimeOnly values included) of one entity at the current tick. Selector: id (also runtime-spawned), name, name:X, path:A/B.", "akeir run inspect <run> <selector> [--json]", true, false, true, cmdRunInspect});
     t.push_back({"run.query", {"run", "query"}, "Query", "Query live entities of a resident run", "--with A,#tag --without B over the live world (runtime-spawned entities included); --components adds dumps.", "akeir run query <run> [--with A,B] [--without C] [--components] [--limit N] [--json]", true, false, true, cmdRunQuery});
     t.push_back({"run.snapshot", {"run", "snapshot"}, "Query", "Snapshot of a resident run (§26.1)", "The full §26.1 snapshot of the live world; --out writes it canonically instead of returning it.", "akeir run snapshot <run> [--out f.json] [--json]", true, false, true, cmdRunSnapshot});

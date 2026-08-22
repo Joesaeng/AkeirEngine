@@ -4,6 +4,7 @@ add_library(akeir_runtime STATIC
   src/Components.cpp
   src/Project.cpp
   src/Assets.cpp
+  src/PhysicsLayers.cpp
 )
 add_library(akeir::runtime ALIAS akeir_runtime)
 target_include_directories(akeir_runtime PUBLIC include)
