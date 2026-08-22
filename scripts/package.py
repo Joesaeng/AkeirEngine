@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """AKEIR Engine release packager.
 
-    python scripts/package.py [--preset msvc-release] [--version 0.1] [--ref HEAD]
+    python scripts/package.py [--preset msvc-release] [--version 0.1.1] [--ref HEAD]
 
 Produces dist/AKEIR-<version>.zip containing
   - every git-tracked file at <ref>  (git archive; no build/, .cpm-cache/, Cache/)
@@ -32,7 +32,7 @@ def run(cmd, **kw):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--preset", default="msvc-release")
-    ap.add_argument("--version", default="0.1")
+    ap.add_argument("--version", default="0.1.1")
     ap.add_argument("--ref", default="HEAD")
     a = ap.parse_args()
 

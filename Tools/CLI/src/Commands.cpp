@@ -21,7 +21,7 @@ Envelope cmdVersion(Context& ctx) {
     Json r = Json::object();
     r["engine"] = "AKEIR";
     r["engineVersion"] = AKEIR_VERSION_STRING;
-    r["release"] = "v0.1.0";
+    r["release"] = "v0.1.1";
     r["fpFlagsHash"] = AKEIR_FP_FLAGS_HASH;      // §22.3 replay header / §41
     r["fpFlags"] = AKEIR_FP_FLAGS_STRING;
 #if defined(_MSC_VER) && !defined(__clang__)
