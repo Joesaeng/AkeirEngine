@@ -18,6 +18,7 @@
 #include "akeir/core/Diagnostic.h"
 #include "akeir/core/Id.h"
 #include "akeir/core/Json.h"
+#include "akeir/runtime/Assets.h"
 
 #include <map>
 #include <optional>
@@ -53,6 +54,11 @@ public:
 
     // ---- 문서 ----
     const std::map<std::string, Json>& documents() const { return docs_; }
+    /// Assets/**/*.meta.json sidecars (§37, ADR-0037) parsed from the documents: id → source image + sprite sub-assets.
+    /// Sidecars are ordinary documents (kind "asset"): created by `asset.import`, patched by `document.patch`, canonical, undoable.
+    const AssetTable& assets() const { return assets_; }
+    /// Assets/**/*.meta.json 문서 경로들 (정렬)
+    std::vector<std::string> assetDocs() const;
     const Json* document(std::string_view path) const;
     Json* documentMut(std::string_view path);               // ChangeSet 적용용 (Phase 3). 적용 후 reindex() 필요
     void setDocument(const std::string& path, Json doc);     // 새 문서 추가/교체 + reindex
@@ -106,11 +112,14 @@ private:
     std::map<std::string, Json> docs_;                 // path → document (정렬된 맵: 결정적 순회)
     std::map<std::string, DocLocation, std::less<>> index_;  // id → location
     std::map<std::string, std::vector<std::string>> duplicates_; // id → 중복 위치들 (reindex 가 채움)
+    AssetTable assets_;                                // Assets/**/*.meta.json (ADR-0037)
+    std::vector<Diagnostic> assetDiags_;               // sidecar 구조 오류 (validate() 가 포함)
 
     Json resolvePrefabRec(std::string_view prefabId, std::vector<std::string>& chain, std::vector<Diagnostic>* diags, bool& ok) const;
     static bool applyOverrides(Json& components, const Json& container, const std::string& docPath, const std::string& basePointer,
                                std::vector<Diagnostic>* diags, const std::string& objectId);
-    void loadDirectory(const std::string& subdir, const std::string& suffix, const std::string& kind, std::vector<Diagnostic>& diags);
+    void loadDirectory(const std::string& subdir, const std::string& suffix, const std::string& kind, std::vector<Diagnostic>& diags, bool recursive = false);
+    void parseAssetDocs();   // docs_ 의 Assets/**/*.meta.json → assets_ + assetDiags_ (reindex 가 부른다)
 };
 
 /// 문서 헤더 키의 고정 순서 (§5.3)

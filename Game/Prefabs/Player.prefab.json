@@ -27,7 +27,7 @@
       "fixedRotation": true
     },
     "SpriteRenderer": {
-      "sprite": "",
+      "sprite": "asset_01m0mcsvrae9vt1rp61tct73am#sprites/player",
       "layer": "Character",
       "tint": [1, 1, 1, 1],
       "sortingOrder": 10

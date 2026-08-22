@@ -13,7 +13,7 @@ Two execution models (ADR-0011, 0029): **one-shot** (the project is opened and c
 | `src/ProjectCommands.cpp` | reads: `project info`, `validate [--fix]`, `fmt`, `schema`, `entity list`, `explain`, `refs`. Shared `openProject()` |
 | `src/InitCommand.cpp` | `project init <name> [--dir D] [--tick-rate] [--seed] [--force]` — creates an empty project (works without a project; not forwarded to serve) |
 | `src/RunCommands.cpp` | play world: `run --headless`, `dump`, `query` |
-| `src/MutationCommands.cpp` | writes (all through `CommandBus`): `entity create\|delete\|rename\|reparent`, `component add\|remove`, `set`, `tag add\|remove`, `prefab create\|instantiate`, `world create`, `apply`, `undo\|redo\|history`, `cmd` |
+| `src/MutationCommands.cpp` | writes (all through `CommandBus`): `entity create\|delete\|rename\|reparent`, `component add\|remove`, `set`, `tag add\|remove`, `prefab create\|instantiate`, `world create`, `asset import`, `apply`, `undo\|redo\|history`, `cmd` |
 | `src/TestCommands.cpp` | `test [filter] [--junit f] [--results-dir d] [--no-artifacts] [--update-golden] [--list]` — the `Engine/Testing` runner, exit 3 on failure. SDL builds inject the capture hook |
 | `src/SdlCommands.cpp` | `capture`, `input map`, windowed `run` (without `--headless`), `installCaptureHooks`. Without `AKEIR_HAS_SDL` everything returns `FEATURE_UNAVAILABLE` |
 | `src/Serve.h/.cpp` | `ServeHost` (resident Project + single CommandBus + run registry, JSON-RPC dispatch), `akeir serve` (Winsock loopback NDJSON + token / `--stdio`), `tryRemote` (thin client), `serve status\|stop` |

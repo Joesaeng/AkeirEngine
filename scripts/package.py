@@ -79,7 +79,7 @@ def main():
 - git: {sha} {' '.join(tags)}
 - built: {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} preset {a.preset}, compiler {version_json.get('compiler')}, fpFlagsHash {version_json.get('fpFlagsHash')}
 - bin/akeir.exe sha256 {exe_sha}
-- reference: `cd Game && ..\\bin\\akeir.exe run --headless --ticks 600 --json` → result.finalHash 0xbc23e49a65efb2e8
+- reference: `cd Game && ..\\bin\\akeir.exe run --headless --ticks 600 --json` → result.finalHash 0x4ac7b45c37618374
 
 Start with QUICKSTART.md.
 """

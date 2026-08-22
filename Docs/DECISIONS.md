@@ -231,3 +231,15 @@
 - **검증**: `Game/` 을 CatSurvivor 로 바꾼 채 수정 없는 `akeir_tests.exe` 80/80 통과, `CatSurvivor.exe` 생성·실행, `akeir test` 통과. 샘플 복원 후 finalHash `0xbc23e49a65efb2e8` 불변.
 - **영향**: Game/Source 와 fixture Source 의 C++ 이 두 벌이다(의도). 게임 실행 파일 이름은 `Game/project.json` 의 `name` 에서 오며 `CMAKE_CONFIGURE_DEPENDS` 로 바뀌면 재구성된다.
 - **참조**: §60, §76, PRINCIPLES §3/§16
+
+## ADR-0037 텍스처 asset: §37 sidecar 를 문서로 취급하고 `asset.import` 로 만들며, renderer 는 `asset_…#sprites/<name>` 을 texture region 으로 그린다
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P0 — 코덱스는 스프라이트를 `Renderer2D.cpp` 에 하드코딩해야 했다).
+- **결정**:
+  1. **형식은 설계 정본 §37 그대로** — `Assets/**/<file>.png.meta.json` (`$schema game://schema/asset-meta/1`, `id asset_…`, `source`, `importer Texture2D`, `settings {filter: nearest|linear, pixelsPerUnit}`, `subAssets[{name, kind: sprite, rect [x,y,w,h], pivot}]`). 피드백이 제안한 별도 `*.asset.json`/grid 선언 형식은 만들지 않는다(§88.7: 이름이 sub-asset 을 소유한다 — grid 는 import 시점의 편의일 뿐 파일에는 rect 로 남는다).
+  2. **sidecar 는 문서다** (`Project::documents()` 의 `Assets/…` 경로, kind `asset`): `reindex()` 가 `AssetTable`(id → source/sprites) 로 파싱하고 asset id 를 index 에 넣어 `locate`/`refs`/중복 id 검출이 그대로 동작한다. canonical 직렬화(헤더 순서에 `source/importer/importerVersion/settings/subAssets/rect/pivot` 추가)·`fmt`·`document.patch`·undo 가 전부 적용된다 — "persistent mutation 은 CommandBus 로" 를 지킨다.
+  3. **`asset.import {source, grid?, names?, pixelsPerUnit?, filter?, pivot?}`** (Mutation command, CLI `akeir asset import <png> [--grid WxH --names a,b] [--ppu] [--filter] [--pivot]`, MCP 는 `apply` 의 op): PNG 는 사용자가 `Assets/` 에 두고, 명령이 IHDR 에서 크기를 읽어 sidecar 를 **생성된 UUIDv7 id** 와 함께 쓴다. grid 는 row-major 로 이름 하나씩(이름 수 ≤ 셀 수), grid 없으면 전체 이미지가 파일 stem 이름의 sprite 하나. 사람이 유효한 id 를 손으로 쓸 수 없다는 점이 이 명령의 존재 이유다.
+  4. **검증**: `ASSET_META_INVALID`, `ASSET_SOURCE_MISSING`, `ASSET_SOURCE_INVALID`(PNG 아님), `ASSET_SUBASSET_RECT_INVALID`(음수/0/이미지 초과 — IHDR 로 검사), `ASSET_SUBASSET_MISSING`(ref 의 `#sprites/<name>` 없음 — 후보 이름을 메시지에), `REF_DANGLING`(sidecar 없는 asset id). 잘못된 ref 는 `property.set` 의 commit 검증에서 거부된다.
+  5. **렌더**: `PlayWorld` 가 `AssetTable` 사본을 들고(`world.assets()`), `Renderer2D` 가 asset id 별로 `SDL_LoadPNG → SDL_CreateTextureFromSurface` 를 캐시한다(실패는 한 번만 경고하고 placeholder 도형). 크기 = rect / pixelsPerUnit × Transform.scale, pivot 기준 배치, `tint` 는 color/alpha mod(흰색 = 원본), `flipX/Y` 는 `SDL_RenderTextureRotated`, nearest 는 `SDL_SCALEMODE_NEAREST`. software rasterizer 경로라 같은 world → 같은 PNG 바이트 — 골든 계약 유지(Tests/Render_Capture 가 픽셀 단위로 검사).
+- **효과**: 샘플 `Game/Assets/Textures/arena.png`(48×16, player/goblin/goblin_elite) 를 `akeir asset import … --grid 16x16 --names …` 로 등록하고 prefab 3개의 `SpriteRenderer.sprite` 를 `set` 으로 연결 — 데이터만으로 끝난다. reflected 문자열이 바뀌어 샘플 기준 finalHash 가 `0x4ac7b45c37618374` 로 이동(불변 fixture 는 `0xbc23…` 유지).
+- **만들지 않은 것**: 텍스처 atlas 생성, `Cache/texture/<key>.bin` 파생 캐시(§37 — PNG 직접 로드로 충분), 애니메이션 프레임, `file.*` op(PNG 자체를 command 로 추가), 이미지 크기 외의 PNG 검증(loader 가 실패하면 경고).
+- **참조**: §37, §88.7, §27, ADR-0026

@@ -3,6 +3,7 @@ add_library(akeir_runtime STATIC
   src/Application.cpp
   src/Components.cpp
   src/Project.cpp
+  src/Assets.cpp
 )
 add_library(akeir::runtime ALIAS akeir_runtime)
 target_include_directories(akeir_runtime PUBLIC include)

@@ -11,14 +11,18 @@
 
 #include "akeir/core/Json.h"
 #include "akeir/ecs/PlayWorld.h"
+#include "akeir/runtime/Assets.h"
 
 #include <memory>
 #include <optional>
+#include <map>
+#include <set>
 #include <string>
 
 struct SDL_Window;
 struct SDL_Renderer;
 struct SDL_Surface;
+struct SDL_Texture;
 
 namespace akeir {
 
@@ -52,7 +56,11 @@ public:
 private:
     Renderer2D() = default;
     SDL_Renderer* renderer_ = nullptr;
-    SDL_Surface* surface_ = nullptr;   // software 타깃일 때 소유
+    SDL_Surface* surface_ = nullptr;
+    // texture cache per asset id (ADR-0037). nullptr = load failed (warned once); textures are owned by this renderer
+    std::map<std::string, SDL_Texture*> textures_;
+    std::set<std::string> warnedAssets_;
+    SDL_Texture* textureFor(const AssetMeta& asset);   // software 타깃일 때 소유
     int width_ = 0, height_ = 0;
 };
 

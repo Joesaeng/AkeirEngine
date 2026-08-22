@@ -1,0 +1,32 @@
+{
+  "$schema": "game://schema/asset-meta/1",
+  "schemaVersion": 1,
+  "id": "asset_01m0mcsvrae9vt1rp61tct73am",
+  "source": "Assets/Textures/arena.png",
+  "importer": "Texture2D",
+  "importerVersion": 1,
+  "settings": {
+    "filter": "nearest",
+    "pixelsPerUnit": 16
+  },
+  "subAssets": [
+    {
+      "name": "player",
+      "kind": "sprite",
+      "rect": [0, 0, 16, 16],
+      "pivot": [0.5, 0.5]
+    },
+    {
+      "name": "goblin",
+      "kind": "sprite",
+      "rect": [16, 0, 16, 16],
+      "pivot": [0.5, 0.5]
+    },
+    {
+      "name": "goblin_elite",
+      "kind": "sprite",
+      "rect": [32, 0, 16, 16],
+      "pivot": [0.5, 0.5]
+    }
+  ]
+}

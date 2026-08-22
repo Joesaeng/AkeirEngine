@@ -19,6 +19,7 @@
 #include "akeir/reflection/PropertyMeta.h"
 #include "akeir/reflection/Registry.h"
 #include "akeir/runtime/Application.h"
+#include "akeir/runtime/Assets.h"
 #include "akeir/runtime/Project.h"
 
 #include <functional>
@@ -99,6 +100,8 @@ public:
     std::uint64_t seed() const { return cfg_.seed; }
     ecs_world_t* flecs() { return world_; }
     const std::string& worldId() const { return worldId_; }
+    /// Assets/**/*.meta.json of the project this world was built from (ADR-0037) — renderers resolve "asset_…#sprites/x" here
+    const AssetTable& assets() const { return assets_; }
 
 private:
     PlayWorld();
@@ -109,6 +112,7 @@ private:
     std::unique_ptr<PhysicsWorld> physics_;
     PlayWorldConfig cfg_;
     std::string worldId_;
+    AssetTable assets_;
     std::vector<std::string> ids_;                    // 정렬 유지
     std::vector<std::pair<std::string, SystemFn>> systems_;
     std::vector<std::pair<std::string, SpawnHook>> spawnHooks_;

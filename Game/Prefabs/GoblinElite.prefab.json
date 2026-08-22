@@ -10,6 +10,7 @@
     "/components/EnemyAI/damage": 20,
     "/components/Health/max": 80,
     "/components/Movement/speed": 4,
+    "/components/SpriteRenderer/sprite": "asset_01m0mcsvrae9vt1rp61tct73am#sprites/goblin_elite",
     "/components/SpriteRenderer/tint": [1, 0.5, 0.5, 1],
     "/components/Transform/scale": [1.3, 1.3, 1]
   }

@@ -21,7 +21,7 @@ commit(cs): base check → Cache/journal/<cs>.json → applyOps on the project �
 | `include/akeir/commands/ChangeSet.h`, `src/ChangeSet.cpp` | §78, §10.1, §9.2 | `ChangeOp{op, doc, path, from, value, before, blob, beforeBlob}`, `ChangeSet{id, tx, actor, createdAt, intent, base, ops, touched, lossy, diagnostics}`, `toJson/fromJson`, `inverse()`, `compose()`, `applyOps(docs, ops)`, `escapeToken/unescapeToken` |
 | `include/akeir/commands/History.h`, `src/History.cpp` | §9.2, §10, §49 | `Cache/history/history.jsonl` (append-only) + `cursor.json` + `idempotency.json`, `Cache/journal/<cs>.json` (write-ahead) |
 | `include/akeir/commands/CommandBus.h`, `src/CommandBus.cpp` | §8, §9, §10, §49, §50 | `CommandKind`, `ChangeBuilder`, `CommandContext` (fail/resolveEntity/resolvePrefab/resolveWorldDoc), `CommandDef`, `CommandBus` (execute/apply/tx/undo/redo/recoverJournal), `nextOrderKey` |
-| `src/BuiltinCommands.cpp` | §8, §34, §78.1 | the 13 built-in Mutation commands + a JSON Schema for each one's args |
+| `src/BuiltinCommands.cpp` | §8, §34, §78.1 | the 14 built-in Mutation commands + a JSON Schema for each one's args |
 
 ## Command list (`akeir capabilities --json` → `result.busCommands[]`)
 
@@ -36,6 +36,7 @@ commit(cs): base check → Cache/journal/<cs>.json → applyOps on the project �
 | `prefab.create` | `{name, components?, base?, set?, add?, remove?, tags?}` | creates `Prefabs/<Name>.prefab.json` |
 | `prefab.instantiate` | `{prefab, world?, name?, parent?, position?, set?, tags?}` | sugar over `entity.create` |
 | `world.create` | `{name}` | `Worlds/<Name>.world.json` (empty entities) |
+| `asset.import` | `{source, grid?, names?, pixelsPerUnit?, filter?, pivot?, id?}` | Creates `Assets/<png>.meta.json` (§37, ADR-0037) with a generated `asset_` id; grid → one sprite per cell (row-major, named), no grid → one whole-image sprite |
 | `document.patch` | `{doc, ops:[RFC 6902]}` | Raw-edit escape hatch. `validate --fix` routes its `artifactChanges` through here. `copy` is not allowed |
 
 Selectors follow §7.4: id / id prefix / `name:X` / `path:World/Parent/Child`. Ambiguity → `AMBIGUOUS_SELECTOR` + candidates.

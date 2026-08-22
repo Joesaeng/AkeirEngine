@@ -3,6 +3,8 @@
 #include "akeir/runtime/Components.h"
 #include "akeir/runtime/Project.h"
 #include "akeir/serialization/Canonical.h"
+#include "TestPng.h"
+#include "akeir/core/Id.h"
 
 #include <filesystem>
 #include <fstream>
@@ -222,4 +224,88 @@ TEST_CASE("Project::create with an empty root resolves to the current directory 
     CHECK_FALSE(Project::load("", diags).has_value());   // no project.json in the test cwd — a diagnostic, not an exception
     REQUIRE(diags.size() == 1);
     CHECK(diags[0].ruleId == "PROJECT_NOT_FOUND");
+}
+
+// ---- asset sidecars (§37, ADR-0037) ----
+namespace {
+struct AssetProject {
+    fs::path dir;
+    std::string assetId = Id::generate("asset").str();
+    AssetProject() {
+        registerBuiltinComponents();
+        dir = fs::temp_directory_path() / "akeir_asset_test";
+        std::error_code ec;
+        fs::remove_all(dir, ec);
+        fs::create_directories(dir / "Assets" / "Textures");
+        fs::create_directories(dir / "Worlds");
+        akeirtest::writePng((dir / "Assets" / "Textures" / "sheet.png").string(), 4, 2, std::vector<std::uint8_t>(4 * 2 * 4, 255));
+        Json prj = Json{{"$schema", "game://schema/project/1"}, {"schemaVersion", 1}, {"name", "A"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}};
+        std::ofstream(dir / "project.json") << prj.dump(2);
+    }
+    ~AssetProject() { std::error_code ec; fs::remove_all(dir, ec); }
+    void sidecar(const Json& subs, const char* source = "Assets/Textures/sheet.png") {
+        Json m = Json{{"$schema", "game://schema/asset-meta/1"}, {"schemaVersion", 1}, {"id", assetId}, {"source", source}, {"importer", "Texture2D"}, {"settings", Json{{"filter", "nearest"}, {"pixelsPerUnit", 2}}}, {"subAssets", subs}};
+        std::ofstream(dir / "Assets" / "Textures" / "sheet.png.meta.json") << m.dump(2);
+    }
+    void world(const std::string& spriteRef) {
+        Json w = Json{{"$schema", "game://schema/world/1"}, {"schemaVersion", 1}, {"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"name", "W"},
+                      {"entities", Json{{"entity_01j5xq8z3mf0n9k2c7p4rtvw70", Json{{"name", "S"}, {"components", Json{{"Transform", Json::object()}, {"SpriteRenderer", Json{{"sprite", spriteRef}}}}}}}}}};
+        std::ofstream(dir / "Worlds" / "W.world.json") << w.dump(2);
+    }
+    std::vector<std::string> rules() {
+        std::vector<Diagnostic> d;
+        auto prj = Project::load(dir.string(), d);
+        REQUIRE(prj);
+        std::vector<std::string> out;
+        for (const auto& x : prj->validate()) out.push_back(x.ruleId);
+        return out;
+    }
+};
+bool has(const std::vector<std::string>& v, const char* r) { for (const auto& x : v) if (x == r) return true; return false; }
+} // namespace
+
+TEST_CASE("Assets: a sidecar is loaded as a document, indexed by id, and sprite refs resolve (ADR-0037)") {
+    AssetProject t;
+    t.sidecar(Json::array({Json{{"name", "a"}, {"kind", "sprite"}, {"rect", Json::array({0, 0, 2, 2})}}, Json{{"name", "b"}, {"kind", "sprite"}, {"rect", Json::array({2, 0, 2, 2})}, {"pivot", Json::array({0, 1})}}}));
+    t.world(t.assetId + "#sprites/b");
+    std::vector<Diagnostic> d;
+    auto prj = Project::load(t.dir.string(), d);
+    REQUIRE(prj);
+    CHECK(prj->assets().size() == 1);
+    CHECK(prj->assetDocs() == std::vector<std::string>{"Assets/Textures/sheet.png.meta.json"});
+    auto loc = prj->locate(t.assetId);
+    REQUIRE(loc);
+    CHECK(loc->kind == "asset");
+    const AssetMeta* a = prj->assets().find(t.assetId);
+    REQUIRE(a);
+    CHECK(a->pixelsPerUnit == 2.f);
+    CHECK(a->sprites.size() == 2);
+    std::string why;
+    const SpriteRegion* r = prj->assets().resolveSprite(Ref{t.assetId + "#sprites/b"}, nullptr, &why);
+    REQUIRE(r);
+    CHECK(r->x == 2); CHECK(r->pivot.y == 1.f); CHECK(why.empty());
+    CHECK(prj->assets().resolveSprite(Ref{t.assetId + "#sprites/zzz"}, nullptr, &why) == nullptr);
+    CHECK(why.find("no sprite 'zzz'") != std::string::npos);
+    for (const auto& x : prj->validate()) CHECK(x.ruleId == "JSON_NOT_CANONICAL");   // only the hand-written formatting, no asset errors
+    // refs: the entity's sprite property points at the asset
+    auto refs = prj->referencesTo(t.assetId);
+    REQUIRE(refs.size() == 1);
+    CHECK(refs[0].detail == "SpriteRenderer.sprite");
+}
+
+TEST_CASE("Assets: validate reports missing source, bad rects, unknown sub-assets and dangling asset ids (ADR-0037)") {
+    AssetProject t;
+    t.sidecar(Json::array({Json{{"name", "a"}, {"kind", "sprite"}, {"rect", Json::array({0, 0, 2, 2})}}}));
+    t.world(t.assetId + "#sprites/nope");
+    auto r1 = t.rules();
+    CHECK(has(r1, "ASSET_SUBASSET_MISSING"));
+    t.world("asset_01j5xq8z3mf0n9k2c7p4rtvw99#sprites/a");   // no such sidecar
+    CHECK(has(t.rules(), "REF_DANGLING"));
+    t.world(t.assetId + "#sprites/a");
+    t.sidecar(Json::array({Json{{"name", "a"}, {"kind", "sprite"}, {"rect", Json::array({3, 0, 2, 2})}}}));   // exceeds the 4x2 image
+    auto r3 = t.rules();
+    CHECK(has(r3, "ASSET_SUBASSET_RECT_INVALID"));
+    CHECK(has(r3, "ASSET_SUBASSET_MISSING"));                  // the bad rect was dropped, so the ref no longer resolves
+    t.sidecar(Json::array({Json{{"name", "a"}, {"kind", "sprite"}, {"rect", Json::array({0, 0, 2, 2})}}}), "Assets/Textures/missing.png");
+    CHECK(has(t.rules(), "ASSET_SOURCE_MISSING"));
 }

@@ -1,6 +1,7 @@
 // Renderer2D.cpp — SDL_Renderer 기반 placeholder 스프라이트 렌더 + PNG capture + golden 비교 (§27, §27.1)
 #include "akeir/render/Renderer2D.h"
 
+#include "akeir/core/Log.h"
 #include "akeir/runtime/Components.h"
 
 #include <SDL3/SDL.h>
@@ -32,6 +33,7 @@ std::unique_ptr<Renderer2D> Renderer2D::createSoftware(int width, int height, st
 }
 
 Renderer2D::~Renderer2D() {
+    for (auto& [id, tex] : textures_) if (tex) SDL_DestroyTexture(tex);
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (surface_) SDL_DestroySurface(surface_);
 }
@@ -73,7 +75,7 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     SDL_SetRenderDrawColor(renderer_, toByte(bg.r), toByte(bg.g), toByte(bg.b), 255);
     SDL_RenderClear(renderer_);
 
-    struct Item { int order; std::string id; SDL_FRect rect; Color color; bool circle; };
+    struct Item { int order; std::string id; SDL_FRect rect; Color color; bool circle; SDL_Texture* tex; SDL_FRect src; bool flipX, flipY; };
     std::vector<Item> items;
     for (const auto& id : world.entityIds()) {
         const SpriteRenderer* sp = world.get<SpriteRenderer>(id);
@@ -81,20 +83,54 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
         if (!sp || !t) continue;
         float w = 1.f, h = 1.f;
         bool circle = false;
-        if (const Collider2D* c = world.get<Collider2D>(id)) {
-            if (c->shape == ColliderShape::Box) { w = c->size.x; h = c->size.y; }
-            else { w = h = c->radius * 2.f; circle = c->shape == ColliderShape::Circle; }
+        SDL_Texture* tex = nullptr;
+        SDL_FRect src{};
+        Vec2 pivot{0.5f, 0.5f};
+        if (!sp->sprite.empty()) {
+            // ADR-0037: "asset_…#sprites/<name>" → texture region. Unresolvable refs are validate errors; here we fall back to the shape
+            const AssetMeta* asset = nullptr;
+            std::string why;
+            if (const SpriteRegion* reg = world.assets().resolveSprite(sp->sprite, &asset, &why)) {
+                if (SDL_Texture* loaded = textureFor(*asset)) {
+                    tex = loaded;
+                    src = SDL_FRect{static_cast<float>(reg->x), static_cast<float>(reg->y), static_cast<float>(reg->w), static_cast<float>(reg->h)};
+                    w = static_cast<float>(reg->w) / asset->pixelsPerUnit;
+                    h = static_cast<float>(reg->h) / asset->pixelsPerUnit;
+                    pivot = reg->pivot;
+                }
+            } else if (warnedAssets_.insert(sp->sprite.value).second) {
+                AKEIR_LOG(Warn, "render", "sprite_unresolved", "Sprite reference does not resolve; drawing the placeholder shape.", Json{{"game.entity", id}, {"sprite", sp->sprite.value}, {"why", why}});
+            }
+        }
+        if (!tex) {
+            if (const Collider2D* c = world.get<Collider2D>(id)) {
+                if (c->shape == ColliderShape::Box) { w = c->size.x; h = c->size.y; }
+                else { w = h = c->radius * 2.f; circle = c->shape == ColliderShape::Circle; }
+            }
         }
         w *= t->scale.x; h *= t->scale.y;
         SDL_FRect r;
         r.w = std::max(1.f, w * ppu);
         r.h = std::max(1.f, h * ppu);
-        r.x = cx + (t->position.x - camPos.x) * ppu - r.w * 0.5f;
-        r.y = cy - (t->position.y - camPos.y) * ppu - r.h * 0.5f;
-        items.push_back({sp->sortingOrder, id, r, sp->tint, circle});
+        r.x = cx + (t->position.x - camPos.x) * ppu - r.w * pivot.x;
+        r.y = cy - (t->position.y - camPos.y) * ppu - r.h * (1.f - pivot.y);
+        items.push_back({sp->sortingOrder, id, r, sp->tint, circle, tex, src, sp->flipX, sp->flipY});
     }
     std::stable_sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.order != b.order ? a.order < b.order : a.id < b.id; });
     for (const auto& it : items) {
+        if (it.tex) {
+            // tint multiplies the texture (white = unchanged); nearest filtering keeps pixel art crisp and the software path deterministic
+            SDL_SetTextureColorMod(it.tex, toByte(it.color.r), toByte(it.color.g), toByte(it.color.b));
+            SDL_SetTextureAlphaMod(it.tex, toByte(it.color.a));
+            if (it.flipX || it.flipY) {
+                SDL_FlipMode flip = static_cast<SDL_FlipMode>((it.flipX ? SDL_FLIP_HORIZONTAL : 0) | (it.flipY ? SDL_FLIP_VERTICAL : 0));
+                SDL_RenderTextureRotated(renderer_, it.tex, &it.src, &it.rect, 0.0, nullptr, flip);
+            } else {
+                SDL_RenderTexture(renderer_, it.tex, &it.src, &it.rect);
+            }
+            ++stats.sprites;
+            continue;
+        }
         SDL_SetRenderDrawColor(renderer_, toByte(it.color.r), toByte(it.color.g), toByte(it.color.b), toByte(it.color.a));
         if (it.circle) {
             // 원: 가로 스캔라인 사각형으로 근사 (software renderer 에서도 결정적)
@@ -114,6 +150,20 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
     }
     SDL_FlushRenderer(renderer_);   // software renderer 는 배치를 flush 해야 surface 에 픽셀이 있다 (readPixels/savePng 전에 필수)
     return stats;
+}
+
+SDL_Texture* Renderer2D::textureFor(const AssetMeta& asset) {
+    auto it = textures_.find(asset.id);
+    if (it != textures_.end()) return it->second;
+    SDL_Texture* tex = nullptr;
+    if (SDL_Surface* surf = SDL_LoadPNG(asset.sourceAbs.c_str())) {
+        tex = SDL_CreateTextureFromSurface(renderer_, surf);
+        SDL_DestroySurface(surf);
+        if (tex) SDL_SetTextureScaleMode(tex, asset.filter == "linear" ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
+    }
+    if (!tex) AKEIR_LOG(Warn, "render", "texture_load_failed", "Cannot load texture; entities using it draw as placeholder shapes.", Json{{"asset", asset.id}, {"source", asset.sourceAbs}, {"error", SDL_GetError()}});
+    textures_[asset.id] = tex;   // nullptr is cached too: warn once, not every frame
+    return tex;
 }
 
 void Renderer2D::present() {

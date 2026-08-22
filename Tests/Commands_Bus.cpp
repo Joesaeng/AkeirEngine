@@ -8,6 +8,7 @@
 #include "akeir/serialization/Canonical.h"
 #include "GameSystems.h"
 #include "akeir/core/Hash.h"
+#include "TestPng.h"
 
 #include <filesystem>
 #include <fstream>
@@ -539,4 +540,41 @@ TEST_CASE("CommandBus: tx handles carry a TTL and expire (§9.1)") {
     std::string tx2 = bus.beginTx();
     CHECK(bus.txInfo(tx2)["ttlMs"] == 600000);
     CHECK(bus.rollbackTx(tx2).ok);
+}
+
+TEST_CASE("asset.import writes a canonical sidecar with a fresh asset_ id and grid sprites — undo removes it (ADR-0037)") {
+    TempProject t;
+    std::error_code ec;
+    fs::create_directories(t.dir / "Assets" / "Textures", ec);
+    REQUIRE(akeirtest::writePng((t.dir / "Assets" / "Textures" / "sheet.png").string(), 32, 16, std::vector<std::uint8_t>(32 * 16 * 4, 200)));
+    CommandBus bus(*t.prj, BusOptions{"test"});
+    Envelope e = bus.execute("asset.import", Json{{"source", "Assets/Textures/sheet.png"}, {"grid", Json{{"cellWidth", 16}, {"cellHeight", 16}}}, {"names", Json::array({"hero", "foe"})}, {"pixelsPerUnit", 8}});
+    REQUIRE_MESSAGE(e.ok, e.toJson().dump());
+    const Json& r = e.result;
+    CHECK(r["doc"] == "Assets/Textures/sheet.png.meta.json");
+    CHECK(r["subAssets"] == Json::array({"hero", "foe"}));
+    std::string id = r["id"].get<std::string>();
+    CHECK(Id::validate(id).empty());
+    CHECK(fs::exists(t.dir / "Assets" / "Textures" / "sheet.png.meta.json"));
+    CHECK(t.fileIsCanonical("Assets/Textures/sheet.png.meta.json"));
+    // the live project sees it
+    const AssetMeta* a = t.prj->assets().find(id);
+    REQUIRE(a);
+    CHECK(a->sprites.size() == 2);
+    CHECK(a->sprites[1].x == 16);
+    CHECK(a->pixelsPerUnit == 8.f);
+    // a second import of the same png is refused; a grid without names is refused; a non-PNG is refused
+    CHECK(bus.execute("asset.import", Json{{"source", "Assets/Textures/sheet.png"}}).toJson()["error"]["ruleId"] == "DOCUMENT_EXISTS");
+    std::ofstream(t.dir / "Assets" / "Textures" / "other.png") << "not a png";
+    CHECK(bus.execute("asset.import", Json{{"source", "Assets/Textures/other.png"}}).toJson()["error"]["ruleId"] == "ASSET_SOURCE_MISSING");
+    // entities can now reference it and a wrong name is rejected at commit
+    std::string player = t.id("path:TestArena/Arena/Player");
+    CHECK(bus.execute("property.set", Json{{"entity", player}, {"component", "SpriteRenderer"}, {"path", "sprite"}, {"value", id + "#sprites/hero"}}).ok);
+    Envelope bad = bus.execute("property.set", Json{{"entity", player}, {"component", "SpriteRenderer"}, {"path", "sprite"}, {"value", id + "#sprites/villain"}});
+    CHECK_FALSE(bad.ok);
+    CHECK(bad.toJson()["error"]["ruleId"] == "VALIDATION_FAILED");
+    // undo twice: the property and then the sidecar itself
+    REQUIRE(bus.undo(2).ok);
+    CHECK_FALSE(fs::exists(t.dir / "Assets" / "Textures" / "sheet.png.meta.json"));
+    CHECK(t.prj->assets().empty());
 }

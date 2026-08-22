@@ -26,9 +26,9 @@ set G=%CD%\bin\akeir.exe
 cd Game
 %G% --help                                      # full command list (`%G% <command> --help` shows that command's usage)
 %G% version --json
-%G% capabilities --json                         # 15 tools, busCommands (13 write commands + argument schemas), exit/error code tables
+%G% capabilities --json                         # 15 tools, busCommands (14 write commands + argument schemas), exit/error code tables
 %G% project info --json
-%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0xbc23e49a65efb2e8
+%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0x4ac7b45c37618374
 %G% test --json                                 # 3 data-driven tests (Combat / Movement / Visual golden)
 %G% capture --ticks 300 --out Cache\capture\f.png --json   # CPU-rendered PNG
 %G% run --ticks 120                             # the same windowed run from the CLI (closes itself after 2 s). To just play, double-click bin\TestArena.exe
@@ -62,7 +62,8 @@ What you can do with data alone (no C++):
 - Physics (Box2D): `Collider2D` (box/circle/capsule) + `RigidBody2D` (static/kinematic/dynamic). **A `Collider2D` on its own has no body and blocks nothing** — give walls a `RigidBody2D {type: static}` too (`validate` warns with `COLLIDER_WITHOUT_BODY` and `--fix` adds it).
 - Player movement: `Collider2D` + `RigidBody2D` (dynamic, gravityScale 0) + `Movement` + `PlayerController` (MoveX/MoveY from input.json). The dependency chain (`Movement` → `RigidBody2D` → `Collider2D`) is listed under `x-requires` in `schema --all`; a missing link is rejected with `COMPONENT_DEPENDENCY_MISSING` (the whole creation is rolled back).
 - Enemy AI: `EnemyAI` (chases inside detectionRange, attacks inside attackRange, targetTag) + `Health`. **For an attack to have an effect, the target needs `Health` too.**
-- Camera: `Camera2D` (orthoSize, background). Sprites are drawn as shapes in the `SpriteRenderer.tint` color (no texture loading yet).
+- Camera: `Camera2D` (orthoSize, background).
+- **Textures**: drop a PNG under `Assets/`, register it — `%G% asset import Assets/Textures/cats.png --grid 16x16 --names hero,cat,fish --json` — and point sprites at it: `%G% set <selector> SpriteRenderer.sprite "<asset id>#sprites/hero"` (the id is in the import result / `Assets/Textures/cats.png.meta.json`). Pixel art stays crisp (nearest), `pixelsPerUnit` sets the world size, `tint`/`flipX`/`flipY` apply. Without a sprite ref an entity is drawn as a tinted shape. The sample's `Game/Assets/Textures/arena.png` shows the format.
 - Tests: write `Tests/**/*.test.json` **by hand** (setup / inputs / assert / determinism / capture golden) — format in `Engine/Testing/README.md`.
 
 What needs C++: new components/systems (e.g. projectiles, score, spawn waves). Add them under `Game/Source/` and rebuild per `Docs/BUILD.md` (VS2022 + bundled CMake/Ninja; `scripts\build.cmd msvc-release all`, tests in `build\msvc-release\Tests\akeir_tests.exe`). A `msvc-release` build also refreshes this zip's `bin\akeir.exe`, and you can rebuild while Claude Code's MCP server is running: the locked file is moved aside and the server switches to the new build on its next tool call (the response carries a `MCP_WORKER_RESTARTED` note). Every struct member must be `AKEIR_PROP`'d or `AKEIR_SKIP`'d — `akeir validate` reports `REFLECT_MEMBER_UNLISTED` otherwise.

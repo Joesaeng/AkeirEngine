@@ -11,7 +11,7 @@ AKEIR is a personal research engine; issues and pull requests are welcome, but t
 ## Workflow
 - Read `Docs/00-START-HERE.md`, then `Docs/STATUS.md` (what exists, what's next) and `Docs/CONVENTIONS.md` (naming, no `;` in test names, LF-only JSON).
 - Build: `scripts\build.cmd msvc-headless all` (fast, no SDL) or `msvc-release all` (SDL). Tests: `build\<preset>\Tests\akeir_tests.exe` and `cd Game && ..\build\<preset>\bin\akeir.exe test --json`.
-- Reference determinism value: `akeir run --headless --ticks 600 --json` in `Game/` → `0xbc23e49a65efb2e8`. If your change moves it, say why in the PR.
+- Reference determinism value: `akeir run --headless --ticks 600 --json` in `Game/` → `0x4ac7b45c37618374`. If your change moves it, say why in the PR.
 - Add a unit test under `Tests/` and, for behaviour visible to AI clients, a line in the relevant `Engine/*/README.md` or `Tools/CLI/README.md`.
 - Decisions → ADR in `Docs/DECISIONS.md`; design changes → mark `▶ v3` in `AKEIR.md`.
 

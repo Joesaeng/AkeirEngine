@@ -13,6 +13,7 @@
 //   prefab.create    {name, components?, base?, tags?}                            {id, doc}
 //   prefab.instantiate {prefab, world?, name?, parent?, position?, set?, tags?}   {id, path, doc}
 //   world.create     {name}                                                       {id, doc}
+//   asset.import     {source, grid?, names?, pixelsPerUnit?, filter?, pivot?}      {id, doc, subAssets}   ← Assets/<png>.meta.json sidecar (§37, ADR-0037)
 //   document.patch   {doc, ops:[RFC 6902]}                                        {doc, applied}   ← raw 편집 (validate --fix 의 artifactChanges 용)
 //
 //   인스턴스 entity(prefab 참조)의 component/property 변경은 문서의 set/add/remove 맵에 기록된다 (§78.1). 그래야 prefab 을 고치면 인스턴스가 따라간다.
@@ -21,6 +22,7 @@
 
 #include "akeir/core/Id.h"
 #include "akeir/reflection/Registry.h"
+#include "akeir/runtime/Assets.h"
 #include "akeir/serialization/Canonical.h"
 #include "akeir/serialization/ComponentJson.h"
 
@@ -550,6 +552,73 @@ bool prefabInstantiate(CommandContext& ctx) {
     return true;
 }
 
+// ---------------------------------------------------------------- asset.import (ADR-0037)
+//   The PNG already lives under Assets/ (the user drops it there); this writes the sidecar next to it with a fresh
+//   asset_ id and the sprite sub-assets: a grid (cellWidth × cellHeight, row-major, one name per cell) or, without a
+//   grid, one sprite covering the whole image named after the file stem.
+bool assetImport(CommandContext& ctx) {
+    const Json& a = ctx.args;
+    if (!a.contains("source") || !a["source"].is_string() || a["source"].get<std::string>().empty())
+        return ctx.fail(ErrorCategory::Usage, "ARG_REQUIRED", "asset.import needs 'source' (project-relative PNG path under Assets/, e.g. Assets/Textures/arena.png).");
+    std::string source = a["source"].get<std::string>();
+    std::replace(source.begin(), source.end(), '\\', '/');
+    if (source.rfind("Assets/", 0) != 0) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'source' must be inside Assets/ (got '" + source + "').", Json{{"source", source}});
+    const std::string doc = source + ".meta.json";
+    if (ctx.project.document(doc)) return ctx.fail(ErrorCategory::Conflict, "DOCUMENT_EXISTS", doc + " already exists (edit it with document.patch).", Json{{"doc", doc}});
+    const std::string abs = ctx.project.rootDir() + "/" + source;
+    int imgW = 0, imgH = 0;
+    if (!pngDimensions(abs, imgW, imgH)) return ctx.fail(ErrorCategory::NotFound, "ASSET_SOURCE_MISSING", source + " is not a readable PNG in this project.", Json{{"source", source}});
+    Json m = Json::object();
+    m["$schema"] = "game://schema/asset-meta/1";
+    m["schemaVersion"] = 1;
+    m["id"] = (a.contains("id") && a["id"].is_string() && !a["id"].get<std::string>().empty()) ? a["id"].get<std::string>() : Id::generate("asset").str();
+    if (!Id::validate(m["id"].get<std::string>()).empty() || Id::parse(m["id"].get<std::string>())->prefix() != "asset") return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'id' must be a valid asset_ id.");
+    m["source"] = source;
+    m["importer"] = "Texture2D";
+    m["importerVersion"] = 1;
+    Json settings = Json::object();
+    std::string filter = a.value("filter", "nearest");
+    if (filter != "nearest" && filter != "linear") return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'filter' must be nearest or linear.");
+    settings["filter"] = filter;
+    double ppu = a.contains("pixelsPerUnit") && a["pixelsPerUnit"].is_number() ? a["pixelsPerUnit"].get<double>() : 16.0;
+    if (ppu <= 0) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'pixelsPerUnit' must be positive.");
+    settings["pixelsPerUnit"] = ppu;
+    m["settings"] = settings;
+    Json pivot = a.contains("pivot") && a["pivot"].is_array() && a["pivot"].size() == 2 ? a["pivot"] : Json::array({0.5, 0.5});
+    Json subs = Json::array();
+    if (a.contains("grid")) {
+        const Json& g = a["grid"];
+        if (!g.is_object() || !g.contains("cellWidth") || !g.contains("cellHeight") || !g["cellWidth"].is_number_integer() || !g["cellHeight"].is_number_integer())
+            return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'grid' must be {cellWidth, cellHeight} in pixels.");
+        const int cw = g["cellWidth"].get<int>(), ch = g["cellHeight"].get<int>();
+        if (cw <= 0 || ch <= 0 || cw > imgW || ch > imgH) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "grid cell " + std::to_string(cw) + "x" + std::to_string(ch) + " does not fit the image " + std::to_string(imgW) + "x" + std::to_string(imgH) + ".");
+        const int cols = imgW / cw, rows = imgH / ch;
+        if (!a.contains("names") || !a["names"].is_array() || a["names"].empty())
+            return ctx.fail(ErrorCategory::Usage, "ARG_REQUIRED", "a grid needs 'names' (one per cell, row-major; sub-assets are addressed by name, §88.7). The image has " + std::to_string(cols) + "x" + std::to_string(rows) + " cells.");
+        const Json& names = a["names"];
+        if (static_cast<int>(names.size()) > cols * rows) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", std::to_string(names.size()) + " names but the grid has only " + std::to_string(cols * rows) + " cells.");
+        int i = 0;
+        for (const auto& n : names) {
+            if (!n.is_string() || n.get<std::string>().empty()) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "'names' must be non-empty strings.");
+            for (const auto& prev : subs) if (prev["name"] == n) return ctx.fail(ErrorCategory::Usage, "ARG_TYPE", "duplicate sprite name '" + n.get<std::string>() + "'.");
+            const int col = i % cols, row = i / cols;
+            subs.push_back(Json{{"name", n}, {"kind", "sprite"}, {"rect", Json::array({col * cw, row * ch, cw, ch})}, {"pivot", pivot}});
+            ++i;
+        }
+    } else {
+        std::string stem = source.substr(source.find_last_of('/') + 1);
+        if (auto dot = stem.find('.'); dot != std::string::npos) stem = stem.substr(0, dot);
+        std::string name = a.contains("names") && a["names"].is_array() && !a["names"].empty() && a["names"][0].is_string() ? a["names"][0].get<std::string>() : stem;
+        subs.push_back(Json{{"name", name}, {"kind", "sprite"}, {"rect", Json::array({0, 0, imgW, imgH})}, {"pivot", pivot}});
+    }
+    m["subAssets"] = subs;
+    if (!ctx.changes.addDocument(doc, m)) return setBuilderError(ctx);
+    Json names = Json::array();
+    for (const auto& s : subs) names.push_back(s["name"]);
+    ctx.result = Json{{"id", m["id"]}, {"doc", doc}, {"source", source}, {"width", imgW}, {"height", imgH}, {"subAssets", names}};
+    return true;
+}
+
 bool worldCreate(CommandContext& ctx) {
     const Json& a = ctx.args;
     if (!a.contains("name") || !a["name"].is_string() || a["name"].get<std::string>().empty())
@@ -624,6 +693,14 @@ void registerBuiltinCommands(CommandBus& bus) {
     bus.registerCommand({"document.patch", K::Mutation, "Apply raw RFC 6902 ops to one document (escape hatch; used by validate --fix for artifactChanges). 'before' is recorded automatically.",
                          schema({{"doc", str("project-relative document path")}, {"ops", Json{{"type", "array"}, {"items", Json{{"type", "object"}}}}}}, {"doc", "ops"}), {}, documentPatch});
     bus.registerCommand({"world.create", K::Mutation, "Create Worlds/<Name>.world.json with no entities.", schema({{"name", str("world name (also file name)")}}, {"name"}), {}, worldCreate});
+    bus.registerCommand({"asset.import", K::Mutation, "Create the Assets/<png>.meta.json sidecar for a PNG already under Assets/ (§37): a fresh asset_ id plus sprite sub-assets — a grid with one name per cell (row-major) or one whole-image sprite. Entities reference sprites as \"<id>#sprites/<name>\" in SpriteRenderer.sprite.",
+                         schema({{"source", str("project-relative PNG path under Assets/ (e.g. Assets/Textures/arena.png)")},
+                                 {"grid", Json{{"type", "object"}, {"description", "{cellWidth, cellHeight} in pixels — slices the sheet row-major; requires names"}}},
+                                 {"names", Json{{"type", "array"}, {"items", str("sprite name")}, {"description", "one per grid cell (row-major); without a grid, the single sprite's name (default: file stem)"}}},
+                                 {"pixelsPerUnit", Json{{"type", "number"}, {"description", "world units = pixels / pixelsPerUnit (default 16)"}}},
+                                 {"filter", Json{{"enum", Json::array({"nearest", "linear"})}, {"description", "texture sampling (default nearest — pixel art)"}}},
+                                 {"pivot", Json{{"type", "array"}, {"description", "[x, y] in 0..1 inside each sprite (default [0.5, 0.5])"}}},
+                                 {"id", str("optional explicit asset_ id (default: generated UUIDv7)")}}, {"source"}), {}, assetImport});
 }
 
 } // namespace akeir

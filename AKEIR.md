@@ -2419,6 +2419,8 @@ key = sha256( sourceBytesHash
 
 ---
 
+▶ v3 (ADR-0037): 구현됨 — sidecar 는 `Assets/**/<file>.png.meta.json` 문서(kind `asset`)로 `Project` 가 로드·index·canonical·undo 한다. `settings` 에 `pixelsPerUnit`, `subAssets[]` 에 `pivot` 추가. `akeir asset import <png> [--grid WxH --names …]` 가 생성된 `asset_` id 로 sidecar 를 만든다. `Cache/texture/<key>.bin`·`manifest.json` 파생 캐시는 만들지 않았다(PNG 직접 로드). 검증 규칙 `ASSET_*`.
+
 # 38. Asset Import CLI
 
 ```bash

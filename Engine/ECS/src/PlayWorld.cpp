@@ -108,6 +108,7 @@ std::unique_ptr<PlayWorld> PlayWorld::build(const Project& project, std::string_
     std::unique_ptr<PlayWorld> pw(new PlayWorld());
     pw->cfg_ = cfg;
     pw->worldId_ = std::string(worldId);
+    pw->assets_ = project.assets();
     pw->world_ = ecs_init();
     pw->physics_ = createBox2DWorld(cfg.physics);
 

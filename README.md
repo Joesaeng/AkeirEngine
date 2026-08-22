@@ -23,7 +23,7 @@
 scripts\build.cmd msvc-headless all            # no SDL: fastest; `msvc-release all` builds the SDL window/capture too
 build\msvc-headless\Tests\akeir_tests.exe
 cd Game
-..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json    # result.finalHash = 0xbc23e49a65efb2e8
+..\build\msvc-headless\bin\akeir.exe run --headless --ticks 600 --json    # result.finalHash = 0x4ac7b45c37618374
 ..\build\msvc-headless\bin\akeir.exe set name:Goblin Movement.speed 4.5   # edit a prefab (all instances), undoable
 ..\build\msvc-headless\bin\akeir.exe test --json                          # Tests/**/*.test.json
 ..\build\msvc-headless\bin\akeir.exe mcp                                  # MCP server over stdio

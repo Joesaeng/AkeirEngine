@@ -21,6 +21,7 @@ namespace {
 
 const char* kWorldSchema = "game://schema/world/1";
 const char* kPrefabSchema = "game://schema/prefab/1";
+const char* kAssetMetaSchema = "game://schema/asset-meta/1";   // §37 sidecar (ADR-0037)
 const char* kProjectSchema = "game://schema/project/1";
 constexpr int kMaxPrefabDepth = 16;
 
@@ -41,25 +42,29 @@ Diagnostic docError(const std::string& rule, const std::string& text, const std:
 } // namespace
 
 const std::vector<std::string>& headerKeyOrder() {
-    static const std::vector<std::string> k = {"$schema", "schemaVersion", "id", "name", "description", "notes", "tags",
+    static const std::vector<std::string> k = {"$schema", "schemaVersion", "id", "name", "kind", "description", "notes", "tags",
                                                "tickRate", "seed", "defaultWorld", "writable",
+                                               "source", "importer", "importerVersion", "settings", "subAssets", "rect", "pivot",
                                                "base", "prefab", "parent", "order", "set", "add", "remove", "components", "entities"};
     return k;
 }
 
 // ---------------------------------------------------------------- load
 
-void Project::loadDirectory(const std::string& subdir, const std::string& suffix, const std::string& kind, std::vector<Diagnostic>& diags) {
+void Project::loadDirectory(const std::string& subdir, const std::string& suffix, const std::string& kind, std::vector<Diagnostic>& diags, bool recursive) {
     fs::path dir = fs::path(rootDir_) / subdir;
     if (!fs::exists(dir)) return;
     std::vector<fs::path> files;
-    for (const auto& e : fs::directory_iterator(dir))
-        if (e.is_regular_file() && e.path().filename().string().size() > suffix.size() &&
-            e.path().filename().string().compare(e.path().filename().string().size() - suffix.size(), suffix.size(), suffix) == 0)
-            files.push_back(e.path());
+    auto consider = [&](const fs::directory_entry& e) {
+        const std::string fn = e.path().filename().generic_string();
+        if (e.is_regular_file() && fn.size() > suffix.size() && fn.compare(fn.size() - suffix.size(), suffix.size(), suffix) == 0) files.push_back(e.path());
+    };
+    std::error_code ec;
+    if (recursive) { for (const auto& e : fs::recursive_directory_iterator(dir, ec)) consider(e); }
+    else { for (const auto& e : fs::directory_iterator(dir, ec)) consider(e); }
     std::sort(files.begin(), files.end());
     for (const auto& f : files) {
-        std::string rel = (fs::path(subdir) / f.filename()).generic_string();
+        std::string rel = fs::relative(f, rootDir_, ec).generic_string();
         std::string err;
         auto j = readJsonFile(f.string(), &err);
         if (!j) { diags.push_back(docError("JSON_PARSE_ERROR", "Cannot parse " + rel + ": " + err, rel, "")); continue; }
@@ -70,6 +75,68 @@ void Project::loadDirectory(const std::string& subdir, const std::string& suffix
         (void)kind;
         docs_[rel] = std::move(*j);
     }
+}
+
+// docs_ 의 Assets/**/*.meta.json → assets_ (ADR-0037). 구조 오류는 assetDiags_ (validate() 가 포함). 깨진 sidecar 는 건너뛴다.
+void Project::parseAssetDocs() {
+    assets_ = AssetTable{};
+    assetDiags_.clear();
+    std::error_code ec;
+    auto bad = [&](const std::string& rel, const std::string& ptr, const std::string& ruleId, const std::string& text) { assetDiags_.push_back(docError(ruleId, text, rel, ptr)); };
+    for (const auto& rel : assetDocs()) {
+        const Json& m = docs_.at(rel);
+        if (!m.is_object()) { bad(rel, "", "DOCUMENT_NOT_OBJECT", rel + " must be a JSON object."); continue; }
+        if (m.value("$schema", "") != kAssetMetaSchema) bad(rel, "/$schema", "DOCUMENT_SCHEMA_MISMATCH", rel + ": $schema must be " + std::string(kAssetMetaSchema) + ".");
+        AssetMeta a;
+        a.metaPath = rel;
+        a.id = m.value("id", "");
+        if (a.id.empty() || !Id::validate(a.id).empty() || Id::parse(a.id)->prefix() != "asset") { bad(rel, "/id", "ASSET_META_INVALID", rel + ": 'id' must be a persistent id with prefix asset_ — create sidecars with `akeir asset import <png>` (§37)."); continue; }
+        a.importer = m.value("importer", "Texture2D");
+        if (a.importer != "Texture2D") { bad(rel, "/importer", "ASSET_META_INVALID", rel + ": importer '" + a.importer + "' is not supported (Texture2D only)."); continue; }
+        a.sourceRel = m.value("source", "");
+        if (a.sourceRel.empty()) a.sourceRel = rel.substr(0, rel.size() - 10);   // default: the sidecar's own file name without .meta.json
+        a.sourceAbs = (fs::path(rootDir_) / a.sourceRel).generic_string();
+        int imgW = 0, imgH = 0;
+        if (!fs::is_regular_file(a.sourceAbs, ec)) bad(rel, "/source", "ASSET_SOURCE_MISSING", rel + ": source image '" + a.sourceRel + "' does not exist.");
+        else if (!pngDimensions(a.sourceAbs, imgW, imgH)) bad(rel, "/source", "ASSET_SOURCE_INVALID", rel + ": source '" + a.sourceRel + "' is not a PNG (Texture2D importer reads PNG only).");
+        if (m.contains("settings") && m["settings"].is_object()) {
+            const Json& st = m["settings"];
+            a.filter = st.value("filter", "nearest");
+            if (a.filter != "nearest" && a.filter != "linear") bad(rel, "/settings/filter", "ASSET_META_INVALID", rel + ": settings.filter must be 'nearest' or 'linear'.");
+            if (st.contains("pixelsPerUnit")) {
+                if (!st["pixelsPerUnit"].is_number() || st["pixelsPerUnit"].get<double>() <= 0) bad(rel, "/settings/pixelsPerUnit", "ASSET_META_INVALID", rel + ": settings.pixelsPerUnit must be a positive number.");
+                else a.pixelsPerUnit = st["pixelsPerUnit"].get<float>();
+            }
+        }
+        if (m.contains("subAssets")) {
+            if (!m["subAssets"].is_array()) bad(rel, "/subAssets", "ASSET_META_INVALID", rel + ": subAssets must be an array.");
+            else {
+                std::size_t i = 0;
+                for (const auto& s : m["subAssets"]) {
+                    const std::string ptr = "/subAssets/" + std::to_string(i++);
+                    if (!s.is_object() || !s.contains("name") || !s["name"].is_string() || s["name"].get<std::string>().empty()) { bad(rel, ptr, "ASSET_META_INVALID", rel + ptr + ": a sub-asset needs a non-empty 'name'."); continue; }
+                    SpriteRegion r;
+                    r.name = s["name"].get<std::string>();
+                    if (s.value("kind", "sprite") != "sprite") { bad(rel, ptr + "/kind", "ASSET_META_INVALID", rel + ptr + ": only kind 'sprite' is supported."); continue; }
+                    if (!s.contains("rect") || !s["rect"].is_array() || s["rect"].size() != 4 || !s["rect"][0].is_number_integer()) { bad(rel, ptr + "/rect", "ASSET_META_INVALID", rel + ptr + ": 'rect' must be [x, y, w, h] in pixels."); continue; }
+                    r.x = s["rect"][0].get<int>(); r.y = s["rect"][1].get<int>(); r.w = s["rect"][2].get<int>(); r.h = s["rect"][3].get<int>();
+                    if (r.x < 0 || r.y < 0 || r.w <= 0 || r.h <= 0) { bad(rel, ptr + "/rect", "ASSET_SUBASSET_RECT_INVALID", rel + ptr + ": rect must have a non-negative origin and a positive size."); continue; }
+                    if (imgW > 0 && (r.x + r.w > imgW || r.y + r.h > imgH)) { bad(rel, ptr + "/rect", "ASSET_SUBASSET_RECT_INVALID", rel + ptr + ": rect [" + std::to_string(r.x) + ", " + std::to_string(r.y) + ", " + std::to_string(r.w) + ", " + std::to_string(r.h) + "] exceeds the image (" + std::to_string(imgW) + "x" + std::to_string(imgH) + ")."); continue; }
+                    if (s.contains("pivot") && s["pivot"].is_array() && s["pivot"].size() == 2) { r.pivot.x = s["pivot"][0].get<float>(); r.pivot.y = s["pivot"][1].get<float>(); }
+                    if (a.sprite(r.name)) { bad(rel, ptr + "/name", "ASSET_META_INVALID", rel + ptr + ": duplicate sub-asset name '" + r.name + "'."); continue; }
+                    a.sprites.push_back(std::move(r));
+                }
+            }
+        }
+        if (const AssetMeta* dup = assets_.find(a.id)) { bad(rel, "/id", "DUPLICATE_PERSISTENT_ID", "Asset id " + a.id + " is declared by more than one sidecar (" + dup->metaPath + ", " + rel + ")."); continue; }
+        assets_.add(std::move(a));
+    }
+}
+
+std::vector<std::string> Project::assetDocs() const {
+    std::vector<std::string> out;
+    for (const auto& [p, d] : docs_) if (p.rfind("Assets/", 0) == 0) out.push_back(p);
+    return out;
 }
 
 namespace {
@@ -98,7 +165,9 @@ std::optional<Project> Project::load(const std::string& rootDir, std::vector<Dia
         diagnostics.push_back(docError("SCHEMA_VERSION_NEWER_THAN_ENGINE", "project.json schemaVersion " + std::to_string(sv) + " is newer than engine " + std::to_string(kProjectSchemaVersion) + ".", "project.json", "/schemaVersion"));
     p.loadDirectory("Worlds", ".world.json", "world", diagnostics);
     p.loadDirectory("Prefabs", ".prefab.json", "prefab", diagnostics);
+    p.loadDirectory("Assets", ".meta.json", "asset", diagnostics, /*recursive*/ true);
     p.reindex();
+    for (const auto& d : p.assetDiags_) diagnostics.push_back(d);
     return p;
 }
 
@@ -156,6 +225,7 @@ std::vector<std::string> Project::prefabPaths() const {
 void Project::reindex() {
     index_.clear();
     duplicates_.clear();
+    parseAssetDocs();
     auto put = [&](const std::string& id, DocLocation loc) {
         auto it = index_.find(id);
         if (it != index_.end()) { duplicates_[id].push_back(it->second.doc + "#" + it->second.pointer); duplicates_[id].push_back(loc.doc + "#" + loc.pointer); return; }
@@ -163,12 +233,14 @@ void Project::reindex() {
     };
     for (const auto& [path, doc] : docs_) {
         if (!doc.is_object()) continue;
+        if (path.rfind("Assets/", 0) == 0) continue;   // asset ids are registered from assets_ below
         bool isWorld = path.rfind("Worlds/", 0) == 0;
         if (doc.contains("id") && doc["id"].is_string()) put(doc["id"].get<std::string>(), DocLocation{path, "", isWorld ? "world" : "prefab"});
         if (isWorld && doc.contains("entities") && doc["entities"].is_object())
             for (auto it = doc["entities"].begin(); it != doc["entities"].end(); ++it)
                 put(it.key(), DocLocation{path, "/entities/" + escapePointerToken(it.key()), "entity"});
     }
+    for (const auto& [id, a] : assets_.all()) put(id, DocLocation{a.metaPath, "", "asset"});   // ADR-0037
 }
 
 std::optional<DocLocation> Project::locate(std::string_view id) const {
@@ -419,6 +491,7 @@ std::vector<Diagnostic> Project::validate() const {
     // reflection completeness (ADR-0035): a component with an unlisted member is an engine/game code bug, not a data bug,
     // but it is surfaced here so `akeir validate` (and CI) fail loudly instead of the member silently vanishing.
     for (const auto& d : Registry::global().diagnostics()) out.push_back(d);
+    for (const auto& d : assetDiags_) out.push_back(d);   // sidecar 구조 오류 (ADR-0037)
     // 중복 id
     for (const auto& [id, where] : duplicates_) {
         Diagnostic d = Diagnostic::error("DUPLICATE_PERSISTENT_ID", "Persistent id " + id + " appears in more than one place: " + Json(where).dump() + ". Run `akeir id fix --keep <path>` (§7.3).")
@@ -427,6 +500,7 @@ std::vector<Diagnostic> Project::validate() const {
     }
     for (const auto& [path, doc] : docs_) {
         if (!doc.is_object()) continue;
+        if (path.rfind("Assets/", 0) == 0) continue;   // sidecars are checked by parseAssetDocs() (assetDiags_ above)
         bool isWorld = path.rfind("Worlds/", 0) == 0;
         const char* expectSchema = isWorld ? kWorldSchema : kPrefabSchema;
         if (doc.value("$schema", "") != expectSchema)
@@ -495,7 +569,14 @@ std::vector<Diagnostic> Project::validate() const {
                     std::string target(r.idPart());
                     if (!Id::validate(target).empty()) continue; // 형식 오류는 component 검증이 잡는다
                     std::string prefix(Id::parse(target)->prefix());
-                    if (prefix == "asset") continue;             // asset sidecar 는 이후 Phase
+                    if (prefix == "asset") {                     // ADR-0037: the sidecar and the sub-asset must exist
+                        const AssetMeta* am = nullptr;
+                        std::string why;
+                        const SpriteRegion* sr = assets_.resolveSprite(r, &am, &why);
+                        if (!am) out.push_back(docError("REF_DANGLING", "Property '" + p.name + "' references " + target + " but no Assets/**/*.meta.json sidecar declares that id.", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));
+                        else if (!sr) out.push_back(docError("ASSET_SUBASSET_MISSING", "Property '" + p.name + "': " + why + " (sidecar " + am->metaPath + ").", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId));
+                        continue;
+                    }
                     if (!locate(target))
                         out.push_back(docError("REF_DANGLING", "Property '" + p.name + "' references " + target + " which does not exist.", path, pointer + "/" + escapePointerToken(it.key()) + "/" + p.name, objectId)
                                           .at(LogicalLocation{objectId, it.key(), "/" + p.name}));

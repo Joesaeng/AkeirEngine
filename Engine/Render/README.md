@@ -8,7 +8,7 @@ Design doc §27 (capture is a first-class feature), §27.1 (capture for vision c
 
 ## What gets drawn (Phase 2 PoC)
 
-- Every entity with a `SpriteRenderer`, at `Transform.position` (x, y), in its `tint` color. Size = `Collider2D` (box: size, circle/capsule: radius×2) or a 1×1 unit, × `Transform.scale`. Circles are approximated by scanline rectangles (deterministic). Textures (the `sprite` Ref) are not loaded yet.
+- Every entity with a `SpriteRenderer`, at `Transform.position` (x, y). **With a sprite ref** (`sprite = "asset_…#sprites/<name>"`, ADR-0037) the texture region from the sidecar is drawn: size = rect / `pixelsPerUnit` × `Transform.scale`, placed by the sprite's `pivot`, `tint` multiplies the texture (white = unchanged), `flipX/flipY` flip it, `settings.filter` nearest (default) or linear. Textures are loaded once per asset id with `SDL_LoadPNG`; a ref that does not resolve is a `validate` error and draws the placeholder. **Without a sprite ref**: a `tint`-colored shape sized by `Collider2D` (box: size, circle/capsule: radius×2) or 1×1 unit, × `Transform.scale`; circles are approximated by scanline rectangles (deterministic).
 - Ordering: `sortingOrder` ascending, ties broken by entity id (deterministic).
 - Camera: the first entity (by id) with `Camera2D.primary`; centered on its `Transform.position`, `orthoSize` = vertical half-height in world units, `background`. Without one: origin, 10. +Y is up.
 - **The software target is a CPU rasterizer**, so the same world → the same PNG bytes (verified by the `Render_Capture.cpp` test). Window-target pixels (direct3d11 etc.) are never used for golden comparison (§27.1: goldens come from the same rasterizer).
@@ -26,4 +26,4 @@ A cut-down pixelmatch: a pixel mismatches when its maximum channel difference (0
 
 ## Not implemented
 
-The SDL_GPU path (§3 "SDL_GPU first" — SDL_Renderer is enough for the PoC, ADR-0027), textures/sprite atlases, text, camera rotation/aspect correction, layer filtering, the offscreen GL driver.
+The SDL_GPU path (§3 "SDL_GPU first" — SDL_Renderer is enough for the PoC, ADR-0027), atlas generation / animation frames, text, camera rotation/aspect correction, layer filtering, the offscreen GL driver.

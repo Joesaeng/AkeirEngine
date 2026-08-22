@@ -32,7 +32,7 @@
       "fixedRotation": true
     },
     "SpriteRenderer": {
-      "sprite": "",
+      "sprite": "asset_01m0mcsvrae9vt1rp61tct73am#sprites/goblin",
       "layer": "Character",
       "tint": [0.6, 1, 0.6, 1]
     },

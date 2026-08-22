@@ -11,13 +11,14 @@ Game/
 ├── Tests/                       data-driven tests (§23): Combat/GoblinBasicCombat, Movement/PlayerMovement, Visual/CombatCapture (requires renderer)  → `akeir test`
 │   ├── Golden/<test>/           golden PNGs (produced only by the software renderer: `akeir test Visual --update-golden`)
 │   └── .results/                `akeir test` output (gitignored)
-├── Data/, Assets/               still empty (texture loading is not implemented — sprites are drawn as tinted shapes)
+├── Assets/Textures/arena.png    the sprite sheet (player / goblin / goblin_elite, 16×16) + arena.png.meta.json (the §37 sidecar made by `akeir asset import … --grid 16x16 --names …`)
+├── Data/                        still empty
 ├── Cache/                       engine-derived data (gitignored): crash/, journal/, history/ (the undo stack)
 └── Source/                      this game's C++ components/systems (statically linked; see its README)
 ```
 
 - Every file must be in §5.3 canonical form — `akeir validate` warns with `JSON_NOT_CANONICAL`, `akeir fmt` fixes it.
-- Reference values: `akeir run --headless --ticks 600` → finalHash `0xbc23e49a65efb2e8`; the run-twice check of GoblinBasicCombat in `akeir test` yields the same value. If this value changes, either the data or determinism changed (`Docs/STATUS.md`).
+- Reference values: `akeir run --headless --ticks 600` → finalHash `0x4ac7b45c37618374` (moved from `0xbc23e49a65efb2e8` when the prefabs got sprite refs, 2026-08-22); the run-twice check of GoblinBasicCombat in `akeir test` yields the same value. If this value changes, either the data or determinism changed (`Docs/STATUS.md`).
 - The scenario (§71): a player (WASD = MoveX/MoveY) and three goblins that chase (`chase`) inside `detectionRange` and deal `damage` every `attackCooldown` inside `attackRange` (`attack`). After 600 ticks the player has 10 HP.
 - `Game/` is **yours to replace**: the engine unit tests use the frozen copy in `Tests/Fixtures/TestArena` (ADR-0036), so swapping this directory for your own game (as CatSurvivor did) breaks nothing. The game executable `build/<preset>/bin/<name>.exe` is named after `project.json` → `name`.
 - Do not hand-write JSON for new entities/prefabs/worlds; use `akeir entity create` / `akeir prefab create` / `akeir world create` (or `akeir apply batch.json`) — ids (UUIDv7), defaults, canonical form and history are handled automatically.

@@ -236,6 +236,23 @@ Envelope cmdPrefabInstantiate(Context& ctx) {
     return runOne(ctx, "prefab.instantiate", a);
 }
 
+Envelope cmdAssetImport(Context& ctx) {
+    const std::string source = ctx.args.positional(2);
+    if (source.empty()) return usage("asset.import", "akeir asset import <Assets/…/file.png> [--grid WxH --names a,b,c] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]");
+    Json a = Json{{"source", source}};
+    if (auto g = ctx.args.get("grid")) {
+        auto x = g->find('x');
+        int cw = x == std::string::npos ? 0 : std::atoi(g->substr(0, x).c_str()), ch = x == std::string::npos ? 0 : std::atoi(g->substr(x + 1).c_str());
+        if (cw <= 0 || ch <= 0) return Envelope::failure("asset.import", CommandError::make(ErrorCategory::Usage, "USAGE_ERROR", "--grid must look like 16x16 (cell width x height in pixels)."));
+        a["grid"] = Json{{"cellWidth", cw}, {"cellHeight", ch}};
+    }
+    if (auto n = ctx.args.get("names")) a["names"] = splitList(*n);
+    if (auto p = ctx.args.getInt("ppu")) a["pixelsPerUnit"] = *p;
+    if (auto f = ctx.args.get("filter")) a["filter"] = *f;
+    if (auto pv = ctx.args.get("pivot")) { Json parts = splitList(*pv); if (parts.size() == 2) a["pivot"] = Json::array({std::atof(parts[0].get<std::string>().c_str()), std::atof(parts[1].get<std::string>().c_str())}); }
+    return runOne(ctx, "asset.import", a);
+}
+
 Envelope cmdWorldCreate(Context& ctx) {
     const std::string name = ctx.args.positional(2);
     if (name.empty()) return usage("world.create", "akeir world create <name>");
@@ -360,6 +377,7 @@ void registerMutationCommands(std::vector<CommandSpec>& t) {
     t.push_back({"prefab.create", {"prefab", "create"}, "Mutation", "Create a prefab", "Writes Prefabs/<Name>.prefab.json.", "akeir prefab create <name> [--components JSON] [--base X] [--set JSON] [--tags a,b]", false, false, false, cmdPrefabCreate});
     t.push_back({"prefab.instantiate", {"prefab", "instantiate"}, "Mutation", "Instantiate a prefab", "Creates an instance entity referencing the prefab.", "akeir prefab instantiate <prefab> [--world W] [--name N] [--parent P] [--position x,y,z] [--set JSON]", false, false, false, cmdPrefabInstantiate});
     t.push_back({"world.create", {"world", "create"}, "Mutation", "Create a world", "Writes Worlds/<Name>.world.json with no entities.", "akeir world create <name>", false, false, false, cmdWorldCreate});
+    t.push_back({"asset.import", {"asset", "import"}, "Mutation", "Import a PNG as a texture asset (§37)", "Creates Assets/<png>.meta.json with a generated asset_ id and sprite sub-assets (--grid WxH --names a,b,c slices a sheet row-major; without --grid the whole image is one sprite). Then set SpriteRenderer.sprite to \"<id>#sprites/<name>\". Undoable like every command.", "akeir asset import <Assets/…/file.png> [--grid 16x16 --names player,goblin] [--ppu 16] [--filter nearest|linear] [--pivot 0.5,0.5]", false, false, false, cmdAssetImport});
     t.push_back({"apply", {"apply"}, "Mutation", "Apply a batch of commands (§49)", "Atomic batch: all commands commit as one ChangeSet or none. '$name' refers to an earlier change's result (as: name). --idempotency-key replays the stored response.",
                  "akeir apply <batch.json|-> [--dry-run] [--idempotency-key K]", false, false, false, cmdApply});
     t.push_back({"history.undo", {"undo"}, "Mutation", "Undo last change(s)", "Applies inverse(ops) of the newest history entry (§10.1). --actor X only undoes X's entries; conflicts if files changed underneath.",
