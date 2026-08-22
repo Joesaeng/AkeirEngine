@@ -78,6 +78,17 @@ void enemyAttack(PlayWorld& w, const InputFrame&, const SimTime& t) {
     }
 }
 
+// HUD (ADR-0040): rewrite the text of every #hud TextRenderer after physics so it shows this tick's state.
+// Uppercase-only bitmap font: "HP 100  GOBLINS 3".
+void hudText(PlayWorld& w, const InputFrame&, const SimTime&) {
+    const Health* hp = nullptr;
+    for (const auto& id : w.query({"#player"})) { hp = w.get<Health>(id); break; }
+    int alive = 0;
+    for (const auto& id : w.query({"EnemyAI"})) if (w.get<EnemyAI>(id)->state != AiState::Dead) ++alive;
+    std::string text = "HP " + std::to_string(hp ? static_cast<int>(std::lround(hp->current)) : 0) + "  GOBLINS " + std::to_string(alive);
+    for (const auto& id : w.query({"TextRenderer", "#hud"})) w.get<TextRenderer>(id)->text = text;
+}
+
 } // namespace
 
 void registerGameSystems(PlayWorld& world) {
@@ -87,6 +98,7 @@ void registerGameSystems(PlayWorld& world) {
     world.addSystem("PlayerMovement", playerMovement);
     world.addSystem("EnemyChase", enemyChase);
     world.addSystem("EnemyAttack", enemyAttack);
+    world.addSystem("HudText", hudText, PlayWorld::SystemPhase::PostPhysics);   // sees the damage dealt this tick
 }
 
 } // namespace game

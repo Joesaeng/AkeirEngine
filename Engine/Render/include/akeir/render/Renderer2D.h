@@ -28,6 +28,7 @@ namespace akeir {
 
 struct RenderStats {
     int sprites = 0;
+    int texts = 0;      // TextRenderer entities drawn (ADR-0040)
     int width = 0, height = 0;
     std::string backend;           // SDL renderer 이름 ("software", "direct3d11", …)
     Json camera;                   // {entity, position, orthoSize}

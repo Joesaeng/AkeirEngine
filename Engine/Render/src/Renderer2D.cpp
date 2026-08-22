@@ -1,6 +1,7 @@
 // Renderer2D.cpp — SDL_Renderer 기반 placeholder 스프라이트 렌더 + PNG capture + golden 비교 (§27, §27.1)
 #include "akeir/render/Renderer2D.h"
 
+#include "Font5x7.h"
 #include "akeir/core/Log.h"
 #include "akeir/runtime/Components.h"
 
@@ -147,6 +148,46 @@ RenderStats Renderer2D::render(const PlayWorld& world) {
             SDL_RenderFillRect(renderer_, &it.rect);
         }
         ++stats.sprites;
+    }
+    // text (ADR-0040): after sprites, in sortingOrder then id order. Glyph pixels are filled rects → deterministic on the software path.
+    struct TextItem { int order; std::string id; const TextRenderer* tr; const Transform* t; };
+    std::vector<TextItem> texts;
+    for (const auto& id : world.entityIds()) {
+        const TextRenderer* tr = world.get<TextRenderer>(id);
+        const Transform* t = world.get<Transform>(id);
+        if (tr && t && !tr->text.empty()) texts.push_back({tr->sortingOrder, id, tr, t});
+    }
+    std::stable_sort(texts.begin(), texts.end(), [](const TextItem& a, const TextItem& b) { return a.order != b.order ? a.order < b.order : a.id < b.id; });
+    for (const auto& it : texts) {
+        const float px = std::max(0.25f, it.tr->scale);
+        const float advance = font5x7::kAdvance * px, glyphH = font5x7::kHeight * px;
+        // decode UTF-8 into code points; unsupported ones draw as the box glyph
+        std::vector<unsigned int> cps;
+        for (std::size_t i = 0; i < it.tr->text.size();) {
+            unsigned char c = static_cast<unsigned char>(it.tr->text[i]);
+            unsigned int cp = c; std::size_t n = 1;
+            if (c >= 0xF0) { cp = c & 0x07; n = 4; } else if (c >= 0xE0) { cp = c & 0x0F; n = 3; } else if (c >= 0xC0) { cp = c & 0x1F; n = 2; }
+            for (std::size_t k = 1; k < n && i + k < it.tr->text.size(); ++k) cp = (cp << 6) | (static_cast<unsigned char>(it.tr->text[i + k]) & 0x3F);
+            cps.push_back(cp);
+            i += n;
+        }
+        const float totalW = cps.empty() ? 0.f : advance * cps.size() - px;
+        float x0, y0;
+        if (it.tr->screenSpace) { x0 = it.t->position.x; y0 = it.t->position.y; }
+        else { x0 = cx + (it.t->position.x - camPos.x) * ppu; y0 = cy - (it.t->position.y - camPos.y) * ppu - glyphH * 0.5f; }
+        if (it.tr->align == TextAlign::Center) x0 -= totalW * 0.5f; else if (it.tr->align == TextAlign::Right) x0 -= totalW;
+        x0 = std::floor(x0); y0 = std::floor(y0);
+        SDL_SetRenderDrawColor(renderer_, toByte(it.tr->color.r), toByte(it.tr->color.g), toByte(it.tr->color.b), toByte(it.tr->color.a));
+        for (std::size_t ci = 0; ci < cps.size(); ++ci) {
+            const font5x7::Glyph& g = font5x7::glyph(cps[ci]);
+            for (int row = 0; row < font5x7::kHeight; ++row)
+                for (int col = 0; col < font5x7::kWidth; ++col)
+                    if (g.rows[row] & (1 << (font5x7::kWidth - 1 - col))) {
+                        SDL_FRect r{x0 + ci * advance + col * px, y0 + row * px, px, px};
+                        SDL_RenderFillRect(renderer_, &r);
+                    }
+        }
+        ++stats.texts;
     }
     SDL_FlushRenderer(renderer_);   // software renderer 는 배치를 flush 해야 surface 에 픽셀이 있다 (readPixels/savePng 전에 필수)
     return stats;

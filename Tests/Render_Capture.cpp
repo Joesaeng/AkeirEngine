@@ -153,3 +153,40 @@ TEST_CASE("Renderer2D: a SpriteRenderer.sprite asset ref draws the texture regio
     CHECK(at(b, 40, 40) == std::array<int, 3>{0, 0, 255});
     fs::remove_all(dir, ec);
 }
+
+TEST_CASE("Renderer2D: TextRenderer draws the 5x7 bitmap font in screen space, deterministic pixels (ADR-0040)") {
+    sdl();
+    registerBuiltinComponents();
+    fs::path dir = fs::temp_directory_path() / "akeir_text_render_test";
+    std::error_code ec; fs::remove_all(dir, ec);
+    fs::create_directories(dir / "Worlds");
+    std::ofstream(dir / "project.json") << Json{{"$schema", "game://schema/project/1"}, {"schemaVersion", 1}, {"name", "T"}, {"tickRate", 60}, {"seed", 1}, {"defaultWorld", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}}.dump();
+    std::ofstream(dir / "Worlds" / "W.world.json") << Json{{"$schema", "game://schema/world/1"}, {"schemaVersion", 1}, {"id", "world_01j5xq8z3mf0n9k2c7p4rtvw6y"}, {"name", "W"}, {"entities", Json{
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw70", Json{{"name", "Cam"}, {"components", Json{{"Transform", Json::object()}, {"Camera2D", Json{{"background", Json::array({0, 0, 0, 1})}}}}}}},
+        {"entity_01j5xq8z3mf0n9k2c7p4rtvw71", Json{{"name", "Hud"}, {"components", Json{{"Transform", Json{{"position", Json::array({2, 3, 0})}}},
+            {"TextRenderer", Json{{"text", "Ia"}, {"screenSpace", true}, {"scale", 1}, {"color", Json::array({1, 1, 1, 1})}}}}}}}}}}.dump();
+    std::vector<Diagnostic> d;
+    auto prj = Project::load(dir.string(), d);
+    REQUIRE(prj);
+    PlayWorldConfig cfg; cfg.seed = 1; cfg.tickRate = 60;
+    auto world = PlayWorld::build(*prj, *prj->defaultWorld(), cfg, d);
+    REQUIRE(world);
+    std::string err;
+    auto r = Renderer2D::createSoftware(32, 16, &err);
+    REQUIRE_MESSAGE(r, err);
+    RenderStats s = r->render(*world);
+    CHECK(s.texts == 1);
+    int w = 0, h = 0;
+    auto px = r->readPixels(&w, &h);
+    auto on = [&](int x, int y) { std::size_t i = (static_cast<std::size_t>(y) * 32 + x) * 4; return px[i] == 255 && px[i + 1] == 255 && px[i + 2] == 255; };
+    // 'I' at (2,3): row 0 = " ### " → x 3..5 lit, x 2 and 6 dark; row 3 = "  #  " → only x 4
+    CHECK(on(3, 3)); CHECK(on(4, 3)); CHECK(on(5, 3)); CHECK_FALSE(on(2, 3)); CHECK_FALSE(on(6, 3));
+    CHECK(on(4, 6)); CHECK_FALSE(on(3, 6));
+    // 'a' is drawn as 'A' (advance 6): row 0 " ### " at x 9..11
+    CHECK(on(9, 3)); CHECK(on(11, 3)); CHECK_FALSE(on(8, 3));
+    CHECK_FALSE(on(0, 0));
+    auto r2 = Renderer2D::createSoftware(32, 16, &err); r2->render(*world);
+    CHECK(r2->readPixels(&w, &h) == px);   // deterministic
+    fs::remove_all(dir, ec);
+}
+

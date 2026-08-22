@@ -78,7 +78,7 @@ bool captureWorld(const PlayWorld& world, int w, int h, const std::string& outPn
     auto r = Renderer2D::createSoftware(w, h, err);
     if (!r) return false;
     RenderStats s = r->render(world);
-    if (stats) *stats = Json{{"sprites", s.sprites}, {"backend", s.backend}, {"camera", s.camera}};
+    if (stats) *stats = Json{{"sprites", s.sprites}, {"texts", s.texts}, {"backend", s.backend}, {"camera", s.camera}};
     std::error_code ec;
     if (std::filesystem::path(outPng).has_parent_path()) std::filesystem::create_directories(std::filesystem::path(outPng).parent_path(), ec);
     return r->savePng(outPng, err);
@@ -100,7 +100,7 @@ Envelope cmdCapture(Context& ctx) {
     std::string err;
     Json stats;
     if (!captureWorld(*world, w, h, out, &err, &stats)) return Envelope::failure("capture", CommandError::make(ErrorCategory::Internal, "CAPTURE_FAILED", err));
-    Json r = Json{{"file", out}, {"width", w}, {"height", h}, {"tick", st.tick}, {"videoDriver", headlessSdl().currentVideoDriver()}, {"renderer", stats.value("backend", "")}, {"sprites", stats.value("sprites", 0)}, {"camera", stats.value("camera", Json())}, {"worldHash", toHex64(world->hash())}};
+    Json r = Json{{"file", out}, {"width", w}, {"height", h}, {"tick", st.tick}, {"videoDriver", headlessSdl().currentVideoDriver()}, {"renderer", stats.value("backend", "")}, {"sprites", stats.value("sprites", 0)}, {"texts", stats.value("texts", 0)}, {"camera", stats.value("camera", Json())}, {"worldHash", toHex64(world->hash())}};
     if (auto golden = ctx.args.get("compare")) {
         CaptureTolerance tol;
         if (auto v = ctx.args.get("per-pixel")) tol.perPixel = std::atof(v->c_str());

@@ -5,7 +5,7 @@ The authoring document model, the built-in components, and the fixed-tick loop.
 | Header | § | Provides |
 |---|---|---|
 | `akeir/runtime/Project.h` | §5.3, §6, §7, §19, §29, §34, §88.9 | `Project::load/create`, the document map (`Worlds/*.world.json`, `Prefabs/*.prefab.json`), id index (`locate`), `resolveSelector` (`name:` / `path:` / id prefix), `entityPath`, `resolvePrefab` / `resolveEntityComponents` (remove → add → set, absent = inherit, cycle/depth checks), `canonicalizeDocument`, `saveAll` / `saveDocument`, `validate()` |
-| `akeir/runtime/Components.h` | §2.1, §6, §57 | Built-in components: `Transform`, `SpriteRenderer`, `Collider2D`, `RigidBody2D`, `Camera2D` + the `registerBuiltinComponents()` anchor |
+| `akeir/runtime/Components.h` | §2.1, §6, §57 | Built-in components: `Transform`, `SpriteRenderer`, `Collider2D`, `RigidBody2D`, `Camera2D`, `TextRenderer` (ADR-0040) + the `registerBuiltinComponents()` anchor |
 | `akeir/runtime/Application.h` | §20.1, §22.2 | `ISimulation`, `IInputSource` (Null/Scripted), `RunConfig`, `RunResult`, `Application::runHeadless` (fixed tick without an accumulator, FP env normalization, hashEvery) |
 | `akeir/runtime/Input.h` | §88.3, §22.3 | `InputFrame {tick, actions, commands}` + JSON |
 | `akeir/runtime/DemoSimulation.h` | — | Placeholder sim for exercising the loop (`akeir run --demo`) |

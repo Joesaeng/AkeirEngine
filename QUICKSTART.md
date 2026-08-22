@@ -28,7 +28,7 @@ cd Game
 %G% version --json
 %G% capabilities --json                         # 15 tools, busCommands (14 write commands + argument schemas), exit/error code tables
 %G% project info --json
-%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0x4ac7b45c37618374
+%G% run --headless --ticks 600 --json           # deterministic run. result.finalHash must be 0x404c60567ccb9e85
 %G% test --json                                 # 3 data-driven tests (Combat / Movement / Visual golden)
 %G% capture --ticks 300 --out Cache\capture\f.png --json   # CPU-rendered PNG
 %G% run --ticks 120                             # the same windowed run from the CLI (closes itself after 2 s). To just play, double-click bin\TestArena.exe
@@ -63,6 +63,7 @@ What you can do with data alone (no C++):
 - Player movement: `Collider2D` + `RigidBody2D` (dynamic, gravityScale 0) + `Movement` + `PlayerController` (MoveX/MoveY from input.json). The dependency chain (`Movement` → `RigidBody2D` → `Collider2D`) is listed under `x-requires` in `schema --all`; a missing link is rejected with `COMPONENT_DEPENDENCY_MISSING` (the whole creation is rolled back).
 - Enemy AI: `EnemyAI` (chases inside detectionRange, attacks inside attackRange, targetTag) + `Health`. **For an attack to have an effect, the target needs `Health` too.**
 - Camera: `Camera2D` (orthoSize, background).
+- HUD / labels: `TextRenderer` (`text`, `scale`, `align`, `screenSpace: true` → `Transform.position` is pixels from the top-left). Built-in 5×7 font: digits, A–Z and punctuation (lowercase prints as uppercase; other scripts print as boxes). A game system rewrites `text` every tick for live values — see `HudText` in `Game/Source/GameSystems.cpp`.
 - **Textures**: drop a PNG under `Assets/`, register it — `%G% asset import Assets/Textures/cats.png --grid 16x16 --names hero,cat,fish --json` — and point sprites at it: `%G% set <selector> SpriteRenderer.sprite "<asset id>#sprites/hero"` (the id is in the import result / `Assets/Textures/cats.png.meta.json`). Pixel art stays crisp (nearest), `pixelsPerUnit` sets the world size, `tint`/`flipX`/`flipY` apply. Without a sprite ref an entity is drawn as a tinted shape. The sample's `Game/Assets/Textures/arena.png` shows the format.
 - Tests: write `Tests/**/*.test.json` **by hand** (setup / inputs / assert / determinism / capture golden). The file format and the assertion language (grammar, functions, examples) come from `%G% schema test --json`; check one expression with `%G% test explain "player.Health.current > 0" --snapshot Cache\snap.json --as player=<id>` (snapshot from `run --headless --snapshot-out`). Typos in function names are parse errors with a suggestion.
 

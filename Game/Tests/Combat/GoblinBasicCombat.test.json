@@ -18,6 +18,6 @@
     { "id": "player-hurt", "expr": "player.Health.current < player.Health.max", "eventually": { "withinTicks": 600 } },
     { "id": "goblins-close", "expr": "dist(g1.Transform.position, player.Transform.position) < 2.5", "at": "end" },
     { "id": "every-enemy-has-collider", "expr": "world.entities.all(e, !has(e.components.EnemyAI) || has(e.components.Collider2D))", "at": "end" },
-    { "id": "entity-count", "expr": "size(world.entities) == 7", "at": "end" }
+    { "id": "entity-count", "expr": "size(world.entities) == 8", "at": "end" }
   ]
 }

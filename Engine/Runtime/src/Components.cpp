@@ -4,6 +4,7 @@
 
 AKEIR_REFLECT_ENUM(akeir::ColliderShape, "box", "circle", "capsule")
 AKEIR_REFLECT_ENUM(akeir::BodyType, "static", "kinematic", "dynamic")
+AKEIR_REFLECT_ENUM(akeir::TextAlign, "left", "center", "right")
 
 namespace akeir {
 
@@ -54,6 +55,16 @@ AKEIR_REFLECT_BEGIN(Camera2D, "Orthographic 2D camera")
     AKEIR_PROP(background, "Clear color");
 AKEIR_REFLECT_END(Camera2D)
 
+AKEIR_REFLECT_BEGIN(TextRenderer, "Text drawn with the built-in 5x7 bitmap font (HUD when screenSpace)")
+    AKEIR_REQUIRES("Transform");
+    AKEIR_PROP(text, "Text to draw. Lowercase prints as uppercase; unsupported characters print as a box. Systems may update it every tick");
+    AKEIR_PROP(color, "Text color");
+    AKEIR_PROP(scale, "Pixels per font pixel (a glyph is 5x7)").min(0.25).ui(1, 8, 0.5);
+    AKEIR_PROP(align, "Horizontal alignment around the position");
+    AKEIR_PROP(screenSpace, "true: Transform.position.x/y are pixels from the top-left of the screen (HUD); false: world space");
+    AKEIR_PROP(sortingOrder, "Draw order (higher = on top)");
+AKEIR_REFLECT_END(TextRenderer)
+
 void registerBuiltinComponents() {
     // 이 TU 의 static initializer 들이 등록을 수행한다. 이 함수는 링커가 TU 를 버리지 않게 하는 앵커다.
     (void)akeirReflectInstance_Transform;
@@ -61,6 +72,7 @@ void registerBuiltinComponents() {
     (void)akeirReflectInstance_Collider2D;
     (void)akeirReflectInstance_RigidBody2D;
     (void)akeirReflectInstance_Camera2D;
+    (void)akeirReflectInstance_TextRenderer;
 }
 
 } // namespace akeir

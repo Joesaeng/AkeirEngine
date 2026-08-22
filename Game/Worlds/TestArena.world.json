@@ -80,6 +80,27 @@
           "scale": [1, 1, 1]
         }
       }
+    },
+    "entity_01m0mdzct5eg9b42reghwd0wps": {
+      "name": "Hud",
+      "tags": ["hud"],
+      "parent": null,
+      "order": "a2",
+      "components": {
+        "TextRenderer": {
+          "text": "HP",
+          "color": [1, 1, 1, 1],
+          "scale": 2,
+          "align": "left",
+          "screenSpace": true,
+          "sortingOrder": 100
+        },
+        "Transform": {
+          "position": [8, 8, 0],
+          "rotation": [0, 0, 0, 1],
+          "scale": [1, 1, 1]
+        }
+      }
     }
   }
 }

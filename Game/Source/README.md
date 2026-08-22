@@ -3,7 +3,7 @@
 The area an AI edits most often (§60). The engine knows nothing about this directory (§76).
 
 - `GameComponents.h/.cpp`: `Health`, `Movement`, `PlayerController`, `EnemyAI` (+ the `AiState` enum). All aggregates, registered with `AKEIR_REFLECT_*`. `registerGameComponents()` is the anchor.
-- `GameSystems.h/.cpp`: `registerGameSystems(world)` — the spawn hook `HealthInit` (current = max), then the systems `PlayerMovement` (MoveX/MoveY → velocity) → `EnemyChase` (chases the nearest `#player` within detection/attack range) → `EnemyAttack` (cooldown, damage, dead).
+- `GameSystems.h/.cpp`: `registerGameSystems(world)` — the spawn hook `HealthInit` (current = max), then the systems `PlayerMovement` (MoveX/MoveY → velocity) → `EnemyChase` (chases the nearest `#player` within detection/attack range) → `EnemyAttack` (cooldown, damage, dead) → `HudText` (PostPhysics: writes "HP … GOBLINS …" into the `#hud` TextRenderer).
 - The only engine API used is `PlayWorld`'s `query / get<T> / rng / contactEvents` (§59). No wall clock, no global RNG, no unordered iteration (§22.2). Ties are broken by id order.
 
 Data: `Game/project.json`, `Game/Prefabs/*.prefab.json`, `Game/Worlds/TestArena.world.json`, `Game/Config/input.json`. `akeir validate` / `akeir fmt` / `akeir run --headless` / `akeir query` / `akeir dump` work from inside `Game/` (or with `--project Game`).

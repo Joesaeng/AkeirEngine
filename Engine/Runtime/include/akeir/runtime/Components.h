@@ -60,6 +60,20 @@ struct Camera2D {
     Color background{0.1f, 0.1f, 0.12f, 1.f};
 };
 
+enum class TextAlign { Left, Center, Right };
+
+/// Text with the built-in 5x7 bitmap font (ADR-0040). World-space by default (Transform.position, camera applies);
+/// screenSpace = true puts it on the HUD: Transform.position.x/y are pixels from the top-left of the window/capture.
+/// Lowercase is drawn as uppercase; characters outside the font draw as a box. A game system may rewrite `text` every tick.
+struct TextRenderer {
+    std::string text;
+    Color color{1.f, 1.f, 1.f, 1.f};
+    float scale = 2.f;                 // pixels per font pixel (screen space) — a 5x7 glyph at 2 is 10x14 px
+    TextAlign align = TextAlign::Left;
+    bool screenSpace = false;
+    int sortingOrder = 100;            // drawn after sprites of lower order
+};
+
 /// builtin component 등록을 강제로 링크 (정적 라이브러리에서 .obj 가 버려지는 것 방지). main() 에서 한 번 호출.
 void registerBuiltinComponents();
 

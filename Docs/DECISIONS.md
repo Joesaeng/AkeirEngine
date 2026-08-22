@@ -260,3 +260,10 @@
 - **결정**: 문법·함수·매크로·바인딩·의미론·예시를 `expr::Expr::reference()`(JSON) 로, 시나리오 파일 형식을 `TestScenario::schema()`(JSON Schema 2020-12) 로 코드에 둔다. 노출: `akeir schema test --json`, `capabilities.testScenario`, MCP `schema_describe {kind: "test"}`. 모르는 함수 이름은 평가 시점이 아니라 **parse 시점** 오류(offset + 편집 거리 ≤ 2 의 "did you mean 'size()'?" + 전체 함수 목록). `akeir test explain "<expr>" [--snapshot f --as name=id]` 가 파싱 결과(roots)와 caret 위치를 보여주고, `run --snapshot-out` 의 snapshot 위에서 평가해 `value`/`bindings` 를 돌려준다(`EXPR_PARSE_ERROR`). README 는 reference 의 사본이 아니라 포인터가 된다(§8: 규칙은 Schema/Capabilities 로 드러낸다).
 - **검증**: `Tests/Testing_Expr.cpp` — 오타 제안, offset, reference 의 모든 예시가 parse 됨, schema 키.
 - **참조**: §23, §23.1, §24, PRINCIPLES §8/§22-4
+
+## ADR-0040 텍스트: `TextRenderer` component + 내장 5×7 bitmap font (HUD 는 screenSpace) — UI 위젯은 만들지 않는다
+- **상태**: 확정 (2026-08-22, CatSurvivor 피드백 P0 "텍스트 및 게임 UI 부재" 중 텍스트 절반).
+- **결정**: 내장 component `TextRenderer {text, color, scale, align(left|center|right), screenSpace, sortingOrder}`. `screenSpace=true` 면 `Transform.position.x/y` 가 화면 좌상단 기준 픽셀(카메라 무관) — HUD. 폰트는 엔진에 박힌 5×7 bitmap(`Engine/Render/src/Font5x7.h`: 숫자·대문자·구두점; 소문자는 대문자로, 그 밖의 글자(한글 포함)는 box)이며 글리프 픽셀을 사각형으로 채워 software 경로에서 바이트 결정적 — 골든에 HUD 를 넣을 수 있다. 게임 system 이 매 tick `text` 를 다시 써서 수치를 보여준다(샘플: `HudText` PostPhysics system, `#hud` 태그 entity). reflected 문자열이라 hash/snapshot 에 포함된다(결정적이면 무해).
+- **만들지 않은 것**: panel/button/bar 같은 retained UI 위젯(PRINCIPLES §8 — 게임 영역; 데이터+system 으로 만들 수 있다), TTF/SDL_ttf 와 한글(폰트를 asset 으로 다루는 후속 — 실제 요구가 생길 때), 줄바꿈/폭 제한.
+- **검증**: `Tests/Render_Capture.cpp` 픽셀 단위('I','a'→'A', 결정성). 샘플 골든 재생성, 기준 finalHash `0x404c60567ccb9e85`.
+- **참조**: §27, ADR-0026, PRINCIPLES §8/§11
